@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="sv" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BörsPulsen - Svenska Börsen i Realtid</title>
+<meta name="description" content="BörsPulsen – din källa för svenska börsnyheter, aktiekurser och marknadsanalys i realtid. Följ OMXS30, aktier och börsutvecklingen live.">
+<meta property="og:title" content="BörsPulsen - Svenska Börsen i Realtid">
+<meta property="og:description" content="Följ svenska börsen i realtid med BörsPulsen. Aktiekurser, nyheter och marknadsanalys.">
+<meta property="og:url" content="https://borspulsen.com">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+  :root {
+    --bg: #131722;
+    --bg2: #1E2130;
+    --bg3: #2A2E39;
+    --card: #1E2130;
+    --border: #2A2E39;
+    --text: #D1D4DC;
+    --text2: #787B86;
+    --accent: #2962FF;
+    --accent2: #2962FF;
+    --green: #26A69A;
+    --red: #EF5350;
+    --header-bg: linear-gradient(180deg, #1E2130 0%, #131722 100%);
+  }
+  [data-theme="light"] {
+    --bg: #F0F3FA;
+    --bg2: #FFFFFF;
+    --bg3: #F0F3FA;
+    --card: #FFFFFF;
+    --border: #E0E3EB;
+    --text: #131722;
+    --text2: #787B86;
+    --accent: #2962FF;
+    --accent2: #2962FF;
+    --green: #26A69A;
+    --red: #EF5350;
+    --header-bg: linear-gradient(180deg, #1E2130 0%, #131722 100%);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  /* TICKER */
+  .ticker-wrap { background: var(--bg3); border-bottom: 1px solid var(--border); overflow: hidden; padding: 8px 0; }
+  .ticker { display: flex; animation: ticker 60s linear infinite; width: max-content; }
+  .ticker:hover { animation-play-state: paused; }
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .ticker-item { display: flex; align-items: center; gap: 6px; padding: 0 20px; white-space: nowrap; font-size: 12px; font-weight: 600; }
+  .ticker-item .name { color: var(--text2); }
+  .ticker-item .price { color: var(--text); }
+  .up { color: var(--green) !important; }
+  .down { color: var(--red) !important; }
+
+  /* HEADER */
+  header { background: var(--header-bg); padding: 0 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.4); }
+  .header-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 20px; height: 56px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-icon { width: 32px; height: 32px; background: #2962FF; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .logo-text { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .logo-text span { color: #2962FF; }
+  nav { display: flex; gap: 4px; margin-left: 20px; }
+  nav a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+  /* GLOBAL SEARCH */
+  .search-wrap { position: relative; }
+  .search-wrap input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 14px 8px 36px; border-radius: 8px; font-size: 14px; width: 280px; outline: none; transition: all 0.2s; }
+  .search-wrap input:focus { background: rgba(255,255,255,0.15); border-color: rgba(41,98,255,0.6); width: 320px; }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.45); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.5); font-size: 15px; }
+  .search-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #1e222d; border: 1px solid #2a2e39; border-radius: 10px; max-height: 320px; overflow-y: auto; z-index: 200; display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+  .search-results.show { display: block; }
+  .search-result-item { padding: 10px 14px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #2a2e39; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s; }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: #2a2e39; }
+  .sr-left { display: flex; align-items: center; gap: 10px; }
+  .sr-name { font-weight: 600; color: #d1d4dc; }
+  .sr-ticker { font-size: 11px; color: #787b86; margin-top: 1px; }
+  .sr-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .sr-badge.SE { background: rgba(41,98,255,0.2); color: #6b9fff; }
+  .sr-badge.NO { background: rgba(239,68,68,0.2); color: #f87171; }
+  .sr-badge.FI { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+  .sr-badge.US { background: rgba(38,166,154,0.2); color: #4dd0c4; }
+  .sr-badge.DE { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .sr-pct { font-size: 13px; font-weight: 700; }
+  .search-results-header { padding: 8px 14px; font-size: 11px; font-weight: 600; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; background: #131722; border-bottom: 1px solid #2a2e39; }
+  .search-no-results { padding: 16px 14px; font-size: 14px; color: #787b86; text-align: center; }
+
+  .theme-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size:13px; transition: all 0.2s; }
+  .theme-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* MAIN */
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 24px 60px; }
+  .section-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; width: 3px; height: 18px; background: #2962FF; border-radius: 2px; }
+
+  /* INDEX CARDS */
+  .index-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .index-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.2s, box-shadow 0.2s; }
+  .index-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .index-name { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 8px; }
+  .index-price { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .index-change { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+  .index-chart { height: 50px; }
+
+  /* ── HEATMAP – TradingView Treemap style ── */
+  .heatmap { margin-bottom: 32px; }
+  .heatmap-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: #131722;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .heat-rect {
+    position: absolute;
+    cursor: pointer;
+    box-sizing: border-box;
+    border: 2px solid #131722;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: filter 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .heat-rect:hover {
+    filter: brightness(1.22);
+    border-color: rgba(255,255,255,0.35);
+    z-index: 10;
+  }
+  .heat-rect .h-ticker  { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; text-align: center; }
+  .heat-rect .h-name-sm { font-size: 10px; color: rgba(255,255,255,0.72); text-align: center; line-height: 1.2; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
+  .heat-rect .h-change  { font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 700; margin-top: 4px; }
+  .heat-rect .h-price   { font-size: 10px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+  /* ── WINNERS / LOSERS ── */
+  .wl-section { margin-bottom: 32px; }
+  .wl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .wl-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .wl-header { padding: 14px 18px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; letter-spacing: 0.3px; }
+  .wl-header.green { color: #26A69A; background: rgba(38,166,154,0.06); }
+  .wl-header.red   { color: #EF5350; background: rgba(239,83,80,0.06); }
+  .wl-item { display: flex; align-items: center; padding: 13px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .wl-item:last-child { border-bottom: none; }
+  .wl-item:hover { background: var(--bg3); }
+  .wl-rank { font-size: 15px; font-weight: 800; color: var(--text2); width: 22px; flex-shrink: 0; text-align: center; }
+  .wl-info { flex: 1; margin-left: 12px; }
+  .wl-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .wl-ticker-sm { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .wl-right { text-align: right; }
+  .wl-pct { font-size: 22px; font-weight: 800; line-height: 1; }
+  .wl-pct.up   { color: #26A69A; }
+  .wl-pct.down { color: #EF5350; }
+  .wl-price-sm { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+  /* MARKET TABS */
+  .market-tabs { display: flex; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .market-tab { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 7px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+  .market-tab:hover { color: var(--text); border-color: var(--accent); }
+  .market-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 12px rgba(41,98,255,0.3); }
+
+  /* TABLE */
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+  .table-filter input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; font-size: 14px; outline: none; width: 220px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
+  th:hover { color: var(--accent); }
+  td { padding: 10px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .stock-name { font-weight: 600; color: var(--text); cursor: pointer; }
+  .stock-name:hover { color: var(--accent2); }
+  .stock-ticker { font-size: 12px; color: var(--text2); display: block; }
+  .change-cell { font-weight: 600; }
+  .market-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .market-badge.NO { background: rgba(239,68,68,0.15); color: #f87171; }
+  .market-badge.FI { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+  .market-badge.US { background: rgba(38,166,154,0.15); color: #4dd0c4; }
+  .market-badge.DE { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+  /* ── MODAL – TradingView ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #1e222d; border: 1px solid #2a2e39; border-radius: 16px; padding: 24px; max-width: 820px; width: 94%; max-height: 94vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.6); }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .modal-title { font-size: 24px; font-weight: 800; color: #d1d4dc; }
+  .modal-subtitle { font-size: 14px; color: #787b86; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .modal-close { background: #2a2e39; border: none; color: #787b86; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; flex-shrink: 0; }
+  .modal-close:hover { color: #d1d4dc; }
+
+  /* TradingView container */
+  .tv-chart-container { width: 100%; height: 450px; background: #131722; border-radius: 10px; overflow: hidden; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
+  .tv-chart-container iframe { border-radius: 10px; }
+  .tv-loading { color: #787b86; font-size: 14px; text-align: center; }
+  .tv-loading-spinner { width: 32px; height: 32px; border: 3px solid #2a2e39; border-top-color: #2962FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat-box { background: #2a2e39; border-radius: 10px; padding: 14px; }
+  .stat-label { font-size: 11px; color: #787b86; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 17px; font-weight: 700; color: #d1d4dc; }
+
+  /* PORTFOLIO */
+  .portfolio { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 32px; }
+  .portfolio-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .portfolio-stat { background: var(--bg3); border-radius: 10px; padding: 14px; }
+  .portfolio-stat label { font-size: 12px; color: var(--text2); }
+  .portfolio-stat .value { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  .portfolio-add { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .portfolio-add input, .portfolio-add select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 9px 14px; border-radius: 8px; font-size: 14px; outline: none; }
+  .portfolio-add input { flex: 1; min-width: 120px; }
+  .btn { background: var(--accent2); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+  .btn:hover { opacity: 0.9; }
+  .btn-danger { background: var(--red); }
+  .portfolio-table th, .portfolio-table td { padding: 10px 12px; }
+
+  /* NEWS */
+  .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .news-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+  .news-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+  .tag-bors { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .tag-analys { background: rgba(245,158,11,0.15); color: var(--accent); }
+  .tag-makro { background: rgba(16,185,129,0.15); color: var(--green); }
+  .news-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 10px; }
+  .news-meta { font-size: 12px; color: var(--text2); }
+
+  /* NEWSLETTER */
+  .newsletter-section { background: linear-gradient(135deg, #0d1a3a 0%, #1a2a5e 50%, #0d1a3a 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 48px; text-align: center; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .newsletter-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.15) 0%, transparent 70%); pointer-events: none; }
+  [data-theme="light"] .newsletter-section { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 50%, #1e3a5f 100%); }
+  .nl-badge { display: inline-block; background: rgba(245,158,11,0.15); color: var(--accent); border: 1px solid rgba(245,158,11,0.3); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px; }
+  .nl-title { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 12px; line-height: 1.2; }
+  .nl-subtitle { font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 32px; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .nl-form { display: flex; gap: 10px; max-width: 480px; margin: 0 auto 16px; }
+  .nl-form input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 14px 18px; border-radius: 10px; font-size: 15px; outline: none; }
+  .nl-form input::placeholder { color: rgba(255,255,255,0.5); }
+  .nl-btn { background: var(--accent); color: #fff; border: none; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+  .nl-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .nl-note { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .nl-features { display: flex; justify-content: center; gap: 24px; margin-top: 24px; flex-wrap: wrap; }
+  .nl-feature { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.7); }
+
+  /* POPUP */
+  .popup-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .popup-overlay.show { display: flex; }
+  .popup { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px; max-width: 460px; width: 90%; text-align: center; position: relative; }
+  .popup-close { position: absolute; top: 14px; right: 14px; background: var(--bg3); border: none; color: var(--text2); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 18px; }
+  .popup-emoji { font-size: 48px; margin-bottom: 16px; }
+  .popup-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+  .popup-text { color: var(--text2); font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+  .popup-btn { display: block; background: var(--accent); color: #fff; text-decoration: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 800; margin-bottom: 10px; transition: opacity 0.2s; }
+  .popup-btn:hover { opacity: 0.9; }
+  .popup-skip { color: var(--text2); font-size: 13px; cursor: pointer; }
+  .popup-skip:hover { color: var(--text); }
+
+  /* FLOATING CTA */
+  .float-cta { position: fixed; bottom: 28px; right: 28px; z-index: 500; }
+  .float-cta a { display: flex; align-items: center; gap: 10px; background: var(--accent); color: #fff; text-decoration: none; padding: 14px 20px; border-radius: 50px; font-size: 14px; font-weight: 800; box-shadow: 0 4px 20px rgba(41,98,255,0.4); transition: all 0.2s; white-space: nowrap; }
+  .float-cta a:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(41,98,255,0.5); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .index-grid { grid-template-columns: repeat(2, 1fr); }
+    .news-grid { grid-template-columns: repeat(2, 1fr); }
+    .heatmap-container { height: 300px; }
+    nav { display: none; }
+    .wl-grid { grid-template-columns: 1fr; }
+    .search-wrap input { width: 200px; }
+    .search-wrap input:focus { width: 220px; }
+  }
+  @media (max-width: 600px) {
+    .index-grid { grid-template-columns: repeat(2, 1fr); }
+    .news-grid { grid-template-columns: 1fr; }
+    .heatmap-container { height: 260px; }
+    .portfolio-summary { grid-template-columns: 1fr; }
+    .nl-form { flex-direction: column; }
+    .modal-stats { grid-template-columns: 1fr; }
+    .float-cta { bottom: 16px; right: 16px; }
+    .float-cta a span:not(:first-child) { display: none; }
+    .wl-pct { font-size: 18px; }
+    .tv-chart-container { height: 320px; }
+    .search-wrap input { width: 160px; }
+    .search-wrap input:focus { width: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">📈</div>
+      <span class="logo-text">Börs<span>Pulsen</span></span>
+    </a>
+    <nav>
+      <a href="#marknad">Marknad</a>
+      <a href="#aktier">Aktier</a>
+      <a href="#portfolio">Portfölj</a>
+      <a href="#nyheter">Nyheter</a>
+    </nav>
+    <div class="header-right">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Sök aktie, t.ex. AAPL, Tesla, Volvo..." id="searchInput" autocomplete="off">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <button class="theme-btn" id="themeBtn">☀️ Ljust</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- MARKNADSÖVERSIKT -->
+  <section id="marknad">
+    <div class="section-title">Marknadsöversikt</div>
+    <div class="index-grid" id="indexGrid"></div>
+  </section>
+
+  <!-- VÄRMEKARTA – TradingView Treemap -->
+  <section class="heatmap" id="heatmapSection">
+    <div class="section-title">Värmekarta — Börsvärde &amp; Daglig förändring</div>
+    <div class="heatmap-container" id="heatmapGrid"></div>
+  </section>
+
+  <!-- VINNARE & FÖRLORARE -->
+  <section class="wl-section" id="winnersLosers">
+    <div class="section-title">Dagens vinnare &amp; förlorare</div>
+    <div class="wl-grid">
+      <div class="wl-card">
+        <div class="wl-header green">▲ &nbsp;Dagens vinnare</div>
+        <div id="winnersList"></div>
+      </div>
+      <div class="wl-card">
+        <div class="wl-header red">▼ &nbsp;Dagens förlorare</div>
+        <div id="losersList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AKTIETABELL -->
+  <section id="aktier">
+    <div class="section-title">Aktier</div>
+    <div class="table-wrap">
+      <!-- Market Tabs -->
+      <div class="market-tabs">
+        <button class="market-tab active" onclick="setMarket('SE', this)">Sverige 🇸🇪</button>
+        <button class="market-tab" onclick="setMarket('NO', this)">Norge 🇳🇴</button>
+        <button class="market-tab" onclick="setMarket('FI', this)">Finland 🇫🇮</button>
+        <button class="market-tab" onclick="setMarket('US', this)">USA 🇺🇸</button>
+        <button class="market-tab" onclick="setMarket('DE', this)">Tyskland 🇩🇪</button>
+        <button class="market-tab" onclick="setMarket('ALL', this)">Alla 🌍</button>
+      </div>
+      <div class="table-header">
+        <span style="font-weight:600;font-size:14px;" id="marketLabel">Svenska börsen</span>&nbsp;—&nbsp;<span id="lastUpdate" style="color:var(--text2)"></span>
+        <div class="table-filter">
+          <input type="text" placeholder="Filtrera aktier..." id="tableFilter">
+        </div>
+      </div>
+      <table id="stockTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">Aktie ⇅</th>
+            <th onclick="sortTable('price')">Kurs ⇅</th>
+            <th onclick="sortTable('change')">Förändring ⇅</th>
+            <th onclick="sortTable('changePct')">% ⇅</th>
+            <th onclick="sortTable('volume')">Volym ⇅</th>
+            <th onclick="sortTable('mcap')">Marknadsvärde ⇅</th>
+          </tr>
+        </thead>
+        <tbody id="stockTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PORTFÖLJ -->
+  <section id="portfolio">
+    <div class="section-title">Min portfölj</div>
+    <div class="portfolio">
+      <div class="portfolio-summary">
+        <div class="portfolio-stat"><label>Totalt värde</label><div class="value" id="portTotal">0 kr</div></div>
+        <div class="portfolio-stat"><label>Investerat</label><div class="value" id="portInvested">0 kr</div></div>
+        <div class="portfolio-stat"><label>Vinst/Förlust</label><div class="value" id="portPnL">0 kr</div></div>
+      </div>
+      <div class="portfolio-add">
+        <select id="portSelect" style="min-width:200px"></select>
+        <input type="number" id="portShares" placeholder="Antal aktier" min="1">
+        <input type="number" id="portPrice" placeholder="Köppris">
+        <button class="btn" onclick="addToPortfolio()">+ Lägg till</button>
+      </div>
+      <div class="table-wrap" style="margin:0">
+        <table class="portfolio-table">
+          <thead><tr><th>Aktie</th><th>Antal</th><th>Köppris</th><th>Nuv. kurs</th><th>Värde</th><th>P&L</th><th></th></tr></thead>
+          <tbody id="portTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- NYHETER -->
+  <section id="nyheter">
+    <div class="section-title">Senaste börsnyheter</div>
+    <div class="news-grid" id="newsGrid"></div>
+  </section>
+
+</main>
+
+<!-- STOCK MODAL – TradingView Advanced Chart -->
+<div class="modal-overlay" id="stockModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-subtitle" id="modalSubtitle">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- TradingView widget mount point -->
+    <div class="tv-chart-container" id="tv_chart_container">
+      <div class="tv-loading">
+        <div class="tv-loading-spinner"></div>
+        Laddar graf...
+      </div>
+    </div>
+
+    <div class="modal-stats">
+      <div class="stat-box"><div class="stat-label">Dagshögsta</div><div class="stat-value" id="statHigh">—</div></div>
+      <div class="stat-box"><div class="stat-label">Dagslägsta</div><div class="stat-value" id="statLow">—</div></div>
+      <div class="stat-box"><div class="stat-label">Volym</div><div class="stat-value" id="statVol">—</div></div>
+      <div class="stat-box"><div class="stat-label">52v Högsta</div><div class="stat-value" id="stat52H">—</div></div>
+      <div class="stat-box"><div class="stat-label">52v Lägsta</div><div class="stat-value" id="stat52L">—</div></div>
+      <div class="stat-box"><div class="stat-label">Marknadsvärde</div><div class="stat-value" id="statMcap">—</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEWSLETTER POPUP -->
+<div class="popup-overlay" id="nlPopup">
+  <div class="popup">
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div class="popup-emoji">📈</div>
+    <div class="popup-title">Missa inte börspulsen!</div>
+    <p class="popup-text">Gå med 10 000+ investerare som får dagliga börsuppdateringar direkt i inkorgen varje morgon.</p>
+    <a href="https://borspulsen.beehiiv.com/subscribe" target="_blank" class="popup-btn">Prenumerera gratis →</a>
+    <div class="popup-skip" onclick="closePopup()">Nej tack, jag missar hellre nyheterna</div>
+  </div>
+</div>
+
+<!-- FLOATING CTA -->
+<div class="float-cta">
+  <a href="https://borspulsen.beehiiv.com/subscribe" target="_blank">
+    <span>📬</span><span>Prenumerera på nyhetsbrevet</span>
+  </a>
+</div>
+
+<script>
+// ─── STOCK DATA ──────────────────────────────────────────────────────────────
+
+const SE_DATA = [
+  { name: 'Volvo B',         ticker: 'VOLV-B',   tvSymbol: 'OMXSTO:VOLV_B',   price: 248.50, mcap: 812,  market: 'SE', currency: 'kr' },
+  { name: 'Ericsson B',      ticker: 'ERIC-B',   tvSymbol: 'OMXSTO:ERIC_B',   price:  83.20, mcap: 276,  market: 'SE', currency: 'kr' },
+  { name: 'H&M B',           ticker: 'HM-B',     tvSymbol: 'OMXSTO:HM_B',     price: 142.70, mcap: 364,  market: 'SE', currency: 'kr' },
+  { name: 'Atlas Copco A',   ticker: 'ATCO-A',   tvSymbol: 'OMXSTO:ATCO_A',   price: 156.30, mcap: 1520, market: 'SE', currency: 'kr' },
+  { name: 'Investor B',      ticker: 'INVE-B',   tvSymbol: 'OMXSTO:INVE_B',   price: 290.40, mcap: 1180, market: 'SE', currency: 'kr' },
+  { name: 'SEB A',           ticker: 'SEB-A',    tvSymbol: 'OMXSTO:SEB_A',    price: 164.80, mcap: 362,  market: 'SE', currency: 'kr' },
+  { name: 'Nordea',          ticker: 'NDA-SE',   tvSymbol: 'OMXSTO:NDA_SE',   price: 124.50, mcap: 462,  market: 'SE', currency: 'kr' },
+  { name: 'Handelsbanken A', ticker: 'SHB-A',    tvSymbol: 'OMXSTO:SHB_A',    price: 106.30, mcap: 218,  market: 'SE', currency: 'kr' },
+  { name: 'ABB',             ticker: 'ABB',      tvSymbol: 'OMXSTO:ABB',      price:  74.60, mcap: 1580, market: 'SE', currency: 'kr' },
+  { name: 'Sandvik',         ticker: 'SAND',     tvSymbol: 'OMXSTO:SAND',     price: 198.40, mcap: 422,  market: 'SE', currency: 'kr' },
+  { name: 'SKF B',           ticker: 'SKF-B',    tvSymbol: 'OMXSTO:SKF_B',    price: 186.20, mcap: 196,  market: 'SE', currency: 'kr' },
+  { name: 'SSAB A',          ticker: 'SSAB-A',   tvSymbol: 'OMXSTO:SSAB_A',   price:  54.80, mcap:  76,  market: 'SE', currency: 'kr' },
+  { name: 'Boliden',         ticker: 'BOL',      tvSymbol: 'OMXSTO:BOL',      price: 312.60, mcap: 134,  market: 'SE', currency: 'kr' },
+  { name: 'Tele2 B',         ticker: 'TEL2-B',   tvSymbol: 'OMXSTO:TEL2_B',   price:  86.40, mcap:  72,  market: 'SE', currency: 'kr' },
+  { name: 'Hexagon B',       ticker: 'HEXA-B',   tvSymbol: 'OMXSTO:HEXA_B',   price: 104.20, mcap: 268,  market: 'SE', currency: 'kr' },
+  { name: 'Alfa Laval',      ticker: 'ALFA',     tvSymbol: 'OMXSTO:ALFA',     price: 468.90, mcap: 202,  market: 'SE', currency: 'kr' },
+  { name: 'Evolution',       ticker: 'EVO',      tvSymbol: 'OMXSTO:EVO',      price: 996.40, mcap: 498,  market: 'SE', currency: 'kr' },
+  { name: 'Kinnevik B',      ticker: 'KINV-B',   tvSymbol: 'OMXSTO:KINV_B',   price:  68.30, mcap:  42,  market: 'SE', currency: 'kr' },
+  { name: 'Essity B',        ticker: 'ESSITY-B', tvSymbol: 'OMXSTO:ESSITY_B', price: 248.60, mcap: 178,  market: 'SE', currency: 'kr' },
+  { name: 'Swedish Match',   ticker: 'SWMA',     tvSymbol: 'OMXSTO:SWMA',     price: 116.80, mcap: 118,  market: 'SE', currency: 'kr' },
+  { name: 'Autoliv',                ticker: 'ALV',      tvSymbol: 'OMXSTO:ALV',      price:  94.20, mcap:  78,  market: 'SE', currency: 'kr' },
+  { name: 'Getinge B',              ticker: 'GETI-B',   tvSymbol: 'OMXSTO:GETI_B',   price: 172.40, mcap:  52,  market: 'SE', currency: 'kr' },
+  { name: 'Hexpol B',               ticker: 'HPOL-B',   tvSymbol: 'OMXSTO:HPOL_B',   price: 134.20, mcap:  38,  market: 'SE', currency: 'kr' },
+  { name: 'Nibe Industrier B',      ticker: 'NIBE-B',   tvSymbol: 'OMXSTO:NIBE_B',   price:  68.30, mcap: 148,  market: 'SE', currency: 'kr' },
+  { name: 'Elekta B',               ticker: 'EKTA-B',   tvSymbol: 'OMXSTO:EKTA_B',   price:  64.50, mcap:  27,  market: 'SE', currency: 'kr' },
+  { name: 'Axfood',                 ticker: 'AXFO',     tvSymbol: 'OMXSTO:AXFO',     price: 254.80, mcap:  54,  market: 'SE', currency: 'kr' },
+  { name: 'Clas Ohlson B',          ticker: 'CLAS-B',   tvSymbol: 'OMXSTO:CLAS_B',   price: 142.60, mcap:  11,  market: 'SE', currency: 'kr' },
+  { name: 'Addtech B',              ticker: 'ADDT-B',   tvSymbol: 'OMXSTO:ADDT_B',   price: 286.40, mcap:  32,  market: 'SE', currency: 'kr' },
+  { name: 'Indutrade',              ticker: 'INDT',     tvSymbol: 'OMXSTO:INDT',     price: 264.20, mcap:  68,  market: 'SE', currency: 'kr' },
+  { name: 'Bilia A',                ticker: 'BIL-A',    tvSymbol: 'OMXSTO:BIL_A',    price: 148.40, mcap:  14,  market: 'SE', currency: 'kr' },
+  { name: 'Beijer Ref B',           ticker: 'BEIJ-B',   tvSymbol: 'OMXSTO:BEIJ_B',   price: 194.60, mcap:  58,  market: 'SE', currency: 'kr' },
+  { name: 'BillerudKorsnäs',        ticker: 'BILL',     tvSymbol: 'OMXSTO:BILL',     price: 124.20, mcap:  28,  market: 'SE', currency: 'kr' },
+  { name: 'Husqvarna B',            ticker: 'HUSQ-B',   tvSymbol: 'OMXSTO:HUSQ_B',   price:  64.80, mcap:  38,  market: 'SE', currency: 'kr' },
+  { name: 'Sagax D',                ticker: 'SAGA-D',   tvSymbol: 'OMXSTO:SAGA_D',   price: 238.40, mcap:  96,  market: 'SE', currency: 'kr' },
+  { name: 'Fastighets AB Balder B', ticker: 'BALD-B',   tvSymbol: 'OMXSTO:BALD_B',   price: 248.60, mcap:  72,  market: 'SE', currency: 'kr' },
+];
+
+const US_DATA = [
+  { name: 'Apple',         ticker: 'AAPL',  tvSymbol: 'NASDAQ:AAPL', price: 178.72, mcap: 2740, market: 'US', currency: '$' },
+  { name: 'Microsoft',     ticker: 'MSFT',  tvSymbol: 'NASDAQ:MSFT', price: 378.91, mcap: 2810, market: 'US', currency: '$' },
+  { name: 'Amazon',        ticker: 'AMZN',  tvSymbol: 'NASDAQ:AMZN', price: 196.20, mcap: 2050, market: 'US', currency: '$' },
+  { name: 'Tesla',         ticker: 'TSLA',  tvSymbol: 'NASDAQ:TSLA', price: 182.63, mcap:  580, market: 'US', currency: '$' },
+  { name: 'Alphabet',      ticker: 'GOOGL', tvSymbol: 'NASDAQ:GOOGL',price: 172.41, mcap: 2140, market: 'US', currency: '$' },
+  { name: 'Meta',          ticker: 'META',  tvSymbol: 'NASDAQ:META', price: 512.77, mcap: 1310, market: 'US', currency: '$' },
+  { name: 'NVIDIA',        ticker: 'NVDA',  tvSymbol: 'NASDAQ:NVDA', price: 788.17, mcap: 1940, market: 'US', currency: '$' },
+  { name: 'Berkshire B',   ticker: 'BRK.B', tvSymbol: 'NYSE:BRK.B',  price: 399.58, mcap:  880, market: 'US', currency: '$' },
+  { name: 'JPMorgan',      ticker: 'JPM',   tvSymbol: 'NYSE:JPM',    price: 231.45, mcap:  668, market: 'US', currency: '$' },
+  { name: 'J&J',           ticker: 'JNJ',   tvSymbol: 'NYSE:JNJ',    price: 156.82, mcap:  378, market: 'US', currency: '$' },
+];
+
+const DE_DATA = [
+  { name: 'SAP',           ticker: 'SAP',  tvSymbol: 'XETRA:SAP',  price: 196.84, mcap: 240, market: 'DE', currency: '€' },
+  { name: 'Siemens',       ticker: 'SIE',  tvSymbol: 'XETRA:SIE',  price: 182.60, mcap: 148, market: 'DE', currency: '€' },
+  { name: 'BASF',          ticker: 'BAS',  tvSymbol: 'XETRA:BAS',  price:  44.21, mcap:  40, market: 'DE', currency: '€' },
+  { name: 'Volkswagen',    ticker: 'VOW3', tvSymbol: 'XETRA:VOW3', price: 114.90, mcap:  58, market: 'DE', currency: '€' },
+  { name: 'BMW',           ticker: 'BMW',  tvSymbol: 'XETRA:BMW',  price:  89.42, mcap:  58, market: 'DE', currency: '€' },
+  { name: 'Mercedes-Benz', ticker: 'MBG',  tvSymbol: 'XETRA:MBG',  price:  63.18, mcap:  68, market: 'DE', currency: '€' },
+  { name: 'Allianz',       ticker: 'ALV',  tvSymbol: 'XETRA:ALV',  price: 274.50, mcap: 112, market: 'DE', currency: '€' },
+  { name: 'Deutsche Bank', ticker: 'DBK',  tvSymbol: 'XETRA:DBK',  price:  15.72, mcap:  32, market: 'DE', currency: '€' },
+  { name: 'Bayer',         ticker: 'BAYN', tvSymbol: 'XETRA:BAYN', price:  27.84, mcap:  27, market: 'DE', currency: '€' },
+  { name: 'Adidas',        ticker: 'ADS',  tvSymbol: 'XETRA:ADS',  price: 218.30, mcap:  38, market: 'DE', currency: '€' },
+];
+
+const NO_DATA = [
+  { name: 'Equinor',            ticker: 'EQNR',   tvSymbol: 'OSLO:EQNR',   price: 268.40, mcap: 880,  market: 'NO', currency: 'kr' },
+  { name: 'Norsk Hydro',        ticker: 'NHY',    tvSymbol: 'OSLO:NHY',    price:  56.80, mcap: 116,  market: 'NO', currency: 'kr' },
+  { name: 'DNB Bank',           ticker: 'DNB',    tvSymbol: 'OSLO:DNB',    price: 218.60, mcap: 348,  market: 'NO', currency: 'kr' },
+  { name: 'Mowi',               ticker: 'MOWI',   tvSymbol: 'OSLO:MOWI',   price: 186.40, mcap: 104,  market: 'NO', currency: 'kr' },
+  { name: 'Telenor',            ticker: 'TEL',    tvSymbol: 'OSLO:TEL',    price: 112.40, mcap: 176,  market: 'NO', currency: 'kr' },
+  { name: 'Yara International', ticker: 'YAR',    tvSymbol: 'OSLO:YAR',    price: 298.60, mcap:  96,  market: 'NO', currency: 'kr' },
+  { name: 'Aker BP',            ticker: 'AKRBP',  tvSymbol: 'OSLO:AKRBP',  price: 268.80, mcap: 164,  market: 'NO', currency: 'kr' },
+  { name: 'Schibsted B',        ticker: 'SCHN',   tvSymbol: 'OSLO:SCHN',   price: 162.40, mcap:  42,  market: 'NO', currency: 'kr' },
+  { name: 'Kongsberg Gruppen',  ticker: 'KOG',    tvSymbol: 'OSLO:KOG',    price: 648.00, mcap: 132,  market: 'NO', currency: 'kr' },
+  { name: 'Orkla',              ticker: 'ORK',    tvSymbol: 'OSLO:ORK',    price:  84.40, mcap:  88,  market: 'NO', currency: 'kr' },
+];
+
+const FI_DATA = [
+  { name: 'Nokia',          ticker: 'NOKIA',  tvSymbol: 'OMXHEX:NOKIA',  price:   3.92, mcap: 220, market: 'FI', currency: '€' },
+  { name: 'Kone B',         ticker: 'KNEBV',  tvSymbol: 'OMXHEX:KNEBV',  price:  46.28, mcap: 250, market: 'FI', currency: '€' },
+  { name: 'Nordea (FI)',    ticker: 'NDA-FI', tvSymbol: 'OMXHEX:NDA_FI', price:  12.64, mcap: 462, market: 'FI', currency: '€' },
+  { name: 'UPM-Kymmene',   ticker: 'UPM',    tvSymbol: 'OMXHEX:UPM',    price:  26.48, mcap:  45, market: 'FI', currency: '€' },
+  { name: 'Sampo A',        ticker: 'SAMPO',  tvSymbol: 'OMXHEX:SAMPO',  price:  46.84, mcap: 196, market: 'FI', currency: '€' },
+  { name: 'Neste',          ticker: 'NESTE',  tvSymbol: 'OMXHEX:NESTE',  price:  14.28, mcap:  63, market: 'FI', currency: '€' },
+  { name: 'Stora Enso R',   ticker: 'STERV',  tvSymbol: 'OMXHEX:STERV',  price:  10.86, mcap:  72, market: 'FI', currency: '€' },
+  { name: 'Fortum',         ticker: 'FORTUM', tvSymbol: 'OMXHEX:FORTUM', price:  11.64, mcap:  52, market: 'FI', currency: '€' },
+  { name: 'Wärtsilä',       ticker: 'WRT1V',  tvSymbol: 'OMXHEX:WRT1V',  price:  16.84, mcap:  96, market: 'FI', currency: '€' },
+  { name: 'Elisa',          ticker: 'ELISA',  tvSymbol: 'OMXHEX:ELISA',  price:  44.68, mcap:  26, market: 'FI', currency: '€' },
+];
+
+const INDICES = [
+  { name: 'OMXS30', value: 2486.40, change: 12.3 },
+  { name: 'OMXSPI', value: 1024.80, change: 4.8 },
+  { name: 'NASDAQ',  value: 17824.00, change: 84.2 },
+  { name: 'S&P 500', value: 5648.00, change: 22.4 },
+];
+
+const NEWS = [
+  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'OMXS30 stänger på rekordnivå — techaktier leder uppgången', time: 'Idag 17:30' },
+  { tag: 'Analys', tagClass: 'tag-analys', title: 'Analytikerna spår fortsatt uppgång för Ericsson efter stark Q3-rapport', time: 'Idag 15:45' },
+  { tag: 'Makro',  tagClass: 'tag-makro',  title: 'Riksbanken signalerar ytterligare räntesänkning i december', time: 'Idag 14:20' },
+  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'Volvo B slog analytikernas förväntningar — aktien stiger 4%', time: 'Idag 12:10' },
+  { tag: 'Analys', tagClass: 'tag-analys', title: 'H&M rapporterar oväntat stark försäljning i Asien', time: 'Idag 10:35' },
+  { tag: 'Makro',  tagClass: 'tag-makro',  title: 'Inflationen i Sverige faller till lägsta sedan 2021', time: 'Igår 18:00' },
+  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'Atlas Copco förvärvar tysk teknikgrupp för 8 miljarder', time: 'Igår 16:30' },
+  { tag: 'Analys', tagClass: 'tag-analys', title: 'Evolution Gaming tar marknadsandelar i Nordamerika', time: 'Igår 14:00' },
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+function initStocks(data) {
+  return data.map(s => ({
+    ...s,
+    change:    +(Math.random() * 10 - 5).toFixed(2),
+    changePct: +(Math.random() * 8 - 4).toFixed(2),
+    volume:    Math.floor(Math.random() * 5000000 + 500000)
+  }));
+}
+
+let seStocks = initStocks(SE_DATA);
+let usStocks = initStocks(US_DATA);
+let deStocks = initStocks(DE_DATA);
+let noStocks = initStocks(NO_DATA);
+let fiStocks = initStocks(FI_DATA);
+
+function getAllStocks() { return [...seStocks, ...usStocks, ...deStocks, ...noStocks, ...fiStocks]; }
+
+let portfolio    = JSON.parse(localStorage.getItem('bp_portfolio') || '[]');
+let sortCol      = 'name', sortDir = 1;
+let currentStock = null;
+let tvWidget     = null;
+let currentMarket = 'SE';
+let popupShown   = localStorage.getItem('bp_popup_shown');
+
+// Market display names
+const MARKET_LABELS = {
+  SE:  'Svenska börsen',
+  NO:  'Oslo Børs',
+  FI:  'Nasdaq Helsinki',
+  US:  'New York — NYSE / NASDAQ',
+  DE:  'Frankfurt — Xetra',
+  ALL: 'Alla marknader'
+};
+
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const themeBtn = document.getElementById('themeBtn');
+let isDark = true;
+themeBtn.onclick = () => {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  themeBtn.textContent = isDark ? '☀️ Ljust' : '🌙 Mörkt';
+  renderIndexCharts();
+};
+
+// ─── TICKER ─────────────────────────────────────────────────────────────────
+function renderTicker() {
+  const t = document.getElementById('ticker');
+  const items = [...seStocks, ...seStocks].map(s => `
+    <div class="ticker-item">
+      <span class="name">${s.ticker}</span>
+      <span class="price">${s.price.toFixed(2)}</span>
+      <span class="${s.changePct >= 0 ? 'up' : 'down'}">${s.changePct >= 0 ? '▲' : '▼'}${Math.abs(s.changePct).toFixed(2)}%</span>
+    </div>`).join('');
+  t.innerHTML = items;
+}
+
+// ─── INDEX CARDS ─────────────────────────────────────────────────────────────
+const indexCharts = [];
+function renderIndexCharts() {
+  const g = document.getElementById('indexGrid');
+  g.innerHTML = '';
+  indexCharts.forEach(c => c.destroy());
+  indexCharts.length = 0;
+  INDICES.forEach((idx, i) => {
+    const isUp = idx.change >= 0;
+    const pts = Array.from({length: 20}, (_, j) => idx.value + (Math.random() - 0.5) * idx.value * 0.02 * (j/20));
+    const card = document.createElement('div');
+    card.className = 'index-card';
+    card.innerHTML = `
+      <div class="index-name">${idx.name}</div>
+      <div class="index-price">${idx.value.toLocaleString('sv-SE', {maximumFractionDigits:2})}</div>
+      <div class="index-change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${idx.change.toFixed(2)} pts (${isUp ? '+' : ''}${(idx.change/idx.value*100).toFixed(2)}%)</div>
+      <div class="index-chart"><canvas id="ic${i}"></canvas></div>`;
+    g.appendChild(card);
+    const ctx = card.querySelector(`#ic${i}`).getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: pts.map((_,j)=>j), datasets: [{ data: pts, borderColor: isUp ? '#26A69A' : '#EF5350', borderWidth: 2, fill: true, backgroundColor: isUp ? 'rgba(38,166,154,0.08)' : 'rgba(239,83,80,0.08)', tension: 0.4, pointRadius: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } }, animation: false }
+    });
+    indexCharts.push(chart);
+  });
+}
+
+// ─── HEATMAP – Squarified Treemap ──────────────────────────────────────────
+function buildTreemap(items, W, H) {
+  const total = items.reduce((s, d) => s + d.mcap, 0);
+  const area  = W * H;
+  const scaled = [...items]
+    .sort((a, b) => b.mcap - a.mcap)
+    .map(d => ({ ...d, a: d.mcap / total * area }));
+
+  const rects = [];
+
+  function worst(row, side) {
+    const s    = row.reduce((sum, d) => sum + d.a, 0);
+    const amax = Math.max(...row.map(d => d.a));
+    const amin = Math.min(...row.map(d => d.a));
+    const s2   = s * s, side2 = side * side;
+    return Math.max(side2 * amax / s2, s2 / (side2 * amin));
+  }
+
+  function placeRow(row, x, y, cw, ch, horiz) {
+    const s = row.reduce((sum, d) => sum + d.a, 0);
+    if (horiz) {
+      const rh = s / cw;
+      let cx = x;
+      for (const d of row) {
+        rects.push({ ...d, x: cx, y, w: d.a / rh, h: rh });
+        cx += d.a / rh;
+      }
+      return rh;
+    } else {
+      const rw = s / ch;
+      let cy = y;
+      for (const d of row) {
+        rects.push({ ...d, x, y: cy, w: rw, h: d.a / rw });
+        cy += d.a / rw;
+      }
+      return rw;
+    }
+  }
+
+  let remaining = [...scaled];
+  let cx = 0, cy = 0, cw = W, ch = H;
+
+  while (remaining.length > 0) {
+    const horiz = cw >= ch;
+    const side  = horiz ? cw : ch;
+    let row = [];
+
+    while (remaining.length > 0) {
+      const candidate = [...row, remaining[0]];
+      if (row.length === 0 || worst(candidate, side) <= worst(row, side)) {
+        row.push(remaining.shift());
+      } else break;
+    }
+
+    const depth = placeRow(row, cx, cy, cw, ch, horiz);
+    if (horiz) { cy += depth; ch -= depth; }
+    else        { cx += depth; cw -= depth; }
+  }
+
+  return rects;
+}
+
+function heatColor(pct) {
+  const abs = Math.min(Math.abs(pct) / 4, 1);
+  if (pct >= 0) {
+    const r = Math.round(30  + (38  - 30)  * abs);
+    const g = Math.round(34  + (166 - 34)  * abs);
+    const b = Math.round(45  + (154 - 45)  * abs);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const r = Math.round(30  + (239 - 30)  * abs);
+    const g = Math.round(34  + (83  - 34)  * abs);
+    const b = Math.round(45  + (80  - 45)  * abs);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+function renderHeatmap() {
+  const container = document.getElementById('heatmapGrid');
+  const W = container.offsetWidth  || 900;
+  const H = container.offsetHeight || 400;
+
+  const rects = buildTreemap(seStocks, W, H);
+  container.innerHTML = '';
+
+  rects.forEach(r => {
+    const pct  = r.changePct;
+    const bg   = heatColor(pct);
+    const showName  = r.h > 36 && r.w > 60;
+    const showPrice = r.h > 54 && r.w > 70;
+    const showFull  = r.h > 68 && r.w > 80;
+
+    const div = document.createElement('div');
+    div.className = 'heat-rect';
+    div.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg};`;
+    div.onclick = () => openModal(r.ticker);
+
+    const sign = pct >= 0 ? '+' : '';
+    div.innerHTML = `
+      ${showName ? `<div class="h-ticker">${r.ticker}</div>` : ''}
+      ${showFull ? `<div class="h-name-sm">${r.name}</div>` : ''}
+      ${showName ? `<div class="h-change">${sign}${pct.toFixed(2)}%</div>` : ''}
+      ${showPrice ? `<div class="h-price">${r.price.toFixed(2)} kr</div>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderHeatmap, 150);
+});
+
+// ─── WINNERS & LOSERS ────────────────────────────────────────────────────────
+function renderWinnersLosers() {
+  const sorted  = [...seStocks].sort((a, b) => b.changePct - a.changePct);
+  const winners = sorted.slice(0, 3);
+  const losers  = sorted.slice(-3).reverse();
+
+  function makeItem(s, rank) {
+    const sign = s.changePct >= 0 ? '+' : '';
+    const cls  = s.changePct >= 0 ? 'up' : 'down';
+    return `<div class="wl-item" onclick="openModal('${s.ticker}')">
+      <div class="wl-rank">${rank}</div>
+      <div class="wl-info">
+        <div class="wl-name">${s.name}</div>
+        <div class="wl-ticker-sm">${s.ticker} &nbsp;·&nbsp; ${s.price.toFixed(2)} ${s.currency}</div>
+      </div>
+      <div class="wl-right">
+        <div class="wl-pct ${cls}">${sign}${s.changePct.toFixed(2)}%</div>
+        <div class="wl-price-sm">${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)} ${s.currency}</div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('winnersList').innerHTML = winners.map((s, i) => makeItem(s, i+1)).join('');
+  document.getElementById('losersList').innerHTML  = losers.map((s, i)  => makeItem(s, i+1)).join('');
+}
+
+// ─── MARKET TABS ─────────────────────────────────────────────────────────────
+function setMarket(market, btn) {
+  currentMarket = market;
+  document.querySelectorAll('.market-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('marketLabel').textContent = MARKET_LABELS[market];
+  sortCol = 'name'; sortDir = 1;
+  document.getElementById('tableFilter').value = '';
+  renderTable();
+}
+
+// ─── STOCK TABLE ─────────────────────────────────────────────────────────────
+function getTableStocks() {
+  if (currentMarket === 'SE')  return seStocks;
+  if (currentMarket === 'NO')  return noStocks;
+  if (currentMarket === 'FI')  return fiStocks;
+  if (currentMarket === 'US')  return usStocks;
+  if (currentMarket === 'DE')  return deStocks;
+  return getAllStocks();
+}
+
+function renderTable() {
+  const filter   = document.getElementById('tableFilter').value.toLowerCase();
+  const pool     = getTableStocks();
+  const filtered = pool.filter(s => s.name.toLowerCase().includes(filter) || s.ticker.toLowerCase().includes(filter));
+  const sorted   = [...filtered].sort((a, b) => {
+    const av = sortCol === 'name' ? a[sortCol] : +a[sortCol];
+    const bv = sortCol === 'name' ? b[sortCol] : +b[sortCol];
+    return av < bv ? -sortDir : sortDir;
+  });
+
+  const showMarketBadge = currentMarket === 'ALL';
+
+  document.getElementById('stockTableBody').innerHTML = sorted.map(s => {
+    const badge = (showMarketBadge && s.market !== 'SE')
+      ? `<span class="market-badge ${s.market}">${s.market}</span>`
+      : '';
+    return `
+    <tr>
+      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}${badge}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td>${s.price.toFixed(2)} ${s.currency}</td>
+      <td class="change-cell ${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)} ${s.currency}</td>
+      <td class="change-cell ${s.changePct >= 0 ? 'up' : 'down'}">${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%</td>
+      <td>${(s.volume/1000).toFixed(0)}k</td>
+      <td>${s.mcap} Mdr</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('lastUpdate').textContent = 'Uppdaterad ' + new Date().toLocaleTimeString('sv-SE');
+}
+
+function sortTable(col) { sortDir = col === sortCol ? -sortDir : 1; sortCol = col; renderTable(); }
+document.getElementById('tableFilter').oninput = renderTable;
+
+// ─── MODAL – TradingView Advanced Chart ─────────────────────────────────────
+function openModal(ticker) {
+  const s = getAllStocks().find(x => x.ticker === ticker);
+  if (!s) return;
+  currentStock = s;
+
+  // Header info
+  document.getElementById('modalTitle').textContent = s.name;
+  const sign  = s.changePct >= 0 ? '+' : '';
+  const color = s.changePct >= 0 ? '#26A69A' : '#EF5350';
+  document.getElementById('modalSubtitle').innerHTML =
+    `<span>${s.ticker}</span>
+     <span style="color:var(--text2)">·</span>
+     <span>${s.price.toFixed(2)} ${s.currency}</span>
+     <span style="color:${color};font-weight:700">${sign}${s.changePct.toFixed(2)}%</span>
+     <span style="background:rgba(255,255,255,0.07);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--text2)">${s.tvSymbol}</span>`;
+
+  // Stats
+  document.getElementById('statHigh').textContent  = s.price.toFixed(2) + ' ' + s.currency;
+  document.getElementById('statLow').textContent   = (s.price * 0.98).toFixed(2) + ' ' + s.currency;
+  document.getElementById('statVol').textContent   = (s.volume/1000).toFixed(0) + 'k';
+  document.getElementById('stat52H').textContent   = (s.price * 1.35).toFixed(2) + ' ' + s.currency;
+  document.getElementById('stat52L').textContent   = (s.price * 0.72).toFixed(2) + ' ' + s.currency;
+  document.getElementById('statMcap').textContent  = s.mcap + ' Mdr';
+
+  // TradingView widget
+  const container = document.getElementById('tv_chart_container');
+  container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
+
+  if (typeof TradingView !== 'undefined') {
+    tvWidget = new TradingView.widget({
+      autosize:          true,
+      symbol:            s.tvSymbol,
+      interval:          'D',
+      timezone:          'Europe/Stockholm',
+      theme:             'dark',
+      style:             '1',
+      locale:            'sv',
+      toolbar_bg:        '#131722',
+      enable_publishing: false,
+      hide_top_toolbar:  false,
+      save_image:        false,
+      container_id:      'tv_chart_inner'
+    });
+  } else {
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#787b86;">
+        <div style="font-size:32px">📊</div>
+        <div style="font-size:14px">TradingView-grafen kunde inte laddas</div>
+        <a href="https://www.tradingview.com/chart/?symbol=${s.tvSymbol}" target="_blank"
+           style="color:#2962FF;font-size:13px;text-decoration:none;">Öppna i TradingView →</a>
+      </div>`;
+  }
+
+  document.getElementById('stockModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('stockModal').classList.remove('show');
+  document.body.style.overflow = '';
+  // Destroy the widget by clearing its container
+  const container = document.getElementById('tv_chart_container');
+  container.innerHTML = `<div class="tv-loading"><div class="tv-loading-spinner"></div>Laddar graf...</div>`;
+  tvWidget = null;
+  currentStock = null;
+}
+
+document.getElementById('stockModal').onclick = e => {
+  if (e.target === e.currentTarget) closeModal();
+};
+
+// Close on Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('stockModal').classList.contains('show')) closeModal();
+});
+
+// ─── GLOBAL SEARCH ───────────────────────────────────────────────────────────
+// Static suggestions for popular global stocks not in our datasets
+const GLOBAL_SUGGESTIONS = [
+  { name: 'Samsung',     ticker: 'KRX:005930', tvSymbol: 'KRX:005930',  market: 'GLOBAL', changePct: 0, currency: '₩' },
+  { name: 'LVMH',        ticker: 'MC',         tvSymbol: 'EURONEXT:MC', market: 'GLOBAL', changePct: 0, currency: '€' },
+  { name: 'Toyota',      ticker: 'TM',         tvSymbol: 'NYSE:TM',     market: 'GLOBAL', changePct: 0, currency: '$' },
+  { name: 'TSMC',        ticker: 'TSM',        tvSymbol: 'NYSE:TSM',    market: 'GLOBAL', changePct: 0, currency: '$' },
+  { name: 'Nestle',      ticker: 'NESN',       tvSymbol: 'SIX:NESN',    market: 'GLOBAL', changePct: 0, currency: 'CHF' },
+  { name: 'Spotify',     ticker: 'SPOT',       tvSymbol: 'NYSE:SPOT',   market: 'GLOBAL', changePct: 0, currency: '$' },
+];
+
+document.getElementById('searchInput').oninput = function() {
+  const q   = this.value.toLowerCase().trim();
+  const res = document.getElementById('searchResults');
+
+  if (!q) { res.classList.remove('show'); return; }
+
+  const allData = [...getAllStocks(), ...GLOBAL_SUGGESTIONS];
+  const matches = allData.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.ticker.toLowerCase().includes(q) ||
+    (s.tvSymbol && s.tvSymbol.toLowerCase().includes(q))
+  ).slice(0, 8);
+
+  if (!matches.length) {
+    res.innerHTML = `<div class="search-no-results">Inga resultat för "${this.value}"</div>`;
+    res.classList.add('show');
+    return;
+  }
+
+  res.innerHTML =
+    `<div class="search-results-header">Sökresultat (${matches.length})</div>` +
+    matches.map(s => {
+      const sign = s.changePct >= 0 ? '+' : '';
+      const cls  = s.changePct >= 0 ? 'up' : 'down';
+      const mkt  = s.market === 'GLOBAL' ? 'SE' : s.market; // fallback badge color
+      const badgeLabel = s.market === 'GLOBAL' ? '🌍' : s.market;
+      const pctStr = s.market !== 'GLOBAL'
+        ? `<span class="sr-pct ${cls}">${sign}${s.changePct.toFixed(2)}%</span>`
+        : '';
+      return `<div class="search-result-item" onclick="handleSearchSelect('${s.ticker}','${s.tvSymbol}','${s.name}','${s.market}')">
+        <div class="sr-left">
+          <div>
+            <div class="sr-name">${s.name}</div>
+            <div class="sr-ticker">${s.ticker} · ${s.tvSymbol}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${pctStr}
+          <span class="sr-badge ${mkt === 'GLOBAL' ? 'SE' : mkt}">${badgeLabel}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+  res.classList.add('show');
+};
+
+function handleSearchSelect(ticker, tvSymbol, name, market) {
+  // Close search
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').classList.remove('show');
+
+  // Check if stock is in our datasets
+  const existing = getAllStocks().find(s => s.ticker === ticker);
+  if (existing) {
+    openModal(ticker);
+    return;
+  }
+
+  // Global stock not in our list — open TradingView modal directly
+  openGlobalModal(ticker, tvSymbol, name, market);
+}
+
+function openGlobalModal(ticker, tvSymbol, name, market) {
+  document.getElementById('modalTitle').textContent = name;
+  document.getElementById('modalSubtitle').innerHTML =
+    `<span>${ticker}</span>
+     <span style="color:var(--text2)">·</span>
+     <span style="background:rgba(255,255,255,0.07);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--text2)">${tvSymbol}</span>`;
+
+  document.getElementById('statHigh').textContent  = '—';
+  document.getElementById('statLow').textContent   = '—';
+  document.getElementById('statVol').textContent   = '—';
+  document.getElementById('stat52H').textContent   = '—';
+  document.getElementById('stat52L').textContent   = '—';
+  document.getElementById('statMcap').textContent  = '—';
+
+  const container = document.getElementById('tv_chart_container');
+  container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
+
+  if (typeof TradingView !== 'undefined') {
+    tvWidget = new TradingView.widget({
+      autosize:          true,
+      symbol:            tvSymbol,
+      interval:          'D',
+      timezone:          'Europe/Stockholm',
+      theme:             'dark',
+      style:             '1',
+      locale:            'sv',
+      toolbar_bg:        '#131722',
+      enable_publishing: false,
+      hide_top_toolbar:  false,
+      save_image:        false,
+      container_id:      'tv_chart_inner'
+    });
+  } else {
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#787b86;">
+        <div style="font-size:32px">📊</div>
+        <a href="https://www.tradingview.com/chart/?symbol=${tvSymbol}" target="_blank"
+           style="color:#2962FF;font-size:13px;text-decoration:none;">Öppna i TradingView →</a>
+      </div>`;
+  }
+
+  document.getElementById('stockModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('show');
+});
+
+// ─── PORTFOLIO ───────────────────────────────────────────────────────────────
+function renderPortfolioSelect() {
+  const sel = document.getElementById('portSelect');
+  const groups = [
+    { label: 'Sverige 🇸🇪', stocks: seStocks },
+    { label: 'Norge 🇳🇴',   stocks: noStocks },
+    { label: 'Finland 🇫🇮', stocks: fiStocks },
+    { label: 'USA 🇺🇸',     stocks: usStocks },
+    { label: 'Tyskland 🇩🇪', stocks: deStocks },
+  ];
+  sel.innerHTML = groups.map(g =>
+    `<optgroup label="${g.label}">` +
+    g.stocks.map(s => `<option value="${s.ticker}">${s.name} (${s.ticker})</option>`).join('') +
+    `</optgroup>`
+  ).join('');
+}
+
+function savePortfolio() { localStorage.setItem('bp_portfolio', JSON.stringify(portfolio)); }
+
+function addToPortfolio() {
+  const ticker   = document.getElementById('portSelect').value;
+  const shares   = +document.getElementById('portShares').value;
+  const buyPrice = +document.getElementById('portPrice').value;
+  if (!shares || !buyPrice) return alert('Fyll i antal och köppris');
+  portfolio.push({ ticker, shares, buyPrice });
+  savePortfolio();
+  renderPortfolio();
+}
+
+function removeFromPortfolio(i) { portfolio.splice(i, 1); savePortfolio(); renderPortfolio(); }
+
+function renderPortfolio() {
+  let total = 0, invested = 0;
+  const rows = portfolio.map((p, i) => {
+    const s      = getAllStocks().find(x => x.ticker === p.ticker) || { name: p.ticker, price: p.buyPrice, currency: '' };
+    const value  = s.price * p.shares;
+    const cost   = p.buyPrice * p.shares;
+    const pnl    = value - cost;
+    total    += value;
+    invested += cost;
+    return `<tr>
+      <td>${s.name} <span class="stock-ticker">${p.ticker}</span></td>
+      <td>${p.shares}</td>
+      <td>${p.buyPrice.toFixed(2)} ${s.currency}</td>
+      <td>${s.price.toFixed(2)} ${s.currency}</td>
+      <td>${value.toFixed(0)} ${s.currency}</td>
+      <td class="${pnl >= 0 ? 'up' : 'down'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(0)} ${s.currency}</td>
+      <td><button class="btn btn-danger" onclick="removeFromPortfolio(${i})" style="padding:4px 10px;font-size:12px">Ta bort</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('portTableBody').innerHTML = rows ||
+    '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">Inga aktier i portföljen ännu</td></tr>';
+
+  const pnl = total - invested;
+  document.getElementById('portTotal').textContent    = total.toFixed(0) + ' kr';
+  document.getElementById('portInvested').textContent = invested.toFixed(0) + ' kr';
+  const pnlEl = document.getElementById('portPnL');
+  pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(0) + ' kr';
+  pnlEl.className   = 'value ' + (pnl >= 0 ? 'up' : 'down');
+}
+
+// ─── NEWS ─────────────────────────────────────────────────────────────────────
+function renderNews() {
+  document.getElementById('newsGrid').innerHTML = NEWS.map(n => `
+    <div class="news-card">
+      <span class="news-tag ${n.tagClass}">${n.tag}</span>
+      <div class="news-title">${n.title}</div>
+      <div class="news-meta">${n.time}</div>
+    </div>`).join('');
+}
+
+// ─── NEWSLETTER ──────────────────────────────────────────────────────────────
+function subscribeNewsletter() {
+  window.open('https://borspulsen.beehiiv.com/subscribe', '_blank');
+}
+
+// ─── POPUP ───────────────────────────────────────────────────────────────────
+function closePopup() {
+  document.getElementById('nlPopup').classList.remove('show');
+  localStorage.setItem('bp_popup_shown', '1');
+}
+if (!popupShown) {
+  setTimeout(() => { document.getElementById('nlPopup').classList.add('show'); }, 45000);
+}
+
+// ─── PRICE UPDATES ───────────────────────────────────────────────────────────
+function updateMarketPrices(liveStocks, baseData) {
+  return liveStocks.map(s => {
+    const delta      = s.price * (Math.random() - 0.5) * 0.01;
+    const newPrice   = Math.max(1, s.price + delta);
+    const base       = baseData.find(x => x.ticker === s.ticker).price;
+    const totalChange = newPrice - base;
+    return {
+      ...s,
+      price:     +newPrice.toFixed(2),
+      change:    +totalChange.toFixed(2),
+      changePct: +(totalChange / base * 100).toFixed(2)
+    };
+  });
+}
+
+function updatePrices() {
+  seStocks = updateMarketPrices(seStocks, SE_DATA);
+  usStocks = updateMarketPrices(usStocks, US_DATA);
+  deStocks = updateMarketPrices(deStocks, DE_DATA);
+  noStocks = updateMarketPrices(noStocks, NO_DATA);
+  fiStocks = updateMarketPrices(fiStocks, FI_DATA);
+
+  renderTicker();
+  renderHeatmap();
+  renderWinnersLosers();
+  renderTable();
+  renderPortfolio();
+
+  if (currentStock) {
+    currentStock = getAllStocks().find(s => s.ticker === currentStock.ticker) || currentStock;
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderTicker();
+renderIndexCharts();
+renderHeatmap();
+renderWinnersLosers();
+document.getElementById('marketLabel').textContent = MARKET_LABELS['SE'];
+renderTable();
+renderPortfolioSelect();
+renderPortfolio();
+renderNews();
+setInterval(updatePrices, 30000);
+</script>
+</body>
+</html>
