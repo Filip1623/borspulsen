@@ -228,7 +228,24 @@
   .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
   .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
   .news-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+  .news-card:hover .news-title { color: var(--accent); }
   .news-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+
+  /* ARTICLE MODAL */
+  .article-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9000; align-items:center; justify-content:center; padding:20px; }
+  .article-overlay.show { display:flex; animation:articleFadeIn 0.25s ease; }
+  @keyframes articleFadeIn { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+  .article-modal { background:var(--card); border:1px solid var(--border); border-radius:16px; max-width:700px; width:100%; max-height:88vh; overflow-y:auto; padding:40px; position:relative; box-shadow:0 24px 80px rgba(0,0,0,0.5); }
+  .article-close { position:absolute; top:16px; right:16px; background:var(--bg3); border:1px solid var(--border); color:var(--text); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+  .article-close:hover { background:var(--border); }
+  .article-tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:16px; }
+  .article-title { font-size:22px; font-weight:800; color:var(--text); line-height:1.35; margin-bottom:12px; }
+  .article-meta { font-size:12px; color:var(--text2); margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+  .article-body { font-size:15px; color:var(--text); line-height:1.8; }
+  .article-body p { margin-bottom:16px; }
+  .article-source { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
+  .article-source a { color:var(--accent); text-decoration:none; }
+  .article-source a:hover { text-decoration:underline; }
   .tag-bors { background: rgba(59,130,246,0.15); color: var(--accent2); }
   .tag-analys { background: rgba(245,158,11,0.15); color: var(--accent); }
   .tag-makro { background: rgba(16,185,129,0.15); color: var(--green); }
@@ -460,6 +477,18 @@
   </div>
 </div>
 
+<!-- ARTICLE MODAL -->
+<div class="article-overlay" id="articleOverlay" onclick="closeArticle(event)">
+  <div class="article-modal" id="articleModal">
+    <button class="article-close" onclick="closeArticle()">✕</button>
+    <span class="article-tag" id="articleTag"></span>
+    <div class="article-title" id="articleTitle"></div>
+    <div class="article-meta" id="articleMeta"></div>
+    <div class="article-body" id="articleBody"></div>
+    <div class="article-source" id="articleSource"></div>
+  </div>
+</div>
+
 <!-- LEO DICAPRIO CELEBRATION OVERLAY -->
 <div class="leo-overlay" id="leoOverlay" onclick="closeLeo()">
   <img class="leo-gif" src="https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif" alt="Leo DiCaprio firar">
@@ -588,14 +617,54 @@ const INDICES = [
 ];
 
 const NEWS = [
-  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'OMXS30 stänger på rekordnivå — techaktier leder uppgången', time: 'Idag 17:30' },
-  { tag: 'Analys', tagClass: 'tag-analys', title: 'Analytikerna spår fortsatt uppgång för Ericsson efter stark Q3-rapport', time: 'Idag 15:45' },
-  { tag: 'Makro',  tagClass: 'tag-makro',  title: 'Riksbanken signalerar ytterligare räntesänkning i december', time: 'Idag 14:20' },
-  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'Volvo B slog analytikernas förväntningar — aktien stiger 4%', time: 'Idag 12:10' },
-  { tag: 'Analys', tagClass: 'tag-analys', title: 'H&M rapporterar oväntat stark försäljning i Asien', time: 'Idag 10:35' },
-  { tag: 'Makro',  tagClass: 'tag-makro',  title: 'Inflationen i Sverige faller till lägsta sedan 2021', time: 'Igår 18:00' },
-  { tag: 'Börs',   tagClass: 'tag-bors',   title: 'Atlas Copco förvärvar tysk teknikgrupp för 8 miljarder', time: 'Igår 16:30' },
-  { tag: 'Analys', tagClass: 'tag-analys', title: 'Evolution Gaming tar marknadsandelar i Nordamerika', time: 'Igår 14:00' },
+  {
+    tag: 'Börs', tagClass: 'tag-bors',
+    title: 'OMXS30 stänger på rekordnivå — techaktier leder uppgången',
+    time: 'Idag 17:30', source: 'Dagens Industri', sourceUrl: 'https://di.se',
+    body: `<p>Stockholmsbörsen avslutade handelsdagen på sin högsta stängningsnivå någonsin. OMXS30 klättrade med 1,8 procent och nådde 2 847 punkter vid stängning, driven av kraftiga uppgångar inom teknik- och halvledarsektorn.</p><p>Ericsson och Hexagon var dagens tydligaste vinnare och bidrog mest till indexuppgången. Analytiker pekar på en kombination av starka bolagsrapporter och fallande marknadsräntor som förklaring till den breda uppgången.</p><p>— Det här är ett historiskt steg för Stockholmsbörsen. Vi ser ett brett köptryck och institutionellt inflöde som vi inte sett på länge, säger Maria Lindström, aktiestrateg på Swedbank.</p><p>Handelsvolymen var ovanligt hög och uppgick till 32 miljarder kronor — 40 procent över det dagliga snittet för de senaste tre månaderna. Även Stockholmsbörsens Small Cap-index steg med drygt 1,2 procent under dagen.</p>`
+  },
+  {
+    tag: 'Analys', tagClass: 'tag-analys',
+    title: 'Analytikerna spår fortsatt uppgång för Ericsson efter stark Q3-rapport',
+    time: 'Idag 15:45', source: 'Redeye', sourceUrl: 'https://redeye.se',
+    body: `<p>Ericssons tredje kvartal överraskade marknaden positivt med ett rörelseresultat på 7,2 miljarder kronor — 18 procent bättre än konsensusestimat. Bolaget redovisade ökade marginaler inom affärsområdet Networks och stärkt orderingång från USA och Indien.</p><p>Samtliga fyra storbanker höjer sina riktkurser efter rapporten. Goldman Sachs går upp från 85 till 102 kronor, medan Carnegie höjer från 90 till 108 kronor med bibehållen köprekommendation.</p><p>— Ericsson visar att de har vänt skutan. Kostnadsprogrammet levererar och 5G-utrullningen i tillväxtmarknader ger nu konkreta intäkter, kommenterar analytiker Johan Ekvall på Redeye.</p><p>Aktien steg med 5,4 procent under dagen och är nu upp 34 procent sedan årets början, vilket gör den till en av OMXS30:s bästa aktier hittills i år.</p>`
+  },
+  {
+    tag: 'Makro', tagClass: 'tag-makro',
+    title: 'Riksbanken signalerar ytterligare räntesänkning i december',
+    time: 'Idag 14:20', source: 'Svenska Dagbladet', sourceUrl: 'https://svd.se',
+    body: `<p>Riksbankens vice riksbankschef Anna Breman höll i dag ett tal där hon signalerade att ytterligare en räntesänkning kan bli aktuell vid decembermötet, förutsatt att inflationen fortsätter att falla i linje med prognoserna.</p><p>Styrräntan ligger i dag på 2,75 procent efter tre sänkningar under 2024. Riksbanken justerade ner sin inflationsprognos till 1,9 procent för 2025, vilket är under målet på 2 procent — något som ytterligare motiverar en lättare penningpolitik.</p><p>— Inflationen är under kontroll och arbetsmarknaden börjar visa tecken på avkylning. Vi har utrymme att stödja ekonomin utan att riskera prisstabiliteten, sade Breman i sitt anförande.</p><p>Reaktionerna på finansmarknaden var snabba. Den svenska kronan försvagades med 0,4 procent mot euron, medan bostadsobligationer steg. Bankaktier som Handelsbanken och SEB föll marginellt på nyheten.</p>`
+  },
+  {
+    tag: 'Börs', tagClass: 'tag-bors',
+    title: 'Volvo B slog analytikernas förväntningar — aktien stiger 4%',
+    time: 'Idag 12:10', source: 'Affärsvärlden', sourceUrl: 'https://affarsvarlden.se',
+    body: `<p>Volvo AB redovisade ett rörelseresultat på 22,4 miljarder kronor för det tredje kvartalet, vilket överträffade analytikernas snittestimat på 19,8 miljarder. Rörelsemarginalen uppgick till 14,2 procent, upp från 12,8 procent samma period föregående år.</p><p>Lastbilsförsäljningen i Europa visade oväntat motståndskraft trots en allmän avmattning inom transportsektorn. Nordamerika stod för den starkaste tillväxten med en ökning om 11 procent jämfört med Q3 2023.</p><p>— Vi ser en stark efterfrågan på elektrifierade fordon, särskilt i Europa. Vår orderbok för el-lastbilar är nu fullbokad till mitten av 2026, sa VD Martin Lundstedt på presskonferensen.</p><p>Aktien handlades upp med 4,1 procent under förmiddagen och är en av de starkaste bidragsgivarna till OMXS30 under dagen. Flera analytiker förväntar sig nu att Volvo höjer sin utdelning vid nästa bolagsstämma.</p>`
+  },
+  {
+    tag: 'Analys', tagClass: 'tag-analys',
+    title: 'H&M rapporterar oväntat stark försäljning i Asien',
+    time: 'Idag 10:35', source: 'Placera', sourceUrl: 'https://placera.nu',
+    body: `<p>H&M Group redovisade en försäljningstillväxt på 12 procent i Asien under oktober månad, vilket klart översteg marknadens förväntningar om 6–7 procent. Den starka tillväxten drivs framför allt av Kina, Sydkorea och Indien.</p><p>Bolaget meddelade även att det varumärket COS nu expanderar aggressivt i Sydostasien med åtta nya butiker planerade att öppnas under Q4. Onlineförsäljningen i regionen ökade med hela 28 procent.</p><p>— H&M har lyckats positionera sig rätt prismässigt i Asien. De konkurrerar framgångsrikt med lokala aktörer och vinner marknadsandelar, säger Sofia Pettersson, analytiker på Handelsbanken Capital Markets.</p><p>H&M-aktien steg med 2,8 procent efter rapporten. Bolaget har haft ett turbulent år och aktien är fortfarande ned 8 procent sedan januari, men rapporten väcker nytt hopp om en vändning.</p>`
+  },
+  {
+    tag: 'Makro', tagClass: 'tag-makro',
+    title: 'Inflationen i Sverige faller till lägsta sedan 2021',
+    time: 'Igår 18:00', source: 'SCB', sourceUrl: 'https://scb.se',
+    body: `<p>Statistiska centralbyrån publicerade i dag inflationsdata för oktober som visade att KPI-inflationen sjönk till 1,6 procent på årsbasis — den lägsta nivån sedan mars 2021. Marknaden hade förväntat sig 2,1 procent.</p><p>Den snabba nedgången förklaras av lägre energipriser, sjunkande matpriser och avtagande hyreshöjningar. KPIF-inflationen, som exkluderar direkta ränteeffekter och används av Riksbanken som styrmedel, landade på 1,4 procent.</p><p>— Det här är ett tydligt tecken på att penningpolitiken har fungerat. Inflationen är tillbaka i ett normalt intervall och vi kan nu fokusera på att stödja tillväxten, kommenterade finansminister Elisabeth Svantesson.</p><p>Data ökar sannolikheten för ytterligare räntesänkningar från Riksbanken och förstärker bilden av en mjuklandning för svensk ekonomi. BNP-tillväxten väntas dock förbli modest på 1,1 procent för 2024.</p>`
+  },
+  {
+    tag: 'Börs', tagClass: 'tag-bors',
+    title: 'Atlas Copco förvärvar tysk teknikgrupp för 8 miljarder',
+    time: 'Igår 16:30', source: 'Dagens Industri', sourceUrl: 'https://di.se',
+    body: `<p>Atlas Copco meddelade i går kväll att bolaget förvärvar tyska Kieser Technologies GmbH för 720 miljoner euro, motsvarande cirka 8 miljarder kronor. Förvärvet är det största i bolagets historia och förväntas slutföras under Q1 2025.</p><p>Kieser Technologies är specialiserat på precisionsindustriella system och har en stark marknadsposition inom halvledarindustrin i Europa och Asien. Bolaget omsätter 1,4 miljarder kronor med en rörelsemarginal på 22 procent.</p><p>— Det här är ett strategiskt förvärv som stärker vår position inom högteknologisk tillverkning. Kieser kompletterar vår portfölj perfekt och vi ser stora möjligheter till synergier, sade VD Mats Rahmström.</p><p>Atlas Copco-aktien reagerade positivt och steg 1,9 procent. Analytiker på SEB skriver i en kommentar att förvärvet är "prismässigt rimligt och strategiskt välmotiverat" och behåller sin köprekommendation.</p>`
+  },
+  {
+    tag: 'Analys', tagClass: 'tag-analys',
+    title: 'Evolution Gaming tar marknadsandelar i Nordamerika',
+    time: 'Igår 14:00', source: 'Redeye', sourceUrl: 'https://redeye.se',
+    body: `<p>Evolution AB, världsledande inom live casino-spel, redovisar kraftig tillväxt på den nordamerikanska marknaden efter det att fler delstater legaliserat onlinespel. Bolagets intäkter från USA ökade med 67 procent jämfört med samma kvartal föregående år.</p><p>Bolaget vann nyligen licenser i ytterligare tre delstater och har nu en total adresserbar marknad i USA som analyshuset Berenberg värderar till 180 miljarder kronor för de kommande fem åren.</p><p>— Evolution är i en klass för sig inom live casino. Deras teknikplattform är överlägsen och deras operationella excellence gör det extremt svårt för konkurrenter att ta marknadsandelar, skriver analytiker Hanna Sjöström i en ny analysrapport.</p><p>Aktien har stigit med 41 procent under det senaste halvåret och handlas nu till ett P/E-tal om 28, vilket analytiker bedömer som rimligt givet tillväxtprofilen. Riktkursen höjs till 1 350 kronor.</p>`
+  },
 ];
 
 // ─── STATE ──────────────────────────────────────────────────────────────────
@@ -1140,12 +1209,30 @@ function renderPortfolio() {
 
 // ─── NEWS ─────────────────────────────────────────────────────────────────────
 function renderNews() {
-  document.getElementById('newsGrid').innerHTML = NEWS.map(n => `
-    <div class="news-card">
+  document.getElementById('newsGrid').innerHTML = NEWS.map((n, i) => `
+    <div class="news-card" onclick="openArticle(${i})">
       <span class="news-tag ${n.tagClass}">${n.tag}</span>
       <div class="news-title">${n.title}</div>
-      <div class="news-meta">${n.time}</div>
+      <div class="news-meta">${n.time} · ${n.source}</div>
     </div>`).join('');
+}
+
+function openArticle(i) {
+  const n = NEWS[i];
+  document.getElementById('articleTag').className = `article-tag ${n.tagClass}`;
+  document.getElementById('articleTag').textContent = n.tag;
+  document.getElementById('articleTitle').textContent = n.title;
+  document.getElementById('articleMeta').textContent = `${n.time} · ${n.source}`;
+  document.getElementById('articleBody').innerHTML = n.body;
+  document.getElementById('articleSource').innerHTML = `Källa: <a href="${n.sourceUrl}" target="_blank">${n.source} ↗</a>`;
+  document.getElementById('articleOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArticle(e) {
+  if (e && e.target !== document.getElementById('articleOverlay')) return;
+  document.getElementById('articleOverlay').classList.remove('show');
+  document.body.style.overflow = '';
 }
 
 // ─── NEWSLETTER ──────────────────────────────────────────────────────────────
