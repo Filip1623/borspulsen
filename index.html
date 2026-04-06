@@ -235,6 +235,15 @@
   .news-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 10px; }
   .news-meta { font-size: 12px; color: var(--text2); }
 
+  /* LEO DICAPRIO OVERLAY */
+  .leo-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer; }
+  .leo-overlay.show { display:flex; animation: leoFadeIn 0.3s ease; }
+  @keyframes leoFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+  .leo-gif { width:420px; max-width:90vw; border-radius:16px; box-shadow:0 0 80px rgba(41,98,255,0.6), 0 0 160px rgba(41,98,255,0.3); }
+  .leo-title { font-size:32px; font-weight:900; color:#fff; margin-top:24px; text-shadow:0 0 30px rgba(41,98,255,0.9); letter-spacing:-0.5px; }
+  .leo-sub { font-size:16px; color:rgba(255,255,255,0.75); margin-top:10px; }
+  .leo-hint { font-size:13px; color:rgba(255,255,255,0.35); margin-top:20px; }
+
   /* NEWSLETTER */
   .newsletter-section { background: linear-gradient(135deg, #0d1a3a 0%, #1a2a5e 50%, #0d1a3a 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 48px; text-align: center; margin-bottom: 32px; position: relative; overflow: hidden; }
   .newsletter-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.15) 0%, transparent 70%); pointer-events: none; }
@@ -451,6 +460,14 @@
   </div>
 </div>
 
+<!-- LEO DICAPRIO CELEBRATION OVERLAY -->
+<div class="leo-overlay" id="leoOverlay" onclick="closeLeo()">
+  <img class="leo-gif" src="https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif" alt="Leo DiCaprio firar">
+  <div class="leo-title">🐺 VÄLKOMMEN TILL BÖRSEN! 💰</div>
+  <div class="leo-sub">Du är nu en del av BörsPulsen-familjen!</div>
+  <div class="leo-hint">Klicka för att fortsätta →</div>
+</div>
+
 <!-- NEWSLETTER POPUP -->
 <div class="popup-overlay" id="nlPopup">
   <div class="popup">
@@ -458,14 +475,14 @@
     <div class="popup-emoji">📈</div>
     <div class="popup-title">Missa inte börspulsen!</div>
     <p class="popup-text">Gå med 10 000+ investerare som får dagliga börsuppdateringar direkt i inkorgen varje morgon.</p>
-    <a href="https://borspulsen.beehiiv.com/subscribe" target="_blank" class="popup-btn">Prenumerera gratis →</a>
+    <a href="#" onclick="showLeo(); return false;" class="popup-btn">Prenumerera gratis →</a>
     <div class="popup-skip" onclick="closePopup()">Nej tack, jag missar hellre nyheterna</div>
   </div>
 </div>
 
 <!-- FLOATING CTA -->
 <div class="float-cta">
-  <a href="https://borspulsen.beehiiv.com/subscribe" target="_blank">
+  <a href="#" onclick="showLeo(); return false;">
     <span>📬</span><span>Prenumerera på nyhetsbrevet</span>
   </a>
 </div>
@@ -1133,6 +1150,21 @@ function renderNews() {
 
 // ─── NEWSLETTER ──────────────────────────────────────────────────────────────
 function subscribeNewsletter() {
+  showLeo();
+}
+
+function showLeo() {
+  const overlay = document.getElementById('leoOverlay');
+  overlay.classList.add('show');
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    window.open('https://borspulsen.beehiiv.com/subscribe', '_blank');
+  }, 3000);
+}
+
+function closeLeo() {
+  const overlay = document.getElementById('leoOverlay');
+  overlay.classList.remove('show');
   window.open('https://borspulsen.beehiiv.com/subscribe', '_blank');
 }
 
