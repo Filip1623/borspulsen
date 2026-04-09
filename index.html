@@ -114,7 +114,7 @@
   .section-title::before { content: ''; width: 3px; height: 18px; background: #2962FF; border-radius: 2px; }
 
   /* INDEX CARDS */
-  .index-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
   .index-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.2s, box-shadow 0.2s; }
   .index-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
   .index-name { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 8px; }
@@ -329,6 +329,10 @@
   .nyckel-label { font-size: 10px; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .nyckel-val { font-size: 15px; font-weight: 700; color: #d1d4dc; }
 
+  /* SIMULERADE PRISER BADGE */
+  .sim-priser-badge { display: none; background: rgba(239,83,80,0.15); border: 1px solid rgba(239,83,80,0.3); color: #EF5350; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; }
+  .sim-priser-badge.show { display: inline-block; }
+
   /* UTDELNINGSKALENDER */
   .utdelning-section { margin-bottom: 32px; }
   .utdelning-table { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
@@ -339,6 +343,13 @@
   .utdelning-table tr:hover td { background: var(--bg3); }
   .utd-yield { color: var(--green); font-weight: 700; }
   .utd-date { color: var(--text2); font-size: 13px; }
+
+  /* UTDELNING MONTH FILTERS */
+  .utd-month-filters { display: flex; gap: 6px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .utd-month-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+  .utd-month-btn:hover { color: var(--text); border-color: var(--accent); }
+  .utd-month-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 10px rgba(41,98,255,0.25); }
+  .utd-empty { padding: 24px 16px; text-align: center; color: var(--text2); font-size: 14px; }
 
   /* MOBILE CARD VIEW */
   .stock-cards { display: none; }
@@ -356,7 +367,7 @@
 
   /* RESPONSIVE */
   @media (max-width: 900px) {
-    .index-grid { grid-template-columns: repeat(2, 1fr); }
+    .index-grid { grid-template-columns: repeat(2, 1fr); } /* 3→2 at tablet */
     .news-grid { grid-template-columns: repeat(2, 1fr); }
     .heatmap-container { height: 300px; }
     nav { display: none; }
@@ -418,6 +429,7 @@
         <input type="text" placeholder="Sök aktie, t.ex. AAPL, Tesla, Volvo..." id="searchInput" autocomplete="off">
         <div class="search-results" id="searchResults"></div>
       </div>
+      <span class="sim-priser-badge" id="simPriserBadge">⚠ Simulerade priser</span>
       <button class="theme-btn" id="themeBtn">☀️ Ljust</button>
     </div>
   </div>
@@ -445,8 +457,8 @@
             "title": "Börser",
             "symbols": [
               {"s": "OMXSTO:OMXS30", "d": "OMXS30"},
-              {"s": "INDEX:OMXSPI", "d": "OMXSPI"},
-              {"s": "NASDAQ:IXIC", "d": "NASDAQ"},
+              {"s": "NASDAQ:IXIC", "d": "NASDAQ Composite"},
+              {"s": "INDEX:NDX", "d": "NASDAQ 100"},
               {"s": "SP:SPX", "d": "S&P 500"},
               {"s": "INDEX:DAX", "d": "DAX"},
               {"s": "OMXSTO:OMXS30GI", "d": "OMXS30GI"}
@@ -594,6 +606,20 @@
   <section class="utdelning-section" id="utdelning">
     <div class="section-title">Utdelningskalender 2026</div>
     <div class="utdelning-table">
+      <div class="utd-month-filters" id="utdMonthFilters">
+        <button class="utd-month-btn" onclick="setUtdMonth(1,this)">Jan</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(2,this)">Feb</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(3,this)">Mar</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(4,this)">Apr</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(5,this)">Maj</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(6,this)">Jun</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(7,this)">Jul</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(8,this)">Aug</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(9,this)">Sep</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(10,this)">Okt</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(11,this)">Nov</button>
+        <button class="utd-month-btn" onclick="setUtdMonth(12,this)">Dec</button>
+      </div>
       <table>
         <thead><tr><th>Bolag</th><th>Ex-datum</th><th>Utbetalning</th><th>Utdelning/aktie</th><th>Direktavkastning</th><th>Frekvens</th></tr></thead>
         <tbody id="utdelningBody"></tbody>
@@ -779,10 +805,9 @@ const FI_DATA = [
 ];
 
 const INDICES = [
-  { name: 'OMXS30', value: 2486.40, change: 12.3 },
-  { name: 'OMXSPI', value: 1024.80, change: 4.8 },
-  { name: 'NASDAQ',  value: 17824.00, change: 84.2 },
-  { name: 'S&P 500', value: 5648.00, change: 22.4 },
+  { name: 'OMXS30',  value: 2486.40,  change: 12.3,  tvSymbol: 'OMXSTO:OMXS30' },
+  { name: 'NASDAQ',  value: 17824.00, change: 84.2,  tvSymbol: 'NASDAQ:IXIC'   },
+  { name: 'S&P 500', value: 5648.00,  change: 22.4,  tvSymbol: 'SP:SPX'         },
 ];
 
 const NEWS = [
@@ -1519,33 +1544,78 @@ const NYCKELTAL = {
 
 // ─── UTDELNINGSKALENDER ──────────────────────────────────────────────────────
 const UTDELNINGAR = [
-  { bolag: 'Volvo B',       exDatum: '2026-04-02', utbet: '2026-04-07', utd: '7,00 kr',  yield: '4.8%', freq: 'Halvår' },
-  { bolag: 'SEB A',         exDatum: '2026-03-26', utbet: '2026-04-01', utd: '8,50 kr',  yield: '6.4%', freq: 'Halvår' },
-  { bolag: 'Nordea',        exDatum: '2026-04-09', utbet: '2026-04-14', utd: '9,20 kr',  yield: '7.2%', freq: 'Halvår' },
-  { bolag: 'Handelsbanken', exDatum: '2026-04-16', utbet: '2026-04-22', utd: '7,50 kr',  yield: '6.8%', freq: 'Halvår' },
-  { bolag: 'Atlas Copco A', exDatum: '2026-04-23', utbet: '2026-04-28', utd: '2,80 kr',  yield: '1.8%', freq: 'Halvår' },
-  { bolag: 'H&M B',         exDatum: '2026-05-07', utbet: '2026-05-13', utd: '7,40 kr',  yield: '5.2%', freq: 'Halvår' },
-  { bolag: 'Investor B',    exDatum: '2026-05-14', utbet: '2026-05-20', utd: '6,00 kr',  yield: '2.4%', freq: 'Halvår' },
-  { bolag: 'Sandvik',       exDatum: '2026-05-21', utbet: '2026-05-27', utd: '6,80 kr',  yield: '3.4%', freq: 'Halvår' },
-  { bolag: 'Essity B',      exDatum: '2026-04-29', utbet: '2026-05-05', utd: '7,10 kr',  yield: '2.9%', freq: 'Halvår' },
-  { bolag: 'Boliden',       exDatum: '2026-05-06', utbet: '2026-05-12', utd: '14,00 kr', yield: '4.4%', freq: 'Halvår' },
-  { bolag: 'ABB',           exDatum: '2026-03-19', utbet: '2026-03-24', utd: '1,50 kr',  yield: '2.1%', freq: 'Kvartal' },
-  { bolag: 'Equinor',       exDatum: '2026-05-13', utbet: '2026-05-19', utd: '5,20 NOK', yield: '8.2%', freq: 'Kvartal' },
-  { bolag: 'DNB Bank',      exDatum: '2026-04-30', utbet: '2026-05-06', utd: '14,00 NOK',yield: '7.8%', freq: 'Halvår' },
-  { bolag: 'Nokia',         exDatum: '2026-04-24', utbet: '2026-04-30', utd: '0,14 EUR', yield: '3.8%', freq: 'Kvartal' },
-  { bolag: 'Neste',         exDatum: '2026-04-17', utbet: '2026-04-23', utd: '1,06 EUR', yield: '4.2%', freq: 'Halvår' },
+  // ── Mars ──
+  { bolag: 'ABB',              exDatum: '2026-03-19', utbet: '2026-03-24', utd: '1,50 kr',   yield: '2.1%', freq: 'Kvartal' },
+  { bolag: 'SEB A',            exDatum: '2026-03-26', utbet: '2026-04-01', utd: '8,50 kr',   yield: '6.4%', freq: 'Halvår'  },
+  // ── April ──
+  { bolag: 'Volvo B',          exDatum: '2026-04-02', utbet: '2026-04-07', utd: '7,00 kr',   yield: '4.8%', freq: 'Halvår'  },
+  { bolag: 'Nordea',           exDatum: '2026-04-09', utbet: '2026-04-14', utd: '9,20 kr',   yield: '7.2%', freq: 'Halvår'  },
+  { bolag: 'Handelsbanken',    exDatum: '2026-04-16', utbet: '2026-04-22', utd: '7,50 kr',   yield: '6.8%', freq: 'Halvår'  },
+  { bolag: 'Neste',            exDatum: '2026-04-17', utbet: '2026-04-23', utd: '1,06 EUR',  yield: '4.2%', freq: 'Halvår'  },
+  { bolag: 'Atlas Copco A',    exDatum: '2026-04-23', utbet: '2026-04-28', utd: '2,80 kr',   yield: '1.8%', freq: 'Halvår'  },
+  { bolag: 'Nokia',            exDatum: '2026-04-24', utbet: '2026-04-30', utd: '0,14 EUR',  yield: '3.8%', freq: 'Kvartal' },
+  { bolag: 'Essity B',         exDatum: '2026-04-29', utbet: '2026-05-05', utd: '7,10 kr',   yield: '2.9%', freq: 'Halvår'  },
+  { bolag: 'DNB Bank',         exDatum: '2026-04-30', utbet: '2026-05-06', utd: '14,00 NOK', yield: '7.8%', freq: 'Halvår'  },
+  // ── Maj ──
+  { bolag: 'Boliden',          exDatum: '2026-05-06', utbet: '2026-05-12', utd: '14,00 kr',  yield: '4.4%', freq: 'Halvår'  },
+  { bolag: 'H&M B',            exDatum: '2026-05-07', utbet: '2026-05-13', utd: '7,40 kr',   yield: '5.2%', freq: 'Halvår'  },
+  { bolag: 'Alfa Laval',       exDatum: '2026-05-12', utbet: '2026-05-19', utd: '9,50 kr',   yield: '2.8%', freq: 'Halvår'  },
+  { bolag: 'Equinor',          exDatum: '2026-05-13', utbet: '2026-05-19', utd: '5,20 NOK',  yield: '8.2%', freq: 'Kvartal' },
+  { bolag: 'Investor B',       exDatum: '2026-05-14', utbet: '2026-05-20', utd: '6,00 kr',   yield: '2.4%', freq: 'Halvår'  },
+  { bolag: 'Evolution',        exDatum: '2026-05-19', utbet: '2026-05-26', utd: '22,00 kr',  yield: '2.2%', freq: 'Halvår'  },
+  { bolag: 'Sandvik',          exDatum: '2026-05-21', utbet: '2026-05-27', utd: '6,80 kr',   yield: '3.4%', freq: 'Halvår'  },
+  // ── Juni ──
+  { bolag: 'Sampo',            exDatum: '2026-06-03', utbet: '2026-06-10', utd: '1,70 EUR',  yield: '5.2%', freq: 'Halvår'  },
+  { bolag: 'SKF B',            exDatum: '2026-06-04', utbet: '2026-06-11', utd: '7,50 kr',   yield: '4.2%', freq: 'Halvår'  },
+  { bolag: 'SSAB A',           exDatum: '2026-06-09', utbet: '2026-06-15', utd: '3,25 kr',   yield: '5.8%', freq: 'Halvår'  },
+  { bolag: 'Ericsson B',       exDatum: '2026-06-11', utbet: '2026-06-17', utd: '2,00 kr',   yield: '3.9%', freq: 'Halvår'  },
+  { bolag: 'Nibe Industrier',  exDatum: '2026-06-16', utbet: '2026-06-23', utd: '0,60 kr',   yield: '1.4%', freq: 'Halvår'  },
+  { bolag: 'Hexagon B',        exDatum: '2026-06-18', utbet: '2026-06-25', utd: '1,66 kr',   yield: '1.6%', freq: 'Halvår'  },
 ];
 
+let currentUtdMonth = new Date().getMonth() + 1; // default = current month
+
+function setUtdMonth(month, btn) {
+  currentUtdMonth = month;
+  document.querySelectorAll('.utd-month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUtdelningar();
+}
+
 function renderUtdelningar() {
-  document.getElementById('utdelningBody').innerHTML = UTDELNINGAR.map(u => `
-    <tr>
-      <td style="font-weight:600">${u.bolag}</td>
-      <td class="utd-date">${u.exDatum}</td>
-      <td class="utd-date">${u.utbet}</td>
-      <td style="font-weight:600">${u.utd}</td>
-      <td class="utd-yield">${u.yield}</td>
-      <td style="color:var(--text2);font-size:12px">${u.freq}</td>
-    </tr>`).join('');
+  const filtered = UTDELNINGAR.filter(u => {
+    const m = parseInt(u.exDatum.split('-')[1], 10);
+    return m === currentUtdMonth;
+  });
+  const tbody = document.getElementById('utdelningBody');
+  // Show/hide table thead based on results
+  const tableEl = tbody.closest('table');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    if (!document.getElementById('utdEmpty')) {
+      const div = document.createElement('div');
+      div.id = 'utdEmpty';
+      div.className = 'utd-empty';
+      div.textContent = 'Inga utdelningar registrerade för denna månad.';
+      tableEl.parentNode.insertBefore(div, tableEl);
+    } else {
+      document.getElementById('utdEmpty').style.display = '';
+    }
+    tableEl.style.display = 'none';
+  } else {
+    tableEl.style.display = '';
+    const empty = document.getElementById('utdEmpty');
+    if (empty) empty.style.display = 'none';
+    tbody.innerHTML = filtered.map(u => `
+      <tr>
+        <td style="font-weight:600">${u.bolag}</td>
+        <td class="utd-date">${u.exDatum}</td>
+        <td class="utd-date">${u.utbet}</td>
+        <td style="font-weight:600">${u.utd}</td>
+        <td class="utd-yield">${u.yield}</td>
+        <td style="color:var(--text2);font-size:12px">${u.freq}</td>
+      </tr>`).join('');
+  }
 }
 
 // ─── SECTOR FILTER ───────────────────────────────────────────────────────────
@@ -1587,6 +1657,92 @@ function renderMobileCards(stocks) {
   }).join('');
 }
 
+// ─── FINNHUB LIVE PRICES ─────────────────────────────────────────────────────
+const FINNHUB_TOKEN = 'd79can9r01qqpmhg94eg';
+const FINNHUB_MAP = {
+  'VOLV-B':   'VOLV-B.ST',
+  'ERIC-B':   'ERIC-B.ST',
+  'HM-B':     'HM-B.ST',
+  'ATCO-A':   'ATCO-A.ST',
+  'INVE-B':   'INVE-B.ST',
+  'SEB-A':    'SEB-A.ST',
+  'NDA-SE':   'NDA-SE.ST',
+  'SHB-A':    'SHB-A.ST',
+  'ABB':      'ABB.ST',
+  'SAND':     'SAND.ST',
+  'SKF-B':    'SKF-B.ST',
+  'SSAB-A':   'SSAB-A.ST',
+  'BOL':      'BOL.ST',
+  'TEL2-B':   'TEL2-B.ST',
+  'HEXA-B':   'HEXA-B.ST',
+  'ALFA':     'ALFA.ST',
+  'EVO':      'EVO.ST',
+  'KINV-B':   'KINV-B.ST',
+  'ESSITY-B': 'ESSITY-B.ST',
+  'SWMA':     'SWMA.ST',
+  'ALV':      'ALV.ST',
+  'GETI-B':   'GETI-B.ST',
+  'HPOL-B':   'HPOL-B.ST',
+  'NIBE-B':   'NIBE-B.ST',
+  'EKTA-B':   'EKTA-B.ST',
+  'AXFO':     'AXFO.ST',
+  'CLAS-B':   'CLAS-B.ST',
+  'ADDT-B':   'ADDT-B.ST',
+  'INDT':     'INDT.ST',
+  'BIL-A':    'BIL-A.ST',
+  'BEIJ-B':   'BEIJ-B.ST',
+  'BILL':     'BILL.ST',
+  'HUSQ-B':   'HUSQ-B.ST',
+  'SAGA-D':   'SAGA-D.ST',
+  'BALD-B':   'BALD-B.ST',
+};
+
+function _delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function fetchLivePrices() {
+  const badge = document.getElementById('simPriserBadge');
+  const tickers = Object.keys(FINNHUB_MAP);
+  let successCount = 0;
+
+  for (let i = 0; i < tickers.length; i++) {
+    if (i > 0) await _delay(100); // 100 ms between calls (≤ 60 req/min per batch)
+    const ticker = tickers[i];
+    const symbol = FINNHUB_MAP[ticker];
+    try {
+      const resp = await fetch(
+        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (!data.c || data.c === 0) continue; // invalid / empty quote
+      const idx = seStocks.findIndex(s => s.ticker === ticker);
+      if (idx !== -1) {
+        seStocks[idx] = {
+          ...seStocks[idx],
+          price:     +data.c.toFixed(2),
+          change:    +((data.d) ? data.d.toFixed(2) : 0),
+          changePct: +((data.dp) ? data.dp.toFixed(2) : 0),
+          volume:    data.v > 0 ? data.v : seStocks[idx].volume,
+        };
+        successCount++;
+      }
+    } catch(e) { /* skip individual failures silently */ }
+  }
+
+  if (successCount > 0) {
+    if (badge) badge.classList.remove('show');
+    // Re-render all views that depend on stock prices
+    renderTicker();
+    renderHeatmap();
+    renderWinnersLosers();
+    renderTable();
+    renderPortfolio();
+  } else {
+    // Full failure — show badge, simulated prices remain
+    if (badge) badge.classList.add('show');
+  }
+}
+
 // ─── FETCH MAKRO RATES ───────────────────────────────────────────────────────
 async function fetchMacroRates() {
   try {
@@ -1614,10 +1770,20 @@ renderTable();
 renderPortfolioSelect();
 renderPortfolio();
 renderNews();
+
+// Aktivera rätt månadsknapp (aktuell månad = april = index 3)
+(function activateCurrentMonthTab() {
+  const buttons = document.querySelectorAll('.utd-month-btn');
+  const idx = currentUtdMonth - 1; // 0-baserat
+  if (buttons[idx]) buttons[idx].classList.add('active');
+})();
 renderUtdelningar();
+
 fetchMacroRates();
+fetchLivePrices(); // hämta live-priser direkt vid sidladdning
 setInterval(updatePrices, 30000);
-setInterval(fetchMacroRates, 3600000); // uppdatera valutakurser varje timme
+setInterval(fetchMacroRates, 3600000);  // valutakurser varje timme
+setInterval(fetchLivePrices, 60000);    // live-priser var 60:e sekund
 
 // Render mobile cards on table updates
 const origRenderTable = renderTable;
