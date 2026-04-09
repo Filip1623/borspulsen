@@ -365,6 +365,44 @@
   .sc-price { font-size: 16px; font-weight: 700; color: var(--text); }
   .sc-change { font-size: 13px; font-weight: 700; margin-top: 2px; }
 
+  /* AKTIE-SCREENER */
+  .screener-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+  .screener-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .screener-filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .screener-filter-group label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .screener-filter-group select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s; }
+  .screener-filter-group select:focus { border-color: var(--accent); }
+  .screener-presets { display: flex; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+  .screener-presets-label { font-size: 12px; color: var(--text2); font-weight: 600; white-space: nowrap; }
+  .preset-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+  .preset-btn:hover { color: var(--text); border-color: var(--accent); }
+  .preset-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 10px rgba(41,98,255,0.25); }
+  .screener-actions { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .screener-count { font-size: 13px; color: var(--text2); margin-left: auto; }
+  .screener-empty { padding: 32px; text-align: center; color: var(--text2); font-size: 14px; }
+  .btn-export-csv { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .btn-export-csv:hover { color: var(--text); border-color: var(--accent); }
+
+  /* WATCHLIST */
+  .watchlist-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+  .watchlist-header-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .watchlist-empty { padding: 32px; text-align: center; color: var(--text2); font-size: 14px; }
+  .btn-wl-add { background: transparent; border: 1px solid var(--border); color: var(--text2); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .btn-wl-add:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-wl-add.in-wl { background: rgba(38,166,154,0.15); color: var(--green); border-color: var(--green); }
+
+  /* ANALYST RECOMMENDATIONS */
+  .analyst-recs { background: #131722; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .analyst-recs-title { font-size: 11px; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 600; }
+  .analyst-bar-wrap { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px; gap: 1px; }
+  .analyst-labels { display: flex; gap: 16px; font-size: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .analyst-lbl { display: flex; align-items: center; gap: 5px; color: #d1d4dc; }
+  .analyst-dot-buy  { width: 8px; height: 8px; border-radius: 50%; background: #26A69A; flex-shrink: 0; }
+  .analyst-dot-hold { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; }
+  .analyst-dot-sell { width: 8px; height: 8px; border-radius: 50%; background: #EF5350; flex-shrink: 0; }
+  .analyst-target-row { font-size: 13px; color: #787b86; }
+  .analyst-target-row strong { color: #d1d4dc; font-size: 14px; }
+
   /* RESPONSIVE */
   @media (max-width: 900px) {
     .index-grid { grid-template-columns: repeat(2, 1fr); } /* 3→2 at tablet */
@@ -420,7 +458,9 @@
     <nav>
       <a href="#marknad">Marknad</a>
       <a href="#aktier">Aktier</a>
+      <a href="#screener">Screener</a>
       <a href="#portfolio">Portfölj</a>
+      <a href="#watchlist">Bevakningslista</a>
       <a href="#nyheter">Nyheter</a>
     </nav>
     <div class="header-right">
@@ -511,6 +551,9 @@
     </div>
   </section>
 
+  <!-- INDEX KORT -->
+  <div class="index-grid" id="indexGrid" style="margin-bottom:32px"></div>
+
   <!-- VÄRMEKARTA – TradingView Treemap -->
   <section class="heatmap" id="heatmapSection">
     <div class="section-title">Värmekarta — Börsvärde &amp; Daglig förändring</div>
@@ -557,8 +600,11 @@
       </div>
       <div class="table-header">
         <span style="font-weight:600;font-size:14px;" id="marketLabel">Svenska börsen</span>&nbsp;—&nbsp;<span id="lastUpdate" style="color:var(--text2)"></span>
-        <div class="table-filter">
-          <input type="text" placeholder="Filtrera aktier..." id="tableFilter">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <a class="btn-export-csv" id="csvExportBtn" onclick="exportCSV();return false;" href="#">📥 Exportera CSV</a>
+          <div class="table-filter">
+            <input type="text" placeholder="Filtrera aktier..." id="tableFilter">
+          </div>
         </div>
       </div>
       <div class="stock-cards" id="stockCards"></div>
@@ -571,6 +617,7 @@
             <th onclick="sortTable('changePct')">% ⇅</th>
             <th onclick="sortTable('volume')">Volym ⇅</th>
             <th onclick="sortTable('mcap')">Marknadsvärde ⇅</th>
+            <th style="width:42px;text-align:center" title="Lägg till i bevakningslista">⭐</th>
           </tr>
         </thead>
         <tbody id="stockTableBody"></tbody>
@@ -598,6 +645,81 @@
           <thead><tr><th>Aktie</th><th>Antal</th><th>Köppris</th><th>Nuv. kurs</th><th>Värde</th><th>Vinst/Förlust</th><th></th></tr></thead>
           <tbody id="portTableBody"></tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- AKTIE-SCREENER -->
+  <section id="screener">
+    <div class="section-title">Aktie-screener</div>
+    <div class="screener-card">
+      <div class="screener-filters">
+        <div class="screener-filter-group">
+          <label>Direktavkastning</label>
+          <select id="scYield">
+            <option value="all">Alla</option>
+            <option value="2">&gt;2%</option>
+            <option value="4">&gt;4%</option>
+            <option value="6">&gt;6%</option>
+          </select>
+        </div>
+        <div class="screener-filter-group">
+          <label>P/E-tal</label>
+          <select id="scPE">
+            <option value="all">Alla</option>
+            <option value="10">&lt;10</option>
+            <option value="15">&lt;15</option>
+            <option value="20">&lt;20</option>
+          </select>
+        </div>
+        <div class="screener-filter-group">
+          <label>Marknadsvärde</label>
+          <select id="scMcap">
+            <option value="all">Alla</option>
+            <option value="large">Stor (&gt;100 Mdr)</option>
+            <option value="mid">Medel (10–100 Mdr)</option>
+            <option value="small">Liten (&lt;10 Mdr)</option>
+          </select>
+        </div>
+        <div class="screener-filter-group">
+          <label>Marknad</label>
+          <select id="scMarket">
+            <option value="all">Alla</option>
+            <option value="SE">SE</option>
+            <option value="NO">NO</option>
+            <option value="FI">FI</option>
+            <option value="US">US</option>
+            <option value="DE">DE</option>
+          </select>
+        </div>
+      </div>
+      <div class="screener-presets">
+        <span class="screener-presets-label">Snabbfilter:</span>
+        <button class="preset-btn" onclick="applyPreset('yield',this)">⭐ Högst direktavkastning</button>
+        <button class="preset-btn" onclick="applyPreset('pe',this)">📉 Lägst värderade</button>
+        <button class="preset-btn" onclick="applyPreset('mcap',this)">🏢 Störst bolag</button>
+      </div>
+      <div class="screener-actions">
+        <button class="btn" onclick="runScreener()">🔍 Filtrera</button>
+        <button class="btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border)" onclick="resetScreener()">Återställ</button>
+        <span class="screener-count" id="screenerCount"></span>
+      </div>
+      <div id="screenerResults">
+        <div class="screener-empty">Välj filter och klicka <strong>Filtrera</strong> för att söka bland aktier.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEVAKNINGSLISTA -->
+  <section id="watchlist">
+    <div class="section-title">Bevakningslista</div>
+    <div class="watchlist-card">
+      <div class="watchlist-header-bar">
+        <span style="font-size:14px;font-weight:600;color:var(--text2)" id="watchlistCount">0 aktier</span>
+        <span style="font-size:12px;color:var(--text2)">Klicka ⭐ i aktietabellen för att lägga till</span>
+      </div>
+      <div id="watchlistBody">
+        <div class="watchlist-empty">Din bevakningslista är tom. Klicka ⭐ i aktietabellen för att lägga till aktier.</div>
       </div>
     </div>
   </section>
@@ -661,6 +783,23 @@
       <div class="nyckel-box"><div class="nyckel-label">Direktavkastning</div><div class="nyckel-val" id="nkYield">—</div></div>
       <div class="nyckel-box"><div class="nyckel-label">P/B-tal</div><div class="nyckel-val" id="nkPB">—</div></div>
     </div>
+
+    <!-- Analytikerrekommendationer -->
+    <div class="analyst-recs" id="analystRecs">
+      <div class="analyst-recs-title">Analytikerkonsensus</div>
+      <div class="analyst-bar-wrap" id="analystBarWrap">
+        <div id="analystBarBuy" style="background:#26A69A;height:100%"></div>
+        <div id="analystBarHold" style="background:#F59E0B;height:100%"></div>
+        <div id="analystBarSell" style="background:#EF5350;height:100%"></div>
+      </div>
+      <div class="analyst-labels">
+        <div class="analyst-lbl"><div class="analyst-dot-buy"></div><span id="analystBuyLbl">Köp (—)</span></div>
+        <div class="analyst-lbl"><div class="analyst-dot-hold"></div><span id="analystHoldLbl">Behåll (—)</span></div>
+        <div class="analyst-lbl"><div class="analyst-dot-sell"></div><span id="analystSellLbl">Sälj (—)</span></div>
+      </div>
+      <div class="analyst-target-row">Riktkurs (median): <strong id="analystTarget">—</strong></div>
+    </div>
+
     <div class="modal-stats">
       <div class="stat-box"><div class="stat-label">Dagshögsta</div><div class="stat-value" id="statHigh">—</div></div>
       <div class="stat-box"><div class="stat-label">Dagslägsta</div><div class="stat-value" id="statLow">—</div></div>
@@ -880,6 +1019,7 @@ let fiStocks = initStocks(FI_DATA);
 function getAllStocks() { return [...seStocks, ...usStocks, ...deStocks, ...noStocks, ...fiStocks]; }
 
 let portfolio    = JSON.parse(localStorage.getItem('bp_portfolio') || '[]');
+let watchlist    = JSON.parse(localStorage.getItem('bp_watchlist')  || '[]');
 let sortCol      = 'name', sortDir = 1;
 let currentStock = null;
 let tvWidget     = null;
@@ -1129,6 +1269,7 @@ function renderTable() {
     const badge = (showMarketBadge && s.market !== 'SE')
       ? `<span class="market-badge ${s.market}">${s.market}</span>`
       : '';
+    const inWl = isInWatchlist(s.ticker);
     return `
     <tr>
       <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}${badge}<span class="stock-ticker">${s.ticker}</span></span></td>
@@ -1137,6 +1278,7 @@ function renderTable() {
       <td class="change-cell ${s.changePct >= 0 ? 'up' : 'down'}">${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%</td>
       <td>${(s.volume/1000).toFixed(0)}k</td>
       <td>${s.mcap} Mdr</td>
+      <td style="text-align:center"><button class="btn-wl-add ${inWl ? 'in-wl' : ''}" title="${inWl ? 'Ta bort från bevakningslista' : 'Lägg till i bevakningslista'}" onclick="toggleWatchlist('${s.ticker}')">${inWl ? '⭐' : '☆'}</button></td>
     </tr>`;
   }).join('');
 
@@ -1177,6 +1319,9 @@ function openModal(ticker) {
   document.getElementById('nkEPS').textContent   = nk.eps + ' ' + s.currency;
   document.getElementById('nkYield').textContent = nk.yield + '%';
   document.getElementById('nkPB').textContent    = nk.pb + 'x';
+
+  // Analyst recommendations
+  renderAnalystRecs(s.ticker, s.currency);
 
   // Hash routing for SEO
   window.location.hash = '#/aktie/' + s.name.toLowerCase().replace(/[\s&]/g,'-').replace(/[^a-z0-9-]/g,'');
@@ -1504,6 +1649,7 @@ function updatePrices() {
   renderWinnersLosers();
   renderTable();
   renderPortfolio();
+  renderWatchlist();
 
   if (currentStock) {
     currentStock = getAllStocks().find(s => s.ticker === currentStock.ticker) || currentStock;
@@ -1778,12 +1924,283 @@ renderNews();
   if (buttons[idx]) buttons[idx].classList.add('active');
 })();
 renderUtdelningar();
+renderWatchlist();
 
 fetchMacroRates();
 fetchLivePrices(); // hämta live-priser direkt vid sidladdning
 setInterval(updatePrices, 30000);
 setInterval(fetchMacroRates, 3600000);  // valutakurser varje timme
 setInterval(fetchLivePrices, 60000);    // live-priser var 60:e sekund
+
+// ─── ANALYST DATA ────────────────────────────────────────────────────────────
+const ANALYST_DATA = {
+  'VOLV-B':   { buy: 14, hold: 5, sell: 2, target: 285, currency: 'kr' },
+  'ERIC-B':   { buy: 10, hold: 6, sell: 3, target: 97,  currency: 'kr' },
+  'HM-B':     { buy: 6,  hold: 9, sell: 5, target: 155, currency: 'kr' },
+  'ATCO-A':   { buy: 12, hold: 7, sell: 2, target: 175, currency: 'kr' },
+  'INVE-B':   { buy: 11, hold: 5, sell: 1, target: 320, currency: 'kr' },
+  'SEB-A':    { buy: 9,  hold: 6, sell: 2, target: 185, currency: 'kr' },
+  'NDA-SE':   { buy: 13, hold: 4, sell: 1, target: 142, currency: 'kr' },
+  'SHB-A':    { buy: 7,  hold: 8, sell: 3, target: 118, currency: 'kr' },
+  'ABB':      { buy: 10, hold: 6, sell: 2, target: 88,  currency: 'kr' },
+  'SAND':     { buy: 11, hold: 5, sell: 2, target: 225, currency: 'kr' },
+  'SKF-B':    { buy: 8,  hold: 6, sell: 3, target: 210, currency: 'kr' },
+  'SSAB-A':   { buy: 7,  hold: 5, sell: 4, target: 62,  currency: 'kr' },
+  'BOL':      { buy: 10, hold: 5, sell: 2, target: 348, currency: 'kr' },
+  'TEL2-B':   { buy: 6,  hold: 7, sell: 4, target: 92,  currency: 'kr' },
+  'HEXA-B':   { buy: 9,  hold: 6, sell: 2, target: 122, currency: 'kr' },
+  'ALFA':     { buy: 13, hold: 4, sell: 1, target: 540, currency: 'kr' },
+  'EVO':      { buy: 15, hold: 3, sell: 1, target: 1180, currency: 'kr' },
+  'KINV-B':   { buy: 5,  hold: 6, sell: 3, target: 75,  currency: 'kr' },
+  'ESSITY-B': { buy: 7,  hold: 7, sell: 3, target: 275, currency: 'kr' },
+  'NIBE-B':   { buy: 8,  hold: 5, sell: 4, target: 78,  currency: 'kr' },
+  'AXFO':     { buy: 6,  hold: 8, sell: 2, target: 280, currency: 'kr' },
+  'GETI-B':   { buy: 7,  hold: 6, sell: 3, target: 190, currency: 'kr' },
+  'AAPL':     { buy: 28, hold: 8, sell: 3, target: 210, currency: '$'  },
+  'MSFT':     { buy: 32, hold: 6, sell: 1, target: 450, currency: '$'  },
+  'AMZN':     { buy: 30, hold: 7, sell: 2, target: 230, currency: '$'  },
+  'TSLA':     { buy: 12, hold: 14, sell: 12, target: 200, currency: '$' },
+  'GOOGL':    { buy: 26, hold: 8, sell: 2, target: 205, currency: '$'  },
+  'META':     { buy: 29, hold: 7, sell: 2, target: 600, currency: '$'  },
+  'NVDA':     { buy: 35, hold: 5, sell: 2, target: 950, currency: '$'  },
+  'JPM':      { buy: 18, hold: 8, sell: 3, target: 265, currency: '$'  },
+  'SAP':      { buy: 18, hold: 6, sell: 2, target: 230, currency: '€'  },
+  'SIE':      { buy: 16, hold: 7, sell: 3, target: 210, currency: '€'  },
+  'EQNR':     { buy: 20, hold: 8, sell: 4, target: 310, currency: 'kr' },
+  'NDA-FI':   { buy: 12, hold: 5, sell: 2, target: 14.5, currency: '€' },
+  'NOKIA':    { buy: 10, hold: 8, sell: 5, target: 4.8,  currency: '€' },
+  'KNEBV':    { buy: 11, hold: 7, sell: 3, target: 52,   currency: '€' },
+  'DNB':      { buy: 13, hold: 6, sell: 2, target: 245, currency: 'kr' },
+  'MOWI':     { buy: 9,  hold: 7, sell: 3, target: 210, currency: 'kr' },
+};
+
+function renderAnalystRecs(ticker, currency) {
+  const fallback = { buy: Math.floor(Math.random()*8)+4, hold: Math.floor(Math.random()*6)+2, sell: Math.floor(Math.random()*3)+1 };
+  const d = ANALYST_DATA[ticker] || { ...fallback, target: null, currency: currency };
+  const total = d.buy + d.hold + d.sell;
+  const buyPct  = (d.buy  / total * 100).toFixed(1);
+  const holdPct = (d.hold / total * 100).toFixed(1);
+  const sellPct = (d.sell / total * 100).toFixed(1);
+  document.getElementById('analystBarBuy').style.width   = buyPct  + '%';
+  document.getElementById('analystBarHold').style.width  = holdPct + '%';
+  document.getElementById('analystBarSell').style.width  = sellPct + '%';
+  document.getElementById('analystBuyLbl').textContent   = `Köp (${d.buy})`;
+  document.getElementById('analystHoldLbl').textContent  = `Behåll (${d.hold})`;
+  document.getElementById('analystSellLbl').textContent  = `Sälj (${d.sell})`;
+  const cur = d.currency || currency;
+  document.getElementById('analystTarget').textContent   = d.target ? `${d.target} ${cur}` : '—';
+}
+
+// ─── WATCHLIST ────────────────────────────────────────────────────────────────
+// watchlist is declared near portfolio in the state section above
+
+function saveWatchlist() { localStorage.setItem('bp_watchlist', JSON.stringify(watchlist)); }
+
+function isInWatchlist(ticker) { return watchlist.some(w => w.ticker === ticker); }
+
+function toggleWatchlist(ticker) {
+  if (isInWatchlist(ticker)) {
+    watchlist = watchlist.filter(w => w.ticker !== ticker);
+  } else {
+    watchlist.push({ ticker, note: '' });
+  }
+  saveWatchlist();
+  renderWatchlist();
+  renderTable(); // refresh "+" buttons
+}
+
+function removeFromWatchlist(ticker) {
+  watchlist = watchlist.filter(w => w.ticker !== ticker);
+  saveWatchlist();
+  renderWatchlist();
+  renderTable();
+}
+
+function updateWatchlistNote(ticker, note) {
+  const item = watchlist.find(w => w.ticker === ticker);
+  if (item) { item.note = note; saveWatchlist(); }
+}
+
+function renderWatchlist() {
+  const body = document.getElementById('watchlistBody');
+  const countEl = document.getElementById('watchlistCount');
+  countEl.textContent = watchlist.length + (watchlist.length === 1 ? ' aktie' : ' aktier');
+
+  if (!watchlist.length) {
+    body.innerHTML = '<div class="watchlist-empty">Din bevakningslista är tom. Klicka ⭐ i aktietabellen för att lägga till aktier.</div>';
+    return;
+  }
+  const rows = watchlist.map(w => {
+    const s = getAllStocks().find(x => x.ticker === w.ticker);
+    if (!s) return '';
+    const sign = s.changePct >= 0 ? '+' : '';
+    const cls  = s.changePct >= 0 ? 'up' : 'down';
+    return `<tr>
+      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td>${s.price.toFixed(2)} ${s.currency}</td>
+      <td class="change-cell ${cls}">${sign}${s.changePct.toFixed(2)}%</td>
+      <td><input type="text" placeholder="Anteckning..." value="${(w.note||'').replace(/"/g,'&quot;')}"
+            oninput="updateWatchlistNote('${s.ticker}',this.value)"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;outline:none;width:160px;"></td>
+      <td><button class="btn btn-danger" onclick="removeFromWatchlist('${s.ticker}')" style="padding:4px 10px;font-size:12px">Ta bort</button></td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Bolag</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Kurs</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Daglig %</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Notering</th>
+      <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const filter = document.getElementById('tableFilter').value.toLowerCase();
+  const pool   = getTableStocks();
+  const filtered = pool.filter(s => s.name.toLowerCase().includes(filter) || s.ticker.toLowerCase().includes(filter));
+
+  const header = ['Bolag','Ticker','Kurs','Förändring','%','Volym','Marknadsvärde (Mdr)','Marknad'];
+  const rows = filtered.map(s => [
+    `"${s.name}"`,
+    s.ticker,
+    s.price.toFixed(2),
+    s.change.toFixed(2),
+    s.changePct.toFixed(2),
+    s.volume,
+    s.mcap,
+    s.market
+  ]);
+
+  const csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const today = new Date().toISOString().slice(0, 10);
+  const filename = `borspulsen-aktier-${today}.csv`;
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ─── AKTIE-SCREENER ───────────────────────────────────────────────────────────
+let activePreset = null;
+
+function getScreenerStocks() {
+  return getAllStocks().map(s => {
+    const nk = NYCKELTAL[s.ticker];
+    return {
+      ...s,
+      peVal:    nk ? parseFloat(nk.pe)    : (8 + Math.random()*14),
+      yieldVal: nk ? parseFloat(nk.yield) : (1 + Math.random()*5)
+    };
+  });
+}
+
+function runScreener(preset) {
+  const yieldFilter  = document.getElementById('scYield').value;
+  const peFilter     = document.getElementById('scPE').value;
+  const mcapFilter   = document.getElementById('scMcap').value;
+  const marketFilter = document.getElementById('scMarket').value;
+
+  let stocks = getScreenerStocks();
+
+  // Apply filters
+  if (yieldFilter !== 'all') {
+    const minY = parseFloat(yieldFilter);
+    stocks = stocks.filter(s => s.yieldVal >= minY);
+  }
+  if (peFilter !== 'all') {
+    const maxPE = parseFloat(peFilter);
+    stocks = stocks.filter(s => s.peVal <= maxPE);
+  }
+  if (mcapFilter === 'large')  stocks = stocks.filter(s => s.mcap > 100);
+  if (mcapFilter === 'mid')    stocks = stocks.filter(s => s.mcap >= 10 && s.mcap <= 100);
+  if (mcapFilter === 'small')  stocks = stocks.filter(s => s.mcap < 10);
+  if (marketFilter !== 'all')  stocks = stocks.filter(s => s.market === marketFilter);
+
+  // Sort by preset
+  if (preset === 'yield') stocks.sort((a, b) => b.yieldVal - a.yieldVal);
+  else if (preset === 'pe') stocks.sort((a, b) => a.peVal - b.peVal);
+  else if (preset === 'mcap') stocks.sort((a, b) => b.mcap - a.mcap);
+
+  const countEl = document.getElementById('screenerCount');
+  countEl.textContent = `${stocks.length} aktie${stocks.length !== 1 ? 'r' : ''} hittades`;
+
+  const resultsDiv = document.getElementById('screenerResults');
+  if (!stocks.length) {
+    resultsDiv.innerHTML = '<div class="screener-empty">Inga aktier matchar dina filter. Prova bredare kriterier.</div>';
+    return;
+  }
+
+  const rows = stocks.map(s => {
+    const sign = s.changePct >= 0 ? '+' : '';
+    const cls  = s.changePct >= 0 ? 'up' : 'down';
+    const badgeHtml = s.market !== 'SE'
+      ? `<span class="market-badge ${s.market}">${s.market}</span>`
+      : '';
+    return `<tr>
+      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}${badgeHtml}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td>${s.ticker}</td>
+      <td style="font-size:10px;color:var(--text2)">${s.market}</td>
+      <td>${s.peVal.toFixed(1)}x</td>
+      <td class="up">${s.yieldVal.toFixed(1)}%</td>
+      <td>${s.mcap} Mdr</td>
+      <td class="${cls}">${s.price.toFixed(2)} ${s.currency}</td>
+    </tr>`;
+  }).join('');
+
+  resultsDiv.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Bolag</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Ticker</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Marknad</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">P/E</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Direktavkastn.</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Marknadsvärde</th>
+      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Kurs</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function applyPreset(type, btn) {
+  // Toggle active on preset buttons
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  if (activePreset === type) {
+    activePreset = null;
+    // Reset dropdowns and clear results
+    resetScreener();
+    return;
+  }
+  activePreset = type;
+  btn.classList.add('active');
+  // Reset dropdowns
+  document.getElementById('scYield').value  = 'all';
+  document.getElementById('scPE').value     = 'all';
+  document.getElementById('scMcap').value   = 'all';
+  document.getElementById('scMarket').value = 'all';
+  runScreener(type);
+}
+
+function resetScreener() {
+  activePreset = null;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('scYield').value  = 'all';
+  document.getElementById('scPE').value     = 'all';
+  document.getElementById('scMcap').value   = 'all';
+  document.getElementById('scMarket').value = 'all';
+  document.getElementById('screenerCount').textContent = '';
+  document.getElementById('screenerResults').innerHTML =
+    '<div class="screener-empty">Välj filter och klicka <strong>Filtrera</strong> för att söka bland aktier.</div>';
+}
 
 // Render mobile cards on table updates
 const origRenderTable = renderTable;
