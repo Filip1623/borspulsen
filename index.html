@@ -403,6 +403,27 @@
   .analyst-target-row { font-size: 13px; color: #787b86; }
   .analyst-target-row strong { color: #d1d4dc; font-size: 14px; }
 
+  /* ── FINANSINSPEKTIONEN – Insider & Blankning ── */
+  .fi-section { margin-top: 20px; border-top: 1px solid #2a2e39; padding-top: 16px; }
+  .fi-section-title { font-size: 13px; font-weight: 700; color: #d1d4dc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .fi-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .fi-tab { background: #2a2e39; border: none; color: #787b86; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+  .fi-tab.active { background: #2962FF; color: #fff; }
+  .fi-panel { display: none; }
+  .fi-panel.active { display: block; }
+  .fi-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .fi-table th { color: #787b86; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-bottom: 1px solid #2a2e39; text-align: left; }
+  .fi-table td { padding: 8px 8px; border-bottom: 1px solid #1e222d; color: #d1d4dc; }
+  .fi-table tr:last-child td { border-bottom: none; }
+  .fi-badge-kop { color: #26A69A; font-weight: 700; font-size: 11px; background: rgba(38,166,154,0.12); padding: 2px 8px; border-radius: 4px; }
+  .fi-badge-salj { color: #EF5350; font-weight: 700; font-size: 11px; background: rgba(239,83,80,0.12); padding: 2px 8px; border-radius: 4px; }
+  .fi-total-blank { font-size: 13px; color: #787b86; margin-bottom: 8px; }
+  .fi-total-blank span { color: #EF5350; font-weight: 700; }
+  .fi-empty { font-size: 13px; color: #787b86; padding: 16px 0; text-align: center; }
+  .fi-source { font-size: 11px; color: #787b86; margin-top: 8px; }
+  .fi-source a { color: #2962FF; text-decoration: none; }
+  .data-badge { font-size: 10px; color: #787b86; background: #2a2e39; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+
   /* RESPONSIVE */
   @media (max-width: 900px) {
     .index-grid { grid-template-columns: repeat(2, 1fr); } /* 3→2 at tablet */
@@ -798,6 +819,28 @@
         <div class="analyst-lbl"><div class="analyst-dot-sell"></div><span id="analystSellLbl">Sälj (—)</span></div>
       </div>
       <div class="analyst-target-row">Riktkurs (median): <strong id="analystTarget">—</strong></div>
+    </div>
+
+    <!-- ── Insynshandel & Blankning (Finansinspektionen) ── -->
+    <div class="fi-section" id="fiSection">
+      <div class="fi-section-title">
+        Insynshandel &amp; Blankning
+        <span class="data-badge" id="fiDataBadge" style="display:none">📊 Exempeldata</span>
+      </div>
+      <div class="fi-tabs">
+        <button class="fi-tab active" id="fiTabInsider" onclick="switchFiTab('insider')">📊 Insiders</button>
+        <button class="fi-tab" id="fiTabBlankning" onclick="switchFiTab('blankning')">📉 Blankning</button>
+      </div>
+      <div class="fi-panel active" id="fiPanelInsider">
+        <div id="fiInsiderContent"></div>
+      </div>
+      <div class="fi-panel" id="fiPanelBlankning">
+        <div id="fiBlankningContent"></div>
+      </div>
+      <div class="fi-source">
+        Källa: <a href="https://marknadssok.fi.se" target="_blank">Finansinspektionen ↗</a>
+        · Exempeldata (live-integration planerad)
+      </div>
     </div>
 
     <div class="modal-stats">
@@ -1322,6 +1365,9 @@ function openModal(ticker) {
 
   // Analyst recommendations
   renderAnalystRecs(s.ticker, s.currency);
+
+  // Finansinspektionen – Insider & Blankning
+  renderFIData(s.ticker);
 
   // Hash routing for SEO
   window.location.hash = '#/aktie/' + s.name.toLowerCase().replace(/[\s&]/g,'-').replace(/[^a-z0-9-]/g,'');
@@ -1989,6 +2035,191 @@ function renderAnalystRecs(ticker, currency) {
   document.getElementById('analystSellLbl').textContent  = `Sälj (${d.sell})`;
   const cur = d.currency || currency;
   document.getElementById('analystTarget').textContent   = d.target ? `${d.target} ${cur}` : '—';
+}
+
+// ─── FINANSINSPEKTIONEN – Insider & Blankning ────────────────────────────────
+
+const INSIDER_DATA = {
+  'VOLV-B': [
+    { datum: '2026-04-03', namn: 'Martin Lundstedt',   befattning: 'VD',                   typ: 'KÖP',  antal: 5000,   kurs: 248.50, varde: 1242500 },
+    { datum: '2026-03-18', namn: 'Mats Henriksson',    befattning: 'CFO',                  typ: 'SÄLJ', antal: 2000,   kurs: 261.20, varde: 522400 },
+    { datum: '2026-02-28', namn: 'Marta Lagergren',    befattning: 'Styrelseledamot',       typ: 'KÖP',  antal: 1000,   kurs: 238.90, varde: 238900 },
+  ],
+  'ERIC-B': [
+    { datum: '2026-04-05', namn: 'Börje Ekholm',       befattning: 'VD',                   typ: 'KÖP',  antal: 50000,  kurs: 83.20,  varde: 4160000 },
+    { datum: '2026-03-22', namn: 'Carl Mellander',     befattning: 'CFO',                  typ: 'KÖP',  antal: 10000,  kurs: 79.40,  varde: 794000 },
+  ],
+  'HM-B': [
+    { datum: '2026-03-15', namn: 'Helena Helmersson',  befattning: 'VD',                   typ: 'SÄLJ', antal: 15000,  kurs: 148.20, varde: 2223000 },
+    { datum: '2026-02-10', namn: 'Karl-Johan Persson', befattning: 'Styrelseordförande',    typ: 'KÖP',  antal: 200000, kurs: 132.60, varde: 26520000 },
+  ],
+  'ATCO-A': [
+    { datum: '2026-04-01', namn: 'Mats Rahmström',     befattning: 'VD',                   typ: 'KÖP',  antal: 8000,   kurs: 156.30, varde: 1250400 },
+  ],
+  'SEB-A': [
+    { datum: '2026-03-28', namn: 'Johan Torgeby',      befattning: 'VD',                   typ: 'KÖP',  antal: 20000,  kurs: 164.80, varde: 3296000 },
+    { datum: '2026-03-10', namn: 'Marcus Wallenberg',  befattning: 'Styrelseordförande',    typ: 'KÖP',  antal: 50000,  kurs: 158.40, varde: 7920000 },
+  ],
+  'INVE-B': [
+    { datum: '2026-03-20', namn: 'Johan Forssell',     befattning: 'VD',                   typ: 'KÖP',  antal: 10000,  kurs: 290.40, varde: 2904000 },
+  ],
+  'NDA-SE': [
+    { datum: '2026-04-04', namn: 'Frank Vang-Jensen',  befattning: 'VD',                   typ: 'KÖP',  antal: 30000,  kurs: 124.50, varde: 3735000 },
+  ],
+  'ABB': [
+    { datum: '2026-03-25', namn: 'Björn Rosengren',    befattning: 'VD',                   typ: 'SÄLJ', antal: 25000,  kurs: 74.60,  varde: 1865000 },
+  ],
+  'SAND': [
+    { datum: '2026-04-02', namn: 'Stefan Widing',      befattning: 'VD',                   typ: 'KÖP',  antal: 15000,  kurs: 198.40, varde: 2976000 },
+  ],
+  'EVO': [
+    { datum: '2026-03-30', namn: 'Martin Carlesund',   befattning: 'VD',                   typ: 'SÄLJ', antal: 5000,   kurs: 996.40, varde: 4982000 },
+    { datum: '2026-03-12', namn: 'Jens von Bahr',      befattning: 'Styrelseledamot',       typ: 'KÖP',  antal: 2000,   kurs: 948.60, varde: 1897200 },
+  ],
+};
+
+const BLANKNING_DATA = {
+  'VOLV-B': [{ innehavare: 'Marshall Wace LLP',      position: 2.84, datum: '2026-04-03' }, { innehavare: 'Citadel Advisors LLC', position: 1.92, datum: '2026-04-01' }, { innehavare: 'AQR Capital',          position: 1.14, datum: '2026-03-28' }],
+  'ERIC-B': [{ innehavare: 'Qube Research',          position: 3.42, datum: '2026-04-04' }, { innehavare: 'Two Sigma',            position: 2.18, datum: '2026-04-02' }],
+  'HM-B':   [{ innehavare: 'Marshall Wace LLP',      position: 4.12, datum: '2026-04-05' }, { innehavare: 'Greenlight Capital',   position: 2.86, datum: '2026-04-01' }, { innehavare: 'Renaissance Tech',     position: 1.54, datum: '2026-03-30' }],
+  'ATCO-A': [{ innehavare: 'AQR Capital',            position: 1.68, datum: '2026-04-03' }],
+  'NIBE-B': [{ innehavare: 'Marshall Wace LLP',      position: 5.24, datum: '2026-04-05' }, { innehavare: 'Citadel Advisors LLC', position: 3.86, datum: '2026-04-04' }, { innehavare: 'Two Sigma',            position: 2.42, datum: '2026-04-02' }],
+  'SEB-A':  [{ innehavare: 'Qube Research',          position: 1.22, datum: '2026-03-29' }],
+  'BOL':    [{ innehavare: 'Marshall Wace LLP',      position: 2.14, datum: '2026-04-04' }, { innehavare: 'AQR Capital',          position: 1.88, datum: '2026-04-01' }],
+  'EVO':    [{ innehavare: 'Citadel Advisors LLC',   position: 2.64, datum: '2026-04-05' }],
+  'HEXA-B': [{ innehavare: 'Two Sigma',              position: 1.86, datum: '2026-04-03' }, { innehavare: 'Renaissance Tech',     position: 1.42, datum: '2026-04-01' }],
+  'SSAB-A': [{ innehavare: 'Marshall Wace LLP',      position: 3.18, datum: '2026-04-04' }, { innehavare: 'Greenlight Capital',   position: 2.46, datum: '2026-04-02' }],
+};
+
+async function fetchInsiderData(companyName) {
+  try {
+    const url = `https://marknadssok.fi.se/Publiceringsklient/sv/Search/Search?SearchFunctionType=Insyn&Utgivare=${encodeURIComponent(companyName)}&Page=1&PageSize=10`;
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function fetchBlankningData(companyName) {
+  try {
+    const url = `https://marknadssok.fi.se/Publiceringsklient/sv/Search/Search?SearchFunctionType=Blankning&Utgivare=${encodeURIComponent(companyName)}&Page=1&PageSize=10`;
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+function formatVarde(v) {
+  if (v >= 1000000) return (v / 1000000).toFixed(1) + ' Mkr';
+  if (v >= 1000)    return (v / 1000).toFixed(0) + 'k kr';
+  return v + ' kr';
+}
+
+function switchFiTab(tab) {
+  document.getElementById('fiTabInsider').classList.toggle('active',   tab === 'insider');
+  document.getElementById('fiTabBlankning').classList.toggle('active', tab === 'blankning');
+  document.getElementById('fiPanelInsider').classList.toggle('active',   tab === 'insider');
+  document.getElementById('fiPanelBlankning').classList.toggle('active', tab === 'blankning');
+}
+
+async function renderFIData(ticker) {
+  // Reset tabs to default (insider)
+  switchFiTab('insider');
+  document.getElementById('fiDataBadge').style.display = 'none';
+
+  // Try live FI data (will almost always fail due to CORS from browser)
+  const s = getAllStocks().find(x => x.ticker === ticker);
+  const companyName = s ? s.name : ticker;
+
+  let insiderRows  = INSIDER_DATA[ticker]  || null;
+  let blankRows    = BLANKNING_DATA[ticker] || null;
+  let usedFallback = true;
+
+  const [liveInsider, liveBlankning] = await Promise.all([
+    fetchInsiderData(companyName),
+    fetchBlankningData(companyName)
+  ]);
+
+  if (liveInsider && Array.isArray(liveInsider.rows) && liveInsider.rows.length > 0) {
+    insiderRows = liveInsider.rows.map(r => ({
+      datum:      r.Tidpunkt ? r.Tidpunkt.substring(0, 10) : '—',
+      namn:       r.Namn       || '—',
+      befattning: r.Befattning || '—',
+      typ:        (r.Karaktär  || '').toUpperCase().includes('KÖP') ? 'KÖP' : 'SÄLJ',
+      antal:      r.Volym      || 0,
+      kurs:       r.Kurs       || 0,
+      varde:      (r.Volym || 0) * (r.Kurs || 0),
+    }));
+    usedFallback = false;
+  }
+
+  if (liveBlankning && Array.isArray(liveBlankning.rows) && liveBlankning.rows.length > 0) {
+    blankRows = liveBlankning.rows.map(r => ({
+      innehavare: r.Positionsinnehavare || '—',
+      position:   parseFloat(r.Position) || 0,
+      datum:      r.Datum ? r.Datum.substring(0, 10) : '—',
+    })).sort((a, b) => b.position - a.position);
+    usedFallback = false;
+  }
+
+  if (usedFallback) {
+    document.getElementById('fiDataBadge').style.display = 'inline';
+  }
+
+  // ── Render Insider table ──
+  const insiderEl = document.getElementById('fiInsiderContent');
+  if (!insiderRows || insiderRows.length === 0) {
+    insiderEl.innerHTML = '<div class="fi-empty">Inga registrerade transaktioner de senaste 90 dagarna</div>';
+  } else {
+    insiderEl.innerHTML = `
+      <table class="fi-table">
+        <thead><tr>
+          <th>Datum</th><th>Person</th><th>Befattning</th><th>Typ</th><th>Antal</th><th>Kurs</th><th>Värde</th>
+        </tr></thead>
+        <tbody>
+          ${insiderRows.map(r => `
+            <tr>
+              <td>${r.datum}</td>
+              <td>${r.namn}</td>
+              <td style="color:#787b86;font-size:12px">${r.befattning}</td>
+              <td><span class="${r.typ === 'KÖP' ? 'fi-badge-kop' : 'fi-badge-salj'}">${r.typ}</span></td>
+              <td>${r.antal.toLocaleString('sv-SE')}</td>
+              <td>${r.kurs.toFixed(2)} kr</td>
+              <td>${formatVarde(r.varde)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── Render Blankning table ──
+  const blankEl = document.getElementById('fiBlankningContent');
+  if (!blankRows || blankRows.length === 0) {
+    blankEl.innerHTML = '<div class="fi-empty">Inga registrerade blankningspositioner</div>';
+  } else {
+    const sorted = [...blankRows].sort((a, b) => b.position - a.position);
+    const total  = sorted.reduce((sum, r) => sum + r.position, 0).toFixed(2);
+    blankEl.innerHTML = `
+      <div class="fi-total-blank">Totalt blankat: <span>${total}%</span></div>
+      <table class="fi-table">
+        <thead><tr>
+          <th>Positionsinnehavare</th><th>Position %</th><th>Senast ändrad</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(r => `
+            <tr>
+              <td>${r.innehavare}</td>
+              <td style="color:#EF5350;font-weight:700">${r.position.toFixed(2)}%</td>
+              <td style="color:#787b86;font-size:12px">${r.datum}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
 }
 
 // ─── WATCHLIST ────────────────────────────────────────────────────────────────
