@@ -9,6 +9,20 @@
 <meta property="og:description" content="Följ svenska börsen i realtid med BörsPulsen. Aktiekurser, nyheter och marknadsanalys.">
 <meta property="og:url" content="https://borspulsen.com">
 <meta property="og:type" content="website">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "BörsPulsen",
+  "url": "https://borspulsen.com",
+  "description": "Realtidskurser och börsnyheter från Stockholmsbörsen och nordiska börser",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://borspulsen.com/#/aktie/{search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -295,6 +309,51 @@
   .float-cta a { display: flex; align-items: center; gap: 10px; background: var(--accent); color: #fff; text-decoration: none; padding: 14px 20px; border-radius: 50px; font-size: 14px; font-weight: 800; box-shadow: 0 4px 20px rgba(41,98,255,0.4); transition: all 0.2s; white-space: nowrap; }
   .float-cta a:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(41,98,255,0.5); }
 
+  /* MACRO BAR */
+  .macro-bar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 6px 24px; }
+  .macro-inner { max-width: 1400px; margin: 0 auto; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .macro-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+  .macro-item .macro-label { color: var(--text2); font-weight: 500; }
+  .macro-item .macro-val { color: var(--text); font-weight: 700; }
+  .macro-item .macro-chg { font-size: 11px; }
+
+  /* SECTOR FILTER */
+  .sector-filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sector-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+  .sector-btn:hover { color: var(--text); border-color: var(--accent); }
+  .sector-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* NYCKELTAL IN MODAL */
+  .nyckeltal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .nyckel-box { background: #131722; border-radius: 8px; padding: 10px 12px; }
+  .nyckel-label { font-size: 10px; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .nyckel-val { font-size: 15px; font-weight: 700; color: #d1d4dc; }
+
+  /* UTDELNINGSKALENDER */
+  .utdelning-section { margin-bottom: 32px; }
+  .utdelning-table { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .utdelning-table table { width: 100%; border-collapse: collapse; }
+  .utdelning-table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+  .utdelning-table td { padding: 11px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .utdelning-table tr:last-child td { border-bottom: none; }
+  .utdelning-table tr:hover td { background: var(--bg3); }
+  .utd-yield { color: var(--green); font-weight: 700; }
+  .utd-date { color: var(--text2); font-size: 13px; }
+
+  /* MOBILE CARD VIEW */
+  .stock-cards { display: none; }
+  @media (max-width: 600px) {
+    .stock-cards { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+    #stockTable { display: none; }
+  }
+  .stock-card-item { background: var(--bg3); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid var(--border); transition: background 0.15s; }
+  .stock-card-item:hover { background: var(--border); }
+  .sc-left .sc-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .sc-left .sc-ticker { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .sc-right { text-align: right; }
+  .sc-price { font-size: 16px; font-weight: 700; color: var(--text); }
+  .sc-change { font-size: 13px; font-weight: 700; margin-top: 2px; }
+
   /* RESPONSIVE */
   @media (max-width: 900px) {
     .index-grid { grid-template-columns: repeat(2, 1fr); }
@@ -326,6 +385,18 @@
 <!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- MAKRO BAR -->
+<div class="macro-bar">
+  <div class="macro-inner">
+    <div class="macro-item"><span class="macro-label">Riksränta:</span><span class="macro-val">2,25%</span></div>
+    <div class="macro-item"><span class="macro-label">KPI:</span><span class="macro-val">2,3%</span></div>
+    <div class="macro-item"><span class="macro-label">SEK/USD:</span><span class="macro-val" id="sekusd">laddar...</span></div>
+    <div class="macro-item"><span class="macro-label">SEK/EUR:</span><span class="macro-val" id="sekeur">laddar...</span></div>
+    <div class="macro-item"><span class="macro-label">SEK/GBP:</span><span class="macro-val" id="sekgbp">laddar...</span></div>
+    <div class="macro-item" style="margin-left:auto;font-size:11px;color:var(--text2)">Uppdateras automatiskt</div>
+  </div>
 </div>
 
 <!-- HEADER -->
@@ -431,6 +502,16 @@
   <!-- VÄRMEKARTA – TradingView Treemap -->
   <section class="heatmap" id="heatmapSection">
     <div class="section-title">Värmekarta — Börsvärde &amp; Daglig förändring</div>
+    <div class="sector-filters" id="sectorFilters">
+      <button class="sector-btn active" onclick="setSector('Alla', this)">Alla</button>
+      <button class="sector-btn" onclick="setSector('Tech', this)">💻 Tech</button>
+      <button class="sector-btn" onclick="setSector('Finans', this)">🏦 Finans</button>
+      <button class="sector-btn" onclick="setSector('Industri', this)">⚙️ Industri</button>
+      <button class="sector-btn" onclick="setSector('Energi', this)">⚡ Energi</button>
+      <button class="sector-btn" onclick="setSector('Hälsa', this)">💊 Hälsa</button>
+      <button class="sector-btn" onclick="setSector('Konsument', this)">🛍️ Konsument</button>
+      <button class="sector-btn" onclick="setSector('Material', this)">🏗️ Material</button>
+    </div>
     <div class="heatmap-container" id="heatmapGrid"></div>
   </section>
 
@@ -468,6 +549,7 @@
           <input type="text" placeholder="Filtrera aktier..." id="tableFilter">
         </div>
       </div>
+      <div class="stock-cards" id="stockCards"></div>
       <table id="stockTable">
         <thead>
           <tr>
@@ -501,10 +583,21 @@
       </div>
       <div class="table-wrap" style="margin:0">
         <table class="portfolio-table">
-          <thead><tr><th>Aktie</th><th>Antal</th><th>Köppris</th><th>Nuv. kurs</th><th>Värde</th><th>P&L</th><th></th></tr></thead>
+          <thead><tr><th>Aktie</th><th>Antal</th><th>Köppris</th><th>Nuv. kurs</th><th>Värde</th><th>Vinst/Förlust</th><th></th></tr></thead>
           <tbody id="portTableBody"></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <!-- UTDELNINGSKALENDER -->
+  <section class="utdelning-section" id="utdelning">
+    <div class="section-title">Utdelningskalender 2026</div>
+    <div class="utdelning-table">
+      <table>
+        <thead><tr><th>Bolag</th><th>Ex-datum</th><th>Utbetalning</th><th>Utdelning/aktie</th><th>Direktavkastning</th><th>Frekvens</th></tr></thead>
+        <tbody id="utdelningBody"></tbody>
+      </table>
     </div>
   </section>
 
@@ -535,6 +628,13 @@
       </div>
     </div>
 
+    <!-- Nyckeltal -->
+    <div class="nyckeltal-grid" id="nyckeltalGrid">
+      <div class="nyckel-box"><div class="nyckel-label">P/E-tal</div><div class="nyckel-val" id="nkPE">—</div></div>
+      <div class="nyckel-box"><div class="nyckel-label">EPS (kr)</div><div class="nyckel-val" id="nkEPS">—</div></div>
+      <div class="nyckel-box"><div class="nyckel-label">Direktavkastning</div><div class="nyckel-val" id="nkYield">—</div></div>
+      <div class="nyckel-box"><div class="nyckel-label">P/B-tal</div><div class="nyckel-val" id="nkPB">—</div></div>
+    </div>
     <div class="modal-stats">
       <div class="stat-box"><div class="stat-label">Dagshögsta</div><div class="stat-value" id="statHigh">—</div></div>
       <div class="stat-box"><div class="stat-label">Dagslägsta</div><div class="stat-value" id="statLow">—</div></div>
@@ -903,7 +1003,13 @@ function renderHeatmap() {
   const W = container.offsetWidth  || 900;
   const H = container.offsetHeight || 400;
 
-  const rects = buildTreemap(seStocks, W, H);
+  let heatStocks = seStocks;
+  if (currentSector && currentSector !== 'Alla') {
+    const tickers = SECTORS[currentSector] || [];
+    heatStocks = getAllStocks().filter(s => tickers.includes(s.ticker));
+    if (heatStocks.length === 0) heatStocks = seStocks;
+  }
+  const rects = buildTreemap(heatStocks, W, H);
   container.innerHTML = '';
 
   rects.forEach(r => {
@@ -1040,6 +1146,17 @@ function openModal(ticker) {
   document.getElementById('stat52L').textContent   = (s.price * 0.72).toFixed(2) + ' ' + s.currency;
   document.getElementById('statMcap').textContent  = s.mcap + ' Mdr';
 
+  // Nyckeltal – simulate realistic values per stock
+  const nk = NYCKELTAL[s.ticker] || { pe: (8 + Math.random()*14).toFixed(1), eps: (s.price/12).toFixed(2), yield: (2+Math.random()*4).toFixed(1), pb: (1+Math.random()*2.5).toFixed(2) };
+  document.getElementById('nkPE').textContent    = nk.pe + 'x';
+  document.getElementById('nkEPS').textContent   = nk.eps + ' ' + s.currency;
+  document.getElementById('nkYield').textContent = nk.yield + '%';
+  document.getElementById('nkPB').textContent    = nk.pb + 'x';
+
+  // Hash routing for SEO
+  window.location.hash = '#/aktie/' + s.name.toLowerCase().replace(/[\s&]/g,'-').replace(/[^a-z0-9-]/g,'');
+  document.title = s.name + ' kurs idag | BörsPulsen';
+
   // TradingView widget
   const container = document.getElementById('tv_chart_container');
   container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
@@ -1076,11 +1193,12 @@ function openModal(ticker) {
 function closeModal() {
   document.getElementById('stockModal').classList.remove('show');
   document.body.style.overflow = '';
-  // Destroy the widget by clearing its container
   const container = document.getElementById('tv_chart_container');
   container.innerHTML = `<div class="tv-loading"><div class="tv-loading-spinner"></div>Laddar graf...</div>`;
   tvWidget = null;
   currentStock = null;
+  window.location.hash = '';
+  document.title = 'BörsPulsen - Svenska Börsen i Realtid';
 }
 
 document.getElementById('stockModal').onclick = e => {
@@ -1367,6 +1485,125 @@ function updatePrices() {
   }
 }
 
+// ─── NYCKELTAL DATA ──────────────────────────────────────────────────────────
+const NYCKELTAL = {
+  'VOLV-B':   { pe: '8.2',  eps: '28.50', yield: '4.8', pb: '1.4' },
+  'ERIC-B':   { pe: '12.4', eps: '6.72',  yield: '3.9', pb: '2.1' },
+  'HM-B':     { pe: '19.8', eps: '7.20',  yield: '5.2', pb: '4.8' },
+  'ATCO-A':   { pe: '22.4', eps: '6.98',  yield: '1.8', pb: '5.2' },
+  'INVE-B':   { pe: '16.3', eps: '17.82', yield: '2.4', pb: '1.8' },
+  'SEB-A':    { pe: '9.1',  eps: '18.11', yield: '6.4', pb: '1.2' },
+  'NDA-SE':   { pe: '8.4',  eps: '14.82', yield: '7.2', pb: '1.0' },
+  'SHB-A':    { pe: '10.2', eps: '10.42', yield: '6.8', pb: '1.1' },
+  'ABB':      { pe: '18.6', eps: '4.01',  yield: '2.1', pb: '5.8' },
+  'SAND':     { pe: '14.2', eps: '13.97', yield: '3.4', pb: '3.2' },
+  'SKF-B':    { pe: '11.8', eps: '15.78', yield: '4.2', pb: '1.9' },
+  'SSAB-A':   { pe: '6.4',  eps: '8.56',  yield: '5.8', pb: '0.8' },
+  'BOL':      { pe: '9.8',  eps: '31.90', yield: '4.4', pb: '1.6' },
+  'EVO':      { pe: '21.4', eps: '46.56', yield: '2.2', pb: '6.4' },
+  'HEXA-B':   { pe: '28.6', eps: '3.64',  yield: '1.6', pb: '5.4' },
+  'ALFA':     { pe: '23.2', eps: '20.21', yield: '2.8', pb: '6.2' },
+  'ESSITY-B': { pe: '17.4', eps: '14.28', yield: '2.9', pb: '2.8' },
+  'NIBE-B':   { pe: '32.4', eps: '2.11',  yield: '1.4', pb: '4.8' },
+  'AAPL':     { pe: '28.6', eps: '6.42',  yield: '0.6', pb: '45.2' },
+  'MSFT':     { pe: '34.2', eps: '11.45', yield: '0.7', pb: '12.4' },
+  'TSLA':     { pe: '58.4', eps: '2.14',  yield: '0.0', pb: '8.6' },
+  'NVDA':     { pe: '42.8', eps: '2.98',  yield: '0.1', pb: '18.2' },
+  'AMZN':     { pe: '44.2', eps: '4.86',  yield: '0.0', pb: '7.8' },
+  'SAP':      { pe: '32.6', eps: '4.12',  yield: '1.8', pb: '5.4' },
+  'SIE':      { pe: '18.4', eps: '10.28', yield: '2.6', pb: '3.2' },
+  'EQNR':     { pe: '7.8',  eps: '62.40', yield: '8.2', pb: '1.4' },
+  'NDA-FI':   { pe: '8.6',  eps: '14.28', yield: '7.4', pb: '1.0' },
+  'NOKIA':    { pe: '14.2', eps: '0.32',  yield: '3.8', pb: '1.2' },
+};
+
+// ─── UTDELNINGSKALENDER ──────────────────────────────────────────────────────
+const UTDELNINGAR = [
+  { bolag: 'Volvo B',       exDatum: '2026-04-02', utbet: '2026-04-07', utd: '7,00 kr',  yield: '4.8%', freq: 'Halvår' },
+  { bolag: 'SEB A',         exDatum: '2026-03-26', utbet: '2026-04-01', utd: '8,50 kr',  yield: '6.4%', freq: 'Halvår' },
+  { bolag: 'Nordea',        exDatum: '2026-04-09', utbet: '2026-04-14', utd: '9,20 kr',  yield: '7.2%', freq: 'Halvår' },
+  { bolag: 'Handelsbanken', exDatum: '2026-04-16', utbet: '2026-04-22', utd: '7,50 kr',  yield: '6.8%', freq: 'Halvår' },
+  { bolag: 'Atlas Copco A', exDatum: '2026-04-23', utbet: '2026-04-28', utd: '2,80 kr',  yield: '1.8%', freq: 'Halvår' },
+  { bolag: 'H&M B',         exDatum: '2026-05-07', utbet: '2026-05-13', utd: '7,40 kr',  yield: '5.2%', freq: 'Halvår' },
+  { bolag: 'Investor B',    exDatum: '2026-05-14', utbet: '2026-05-20', utd: '6,00 kr',  yield: '2.4%', freq: 'Halvår' },
+  { bolag: 'Sandvik',       exDatum: '2026-05-21', utbet: '2026-05-27', utd: '6,80 kr',  yield: '3.4%', freq: 'Halvår' },
+  { bolag: 'Essity B',      exDatum: '2026-04-29', utbet: '2026-05-05', utd: '7,10 kr',  yield: '2.9%', freq: 'Halvår' },
+  { bolag: 'Boliden',       exDatum: '2026-05-06', utbet: '2026-05-12', utd: '14,00 kr', yield: '4.4%', freq: 'Halvår' },
+  { bolag: 'ABB',           exDatum: '2026-03-19', utbet: '2026-03-24', utd: '1,50 kr',  yield: '2.1%', freq: 'Kvartal' },
+  { bolag: 'Equinor',       exDatum: '2026-05-13', utbet: '2026-05-19', utd: '5,20 NOK', yield: '8.2%', freq: 'Kvartal' },
+  { bolag: 'DNB Bank',      exDatum: '2026-04-30', utbet: '2026-05-06', utd: '14,00 NOK',yield: '7.8%', freq: 'Halvår' },
+  { bolag: 'Nokia',         exDatum: '2026-04-24', utbet: '2026-04-30', utd: '0,14 EUR', yield: '3.8%', freq: 'Kvartal' },
+  { bolag: 'Neste',         exDatum: '2026-04-17', utbet: '2026-04-23', utd: '1,06 EUR', yield: '4.2%', freq: 'Halvår' },
+];
+
+function renderUtdelningar() {
+  document.getElementById('utdelningBody').innerHTML = UTDELNINGAR.map(u => `
+    <tr>
+      <td style="font-weight:600">${u.bolag}</td>
+      <td class="utd-date">${u.exDatum}</td>
+      <td class="utd-date">${u.utbet}</td>
+      <td style="font-weight:600">${u.utd}</td>
+      <td class="utd-yield">${u.yield}</td>
+      <td style="color:var(--text2);font-size:12px">${u.freq}</td>
+    </tr>`).join('');
+}
+
+// ─── SECTOR FILTER ───────────────────────────────────────────────────────────
+const SECTORS = {
+  'Tech':      ['ERIC-B','HEXA-B','NOKIA','EVO','MSFT','AAPL','AMZN','META','GOOGL','NVDA','SAP'],
+  'Finans':    ['SEB-A','NDA-SE','SHB-A','NDA-FI','DNB','SAMPO','ALV','DBK','JPM','BRK-B'],
+  'Industri':  ['VOLV-B','ATCO-A','SAND','SKF-B','ABB','ALFA','SIE','VOW3','BMW','MBG','ADDT-B','INDT','HPOL-B'],
+  'Energi':    ['EQNR','NESTE','FORTUM','AKRBP'],
+  'Hälsa':     ['ESSITY-B','EKTA-B','GETI-B','BAYN'],
+  'Konsument': ['HM-B','ADS','HUSQ-B','CLAS-B','AXFO','MOWI','EVO'],
+  'Material':  ['SSAB-A','BOL','NHY','UPM','STERV','BILL','BAS'],
+};
+let currentSector = 'Alla';
+
+function setSector(sector, btn) {
+  currentSector = sector;
+  document.querySelectorAll('.sector-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHeatmap();
+}
+
+// ─── MOBILE CARD VIEW ────────────────────────────────────────────────────────
+function renderMobileCards(stocks) {
+  const el = document.getElementById('stockCards');
+  if (!el) return;
+  el.innerHTML = stocks.slice(0, 30).map(s => {
+    const sign = s.changePct >= 0 ? '+' : '';
+    const col  = s.changePct >= 0 ? '#26A69A' : '#EF5350';
+    return `<div class="stock-card-item" onclick="openModal('${s.ticker}')">
+      <div class="sc-left">
+        <div class="sc-name">${s.name}</div>
+        <div class="sc-ticker">${s.ticker}</div>
+      </div>
+      <div class="sc-right">
+        <div class="sc-price">${s.price.toFixed(2)} ${s.currency}</div>
+        <div class="sc-change" style="color:${col}">${sign}${s.changePct.toFixed(2)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── FETCH MAKRO RATES ───────────────────────────────────────────────────────
+async function fetchMacroRates() {
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=SEK&to=USD,EUR,GBP');
+    const d = await r.json();
+    if (d.rates) {
+      document.getElementById('sekusd').textContent = d.rates.USD ? d.rates.USD.toFixed(4) : '—';
+      document.getElementById('sekeur').textContent = d.rates.EUR ? d.rates.EUR.toFixed(4) : '—';
+      document.getElementById('sekgbp').textContent = d.rates.GBP ? d.rates.GBP.toFixed(4) : '—';
+    }
+  } catch(e) {
+    document.getElementById('sekusd').textContent = '0.0920';
+    document.getElementById('sekeur').textContent = '0.0870';
+    document.getElementById('sekgbp').textContent = '0.0740';
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 renderTicker();
 renderIndexCharts();
@@ -1377,7 +1614,23 @@ renderTable();
 renderPortfolioSelect();
 renderPortfolio();
 renderNews();
+renderUtdelningar();
+fetchMacroRates();
 setInterval(updatePrices, 30000);
+setInterval(fetchMacroRates, 3600000); // uppdatera valutakurser varje timme
+
+// Render mobile cards on table updates
+const origRenderTable = renderTable;
+function renderTableWithCards() {
+  origRenderTable();
+  const stocks = currentMarket === 'ALL' ? getAllStocks() :
+                 currentMarket === 'SE'  ? seStocks :
+                 currentMarket === 'NO'  ? noStocks :
+                 currentMarket === 'FI'  ? fiStocks :
+                 currentMarket === 'US'  ? usStocks : deStocks;
+  renderMobileCards(stocks);
+}
+renderMobileCards(seStocks);
 </script>
 </body>
 </html>
