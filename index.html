@@ -336,6 +336,30 @@
   .article-source { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
   .article-source a { color:var(--accent); text-decoration:none; }
   .article-source a:hover { text-decoration:underline; }
+
+  /* AI NYHETSRADAR */
+  .impact-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .impact-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .impact-header-icon { font-size: 14px; }
+  .impact-header-title { font-size: 13px; font-weight: 800; color: var(--text); }
+  .impact-header-badge { font-size: 11px; background: linear-gradient(135deg, rgba(27,79,216,0.15), rgba(99,102,241,0.15)); color: var(--accent); padding: 2px 8px; border-radius: 10px; font-weight: 700; border: 1px solid rgba(27,79,216,0.2); }
+  .impact-loading { font-size: 13px; color: var(--text2); padding: 8px 0; }
+  .impact-stocks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .impact-stock { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg3); border-radius: 10px; border: 1px solid var(--border); transition: background 0.15s; }
+  [data-theme="light"] .impact-stock { background: #F8FAFC; }
+  .impact-stock-dir { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; font-weight: 800; }
+  .impact-dir-up   { background: rgba(22,163,74,0.15); color: #16A34A; }
+  .impact-dir-down { background: rgba(220,38,38,0.15); color: #DC2626; }
+  .impact-dir-neutral { background: rgba(100,116,139,0.15); color: #64748B; }
+  .impact-stock-info { flex: 1; min-width: 0; }
+  .impact-stock-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .impact-stock-reason { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .impact-stock-ticker { font-size: 11px; color: var(--accent); font-weight: 600; }
+  .impact-confidence { font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 700; flex-shrink: 0; }
+  .impact-conf-high { background: rgba(22,163,74,0.12); color: #16A34A; }
+  .impact-conf-medium { background: rgba(234,179,8,0.12); color: #CA8A04; }
+  .impact-conf-low { background: rgba(100,116,139,0.12); color: #64748B; }
+  .impact-summary { font-size: 12px; color: var(--text2); line-height: 1.5; font-style: italic; padding: 10px 12px; background: rgba(27,79,216,0.06); border-radius: 8px; border-left: 3px solid var(--accent); }
   .tag-bors { background: rgba(59,130,246,0.15); color: var(--accent2); }
   .tag-analys { background: rgba(245,158,11,0.15); color: var(--accent); }
   .tag-makro { background: rgba(16,185,129,0.15); color: var(--green); }
@@ -1034,6 +1058,18 @@
     <div class="article-meta" id="articleMeta"></div>
     <div class="article-body" id="articleBody"></div>
     <div class="article-source" id="articleSource"></div>
+
+    <!-- AI NYHETSRADAR -->
+    <div class="impact-section" id="impactSection" style="display:none">
+      <div class="impact-header">
+        <span class="impact-header-icon">✦</span>
+        <span class="impact-header-title">AI Aktieradar</span>
+        <span class="impact-header-badge">Påverkade aktier</span>
+      </div>
+      <div id="impactContent">
+        <div class="impact-loading">Analyserar nyheten...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2000,8 +2036,56 @@ function openArticle(i) {
     ? `<p>${escapeHTML(n.summary)}</p>`
     : '<p>Ingen sammanfattning tillgänglig.</p>';
   document.getElementById('articleSource').innerHTML = `Källa: <a href="${escapeHTML(n.url)}" target="_blank" rel="noopener">${escapeHTML(n.source)} ↗</a>`;
+
+  // Visa AI-radar och starta analys
+  const impactSection = document.getElementById('impactSection');
+  const impactContent = document.getElementById('impactContent');
+  impactSection.style.display = 'block';
+  impactContent.innerHTML = '<div class="impact-loading">⏳ AI analyserar aktieeffekter...</div>';
+  fetchNewsImpact(n.title, n.summary);
+
   document.getElementById('articleOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
+}
+
+async function fetchNewsImpact(headline, summary) {
+  const content = document.getElementById('impactContent');
+  try {
+    const res = await fetch('/.netlify/functions/news-impact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ headline, summary }),
+    });
+    const data = await res.json();
+
+    if (!data.stocks || data.stocks.length === 0) {
+      content.innerHTML = '<div class="impact-loading">Inga direkta svenska aktier identifierade för denna nyhet.</div>';
+      return;
+    }
+
+    const dirIcon = { up: '▲', down: '▼', neutral: '—' };
+    const dirCls  = { up: 'impact-dir-up', down: 'impact-dir-down', neutral: 'impact-dir-neutral' };
+    const confCls = { high: 'impact-conf-high', medium: 'impact-conf-medium', low: 'impact-conf-low' };
+    const confLabel = { high: 'Hög', medium: 'Medel', low: 'Låg' };
+
+    const stocksHtml = data.stocks.map(s => `
+      <div class="impact-stock">
+        <div class="impact-stock-dir ${dirCls[s.direction] || 'impact-dir-neutral'}">${dirIcon[s.direction] || '—'}</div>
+        <div class="impact-stock-info">
+          <div class="impact-stock-name">${escapeHTML(s.name)} <span class="impact-stock-ticker">${escapeHTML(s.ticker)}</span></div>
+          <div class="impact-stock-reason">${escapeHTML(s.reason)}</div>
+        </div>
+        <span class="impact-confidence ${confCls[s.confidence] || ''}">${confLabel[s.confidence] || ''}</span>
+      </div>`).join('');
+
+    const summaryHtml = data.summary
+      ? `<div class="impact-summary">${escapeHTML(data.summary)}</div>`
+      : '';
+
+    content.innerHTML = `<div class="impact-stocks">${stocksHtml}</div>${summaryHtml}`;
+  } catch {
+    content.innerHTML = '<div class="impact-loading">Kunde inte analysera aktieeffekter just nu.</div>';
+  }
 }
 
 function closeArticle(e) {
