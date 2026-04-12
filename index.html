@@ -9,6 +9,12 @@
 <meta property="og:description" content="Följ svenska börsen i realtid med BörsPulsen. Aktiekurser, nyheter och marknadsanalys.">
 <meta property="og:url" content="https://borspulsen.com">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://borspulsen.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BörsPulsen - Svenska Börsen i Realtid">
+<meta name="twitter:description" content="Följ svenska börsen i realtid med BörsPulsen. Aktiekurser, nyheter och marknadsanalys.">
+<meta name="twitter:image" content="https://borspulsen.com/og-image.png">
+<link rel="canonical" href="https://borspulsen.com">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -424,12 +430,48 @@
   .fi-source a { color: #2962FF; text-decoration: none; }
   .data-badge { font-size: 10px; color: #787b86; background: #2a2e39; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
 
+  /* FOOTER */
+  .site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 40px 24px 32px; margin-top: 32px; }
+  .footer-inner { max-width: 1400px; margin: 0 auto; }
+  .footer-disclaimer { background: rgba(239,83,80,0.07); border: 1px solid rgba(239,83,80,0.2); border-radius: 10px; padding: 16px 20px; margin-bottom: 28px; }
+  .footer-disclaimer-title { font-size: 12px; font-weight: 700; color: #EF5350; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .footer-disclaimer p { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; margin-bottom: 28px; }
+  .footer-brand .logo-text { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 10px; display: block; }
+  .footer-brand p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .footer-col-title { font-size: 12px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .footer-col a { display: block; font-size: 13px; color: var(--text2); text-decoration: none; margin-bottom: 8px; transition: color 0.15s; }
+  .footer-col a:hover { color: var(--accent); }
+  .footer-bottom { border-top: 1px solid var(--border); padding-top: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .footer-bottom p { font-size: 12px; color: var(--text2); }
+  .footer-bottom a { color: var(--accent); text-decoration: none; }
+  .footer-bottom a:hover { text-decoration: underline; }
+  @media (max-width: 700px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 20px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; }
+  }
+
   /* RESPONSIVE */
+  /* HAMBURGER MENU */
+  .hamburger-btn { display: none; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 20px; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+  .hamburger-btn:hover { background: rgba(255,255,255,0.2); }
+  .mobile-menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; }
+  .mobile-menu-overlay.open { display: block; }
+  .mobile-menu { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: #1E2130; border-right: 1px solid #2A2E39; z-index: 1000; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto; }
+  .mobile-menu.open { transform: translateX(0); }
+  .mobile-menu-header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 20px; border-bottom: 1px solid #2A2E39; margin-bottom: 8px; }
+  .mobile-menu-logo { font-size: 18px; font-weight: 800; color: #fff; }
+  .mobile-menu-logo span { color: #2962FF; }
+  .mobile-menu-close { background: #2A2E39; border: none; color: #787B86; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  .mobile-menu a { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.8); text-decoration: none; padding: 14px 20px; font-size: 15px; font-weight: 500; transition: all 0.15s; border-left: 3px solid transparent; }
+  .mobile-menu a:hover { background: rgba(255,255,255,0.06); color: #fff; border-left-color: #2962FF; }
+
   @media (max-width: 900px) {
     .index-grid { grid-template-columns: repeat(2, 1fr); } /* 3→2 at tablet */
     .news-grid { grid-template-columns: repeat(2, 1fr); }
     .heatmap-container { height: 300px; }
     nav { display: none; }
+    .hamburger-btn { display: flex; }
     .wl-grid { grid-template-columns: 1fr; }
     .search-wrap input { width: 200px; }
     .search-wrap input:focus { width: 220px; }
@@ -484,6 +526,7 @@
       <a href="#watchlist">Bevakningslista</a>
       <a href="#nyheter">Nyheter</a>
     </nav>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Öppna meny">☰</button>
     <div class="header-right">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
@@ -495,6 +538,22 @@
     </div>
   </div>
 </header>
+
+<!-- MOBILMENY -->
+<div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-header">
+    <span class="mobile-menu-logo">Börs<span>Pulsen</span></span>
+    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Stäng meny">✕</button>
+  </div>
+  <a href="#marknad"    onclick="closeMobileMenu()">📊 Marknad</a>
+  <a href="#aktier"     onclick="closeMobileMenu()">📈 Aktier</a>
+  <a href="#screener"   onclick="closeMobileMenu()">🔍 Screener</a>
+  <a href="#portfolio"  onclick="closeMobileMenu()">💼 Portfölj</a>
+  <a href="#watchlist"  onclick="closeMobileMenu()">⭐ Bevakningslista</a>
+  <a href="#nyheter"    onclick="closeMobileMenu()">📰 Nyheter</a>
+  <a href="#utdelning"  onclick="closeMobileMenu()">💰 Utdelningskalender</a>
+</div>
 
 <main>
   <!-- MARKNADSÖVERSIKT – TradingView live -->
@@ -778,6 +837,40 @@
 
 </main>
 
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-disclaimer">
+      <div class="footer-disclaimer-title">⚠ Viktig information</div>
+      <p>Innehållet på BörsPulsen är enbart i informationssyfte och utgör inte investeringsrådgivning. Historisk avkastning är ingen garanti för framtida resultat. Aktiekurser kan vara fördröjda eller simulerade. Gör alltid din egen analys och konsultera en auktoriserad rådgivare innan du fattar investeringsbeslut.</p>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text">Börs<span style="color:#2962FF">Pulsen</span></span>
+        <p>Din källa för svenska börsnyheter, aktiekurser och marknadsanalys. Vi följer OMXS30 och nordiska börser i realtid.</p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Marknad</div>
+        <a href="#marknad">Marknadsöversikt</a>
+        <a href="#aktier">Aktietabell</a>
+        <a href="#screener">Aktie-screener</a>
+        <a href="#utdelning">Utdelningskalender</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Verktyg</div>
+        <a href="#portfolio">Portföljtracker</a>
+        <a href="#watchlist">Bevakningslista</a>
+        <a href="#nyheter">Börsnyheter</a>
+        <a href="https://borspulsen.beehiiv.com/subscribe" target="_blank" rel="noopener">Nyhetsbrev</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 BörsPulsen. Alla rättigheter förbehållna. Data från <a href="https://finnhub.io" target="_blank" rel="noopener">Finnhub</a> och <a href="https://www.tradingview.com" target="_blank" rel="noopener">TradingView</a>.</p>
+      <p><a href="mailto:kontakt@borspulsen.com">Kontakt</a> &nbsp;·&nbsp; <a href="#">Integritetspolicy</a> &nbsp;·&nbsp; <a href="#">Villkor</a></p>
+    </div>
+  </div>
+</footer>
+
 <!-- STOCK MODAL – TradingView Advanced Chart -->
 <div class="modal-overlay" id="stockModal">
   <div class="modal">
@@ -894,6 +987,13 @@
 </div>
 
 <script>
+// ─── SÄKERHET: HTML-escaping för att förhindra XSS ───────────────────────────
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 // ─── STOCK DATA ──────────────────────────────────────────────────────────────
 
 const SE_DATA = [
@@ -1451,7 +1551,7 @@ document.getElementById('searchInput').oninput = function() {
   ).slice(0, 8);
 
   if (!matches.length) {
-    res.innerHTML = `<div class="search-no-results">Inga resultat för "${this.value}"</div>`;
+    res.innerHTML = `<div class="search-no-results">Inga resultat för "${escapeHTML(this.value)}"</div>`;
     res.classList.add('show');
     return;
   }
@@ -1849,8 +1949,8 @@ function renderMobileCards(stocks) {
   }).join('');
 }
 
-// ─── FINNHUB LIVE PRICES ─────────────────────────────────────────────────────
-const FINNHUB_TOKEN = 'd79can9r01qqpmhg94eg';
+// ─── FINNHUB LIVE PRICES (via serverless proxy) ──────────────────────────────
+// API-nyckeln hanteras av /.netlify/functions/quote – aldrig i frontend
 const FINNHUB_MAP = {
   'VOLV-B':   'VOLV-B.ST',
   'ERIC-B':   'ERIC-B.ST',
@@ -1902,7 +2002,7 @@ async function fetchLivePrices() {
     const symbol = FINNHUB_MAP[ticker];
     try {
       const resp = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`
+        `/.netlify/functions/quote?symbol=${encodeURIComponent(symbol)}`
       );
       if (!resp.ok) continue;
       const data = await resp.json();
@@ -1977,6 +2077,21 @@ fetchLivePrices(); // hämta live-priser direkt vid sidladdning
 setInterval(updatePrices, 30000);
 setInterval(fetchMacroRates, 3600000);  // valutakurser varje timme
 setInterval(fetchLivePrices, 60000);    // live-priser var 60:e sekund
+
+// ─── MOBILMENY ───────────────────────────────────────────────────────────────
+function openMobileMenu() {
+  document.getElementById('mobileMenu').classList.add('open');
+  document.getElementById('mobileMenuOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').classList.remove('open');
+  document.getElementById('mobileMenuOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('hamburgerBtn').addEventListener('click', openMobileMenu);
+document.getElementById('mobileMenuClose').addEventListener('click', closeMobileMenu);
+document.getElementById('mobileMenuOverlay').addEventListener('click', closeMobileMenu);
 
 // ─── ANALYST DATA ────────────────────────────────────────────────────────────
 const ANALYST_DATA = {
