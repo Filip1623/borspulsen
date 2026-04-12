@@ -264,10 +264,21 @@
 
   /* NEWS */
   .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-  .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-  .news-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+  .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
+  .news-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
   .news-card:hover .news-title { color: var(--accent); }
+  .news-card-img { width: 100%; height: 160px; object-fit: cover; background: var(--bg3); display: block; }
+  .news-card-img-placeholder { width: 100%; height: 160px; background: linear-gradient(135deg, var(--bg3) 0%, var(--border) 100%); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+  .news-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
   .news-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+  .news-summary { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-meta { font-size: 11px; color: var(--text2); display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .news-source-badge { font-weight: 600; color: var(--accent); }
+  .news-loading { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; grid-column: 1/-1; }
+  .news-refresh-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .news-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .news-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  [data-theme="light"] .news-card:hover { box-shadow: 0 8px 24px rgba(27,79,216,0.12); }
 
   /* ARTICLE MODAL */
   .article-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9000; align-items:center; justify-content:center; padding:20px; }
@@ -287,8 +298,7 @@
   .tag-bors { background: rgba(59,130,246,0.15); color: var(--accent2); }
   .tag-analys { background: rgba(245,158,11,0.15); color: var(--accent); }
   .tag-makro { background: rgba(16,185,129,0.15); color: var(--green); }
-  .news-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 10px; }
-  .news-meta { font-size: 12px; color: var(--text2); }
+  .news-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.45; margin-bottom: 8px; }
 
   /* LEO DICAPRIO OVERLAY */
   .leo-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer; }
@@ -851,8 +861,13 @@
 
   <!-- NYHETER -->
   <section id="nyheter">
-    <div class="section-title">Senaste börsnyheter</div>
-    <div class="news-grid" id="newsGrid"></div>
+    <div class="news-header-row">
+      <div class="section-title" style="margin-bottom:0">Senaste börsnyheter</div>
+      <button class="news-refresh-btn" onclick="loadNews()" id="newsRefreshBtn">↻ Uppdatera</button>
+    </div>
+    <div class="news-grid" id="newsGrid">
+      <div class="news-loading">Laddar nyheter...</div>
+    </div>
   </section>
 
 </main>
@@ -1783,23 +1798,92 @@ function renderPortfolio() {
 }
 
 // ─── NEWS ─────────────────────────────────────────────────────────────────────
+let newsCache = [];
+
+function formatNewsTime(unixTs) {
+  const d = new Date(unixTs * 1000);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 60000);
+  if (diff < 1) return 'Just nu';
+  if (diff < 60) return `${diff} min sedan`;
+  if (diff < 1440) return `${Math.floor(diff/60)} tim sedan`;
+  return d.toLocaleDateString('sv-SE', { day:'numeric', month:'short' });
+}
+
+function getCategoryTag(category) {
+  const map = {
+    'general': { label: 'Börs', cls: 'tag-bors' },
+    'forex': { label: 'Valuta', cls: 'tag-makro' },
+    'crypto': { label: 'Krypto', cls: 'tag-analys' },
+    'merger': { label: 'Förvärv', cls: 'tag-bors' },
+  };
+  return map[category] || { label: 'Nyheter', cls: 'tag-bors' };
+}
+
+async function loadNews() {
+  const grid = document.getElementById('newsGrid');
+  const btn  = document.getElementById('newsRefreshBtn');
+  grid.innerHTML = '<div class="news-loading">⏳ Laddar nyheter...</div>';
+  if (btn) btn.disabled = true;
+
+  try {
+    const res  = await fetch('/.netlify/functions/news');
+    const data = await res.json();
+
+    if (!res.ok || !data.articles || data.articles.length === 0) {
+      throw new Error('Inga nyheter');
+    }
+
+    newsCache = data.articles;
+    renderNews();
+  } catch (err) {
+    grid.innerHTML = '<div class="news-loading">Kunde inte hämta nyheter just nu. Försök igen senare.</div>';
+  }
+
+  if (btn) btn.disabled = false;
+}
+
 function renderNews() {
-  document.getElementById('newsGrid').innerHTML = NEWS.map((n, i) => `
-    <div class="news-card" onclick="openArticle(${i})">
-      <span class="news-tag ${n.tagClass}">${n.tag}</span>
-      <div class="news-title">${n.title}</div>
-      <div class="news-meta">${n.time} · ${n.source}</div>
-    </div>`).join('');
+  const grid = document.getElementById('newsGrid');
+  if (!newsCache.length) { loadNews(); return; }
+
+  grid.innerHTML = newsCache.map((n, i) => {
+    const { label, cls } = getCategoryTag(n.category);
+    const timeStr = n.time ? formatNewsTime(n.time) : '';
+    const imgHtml = n.image
+      ? `<img class="news-card-img" src="${escapeHTML(n.image)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="news-card-img-placeholder">📰</div>`;
+    const summaryHtml = n.summary
+      ? `<div class="news-summary">${escapeHTML(n.summary)}</div>`
+      : '';
+    return `
+      <div class="news-card" onclick="openArticle(${i})">
+        ${imgHtml}
+        <div class="news-card-body">
+          <span class="news-tag ${cls}">${label}</span>
+          <div class="news-title">${escapeHTML(n.title)}</div>
+          ${summaryHtml}
+          <div class="news-meta">
+            <span class="news-source-badge">${escapeHTML(n.source)}</span>
+            <span>${timeStr}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function openArticle(i) {
-  const n = NEWS[i];
-  document.getElementById('articleTag').className = `article-tag ${n.tagClass}`;
-  document.getElementById('articleTag').textContent = n.tag;
+  const n = newsCache[i];
+  if (!n) return;
+  const { label, cls } = getCategoryTag(n.category);
+  document.getElementById('articleTag').className = `article-tag ${cls}`;
+  document.getElementById('articleTag').textContent = label;
   document.getElementById('articleTitle').textContent = n.title;
-  document.getElementById('articleMeta').textContent = `${n.time} · ${n.source}`;
-  document.getElementById('articleBody').innerHTML = n.body;
-  document.getElementById('articleSource').innerHTML = `Källa: <a href="${n.sourceUrl}" target="_blank">${n.source} ↗</a>`;
+  document.getElementById('articleMeta').textContent = `${formatNewsTime(n.time)} · ${n.source}`;
+  document.getElementById('articleBody').innerHTML = n.summary
+    ? `<p>${escapeHTML(n.summary)}</p>`
+    : '<p>Ingen sammanfattning tillgänglig.</p>';
+  document.getElementById('articleSource').innerHTML = `Källa: <a href="${escapeHTML(n.url)}" target="_blank" rel="noopener">${escapeHTML(n.source)} ↗</a>`;
   document.getElementById('articleOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -2133,7 +2217,7 @@ document.getElementById('marketLabel').textContent = MARKET_LABELS['SE'];
 renderTable();
 renderPortfolioSelect();
 renderPortfolio();
-renderNews();
+loadNews();
 
 // Aktivera rätt månadsknapp (aktuell månad = april = index 3)
 (function activateCurrentMonthTab() {
