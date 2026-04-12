@@ -251,6 +251,21 @@
     .news-sidebar { height: 320px; }
   }
 
+  /* AI KONTEXTBANNER */
+  .ai-context-bar { display: none; align-items: center; gap: 10px; background: linear-gradient(135deg, rgba(27,79,216,0.1) 0%, rgba(99,102,241,0.1) 100%); border: 1px solid rgba(27,79,216,0.25); border-radius: 10px; padding: 10px 16px; margin-bottom: 10px; animation: aiFadeIn 0.4s ease; }
+  .ai-context-bar.visible { display: flex; }
+  @keyframes aiFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  .ai-context-icon { font-size: 16px; flex-shrink: 0; }
+  .ai-context-text { flex: 1; font-size: 13px; color: var(--text); }
+  .ai-context-label { font-weight: 800; color: var(--accent); margin-right: 6px; }
+  .ai-context-reason { color: var(--text2); }
+  .ai-context-reset { background: none; border: 1px solid var(--border); color: var(--text2); font-size: 11px; padding: 3px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0; }
+  .ai-context-reset:hover { border-color: var(--accent); color: var(--accent); }
+  .ai-context-confidence { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; flex-shrink: 0; }
+  .ai-confidence-high { background: rgba(22,163,74,0.15); color: #16A34A; }
+  .ai-confidence-medium { background: rgba(234,179,8,0.15); color: #CA8A04; }
+  .ai-confidence-low { background: rgba(100,116,139,0.15); color: #64748B; }
+
   .modal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
   /* Bull & Bear panel */
@@ -663,31 +678,21 @@
 
     <!-- SPLIT: Graf vänster + Nyheter höger -->
     <div class="chart-news-split">
-      <!-- OMXS30 kompakt graf -->
+      <!-- Graf + AI-banner -->
       <div class="chart-col">
-        <div style="height:420px; border-radius:12px; overflow:hidden;">
-          <div class="tradingview-widget-container" style="height:100%">
-            <div class="tradingview-widget-container__widget" style="height:100%"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-            {
-              "autosize": true,
-              "symbol": "OMXSTO:OMXS30",
-              "interval": "D",
-              "timezone": "Europe/Stockholm",
-              "theme": "dark",
-              "style": "1",
-              "locale": "sv_SE",
-              "backgroundColor": "rgba(19, 23, 34, 0)",
-              "gridColor": "rgba(42, 46, 57, 0.3)",
-              "hide_top_toolbar": false,
-              "hide_legend": false,
-              "save_image": false,
-              "studies": ["RSI@tv-basicstudies"],
-              "support_host": "https://www.tradingview.com"
-            }
-            </script>
+        <!-- AI kontextbanner -->
+        <div class="ai-context-bar" id="aiContextBar">
+          <span class="ai-context-icon">✦</span>
+          <div class="ai-context-text">
+            <span class="ai-context-label" id="aiContextName"></span>
+            <span class="ai-context-reason" id="aiContextReason"></span>
           </div>
+          <span class="ai-context-confidence" id="aiContextConfidence"></span>
+          <button class="ai-context-reset" onclick="resetChart()">↩ OMXS30</button>
         </div>
+
+        <!-- Dynamisk TradingView-graf -->
+        <div id="mainChartContainer" style="height:420px; border-radius:12px; overflow:hidden;"></div>
       </div>
 
       <!-- Nyheter sidebar -->
@@ -1829,6 +1834,87 @@ function renderPortfolio() {
   pnlEl.className   = 'value ' + (pnl >= 0 ? 'up' : 'down');
 }
 
+// ─── DYNAMISK GRAF ────────────────────────────────────────────────────────────
+let currentChartSymbol = 'OMXSTO:OMXS30';
+
+function initChart(symbol) {
+  const container = document.getElementById('mainChartContainer');
+  if (!container) return;
+  currentChartSymbol = symbol;
+
+  // Rensa gammalt widget
+  container.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.height = '100%';
+
+  const widgetDiv = document.createElement('div');
+  widgetDiv.className = 'tradingview-widget-container__widget';
+  widgetDiv.style.height = '100%';
+  wrapper.appendChild(widgetDiv);
+
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    autosize: true,
+    symbol: symbol,
+    interval: 'D',
+    timezone: 'Europe/Stockholm',
+    theme: 'dark',
+    style: '1',
+    locale: 'sv_SE',
+    backgroundColor: 'rgba(19,23,34,0)',
+    gridColor: 'rgba(42,46,57,0.3)',
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    studies: ['RSI@tv-basicstudies'],
+    support_host: 'https://www.tradingview.com',
+  });
+  wrapper.appendChild(script);
+}
+
+function resetChart() {
+  initChart('OMXSTO:OMXS30');
+  const bar = document.getElementById('aiContextBar');
+  if (bar) bar.classList.remove('visible');
+}
+
+function showAiContextBar(result) {
+  const bar = document.getElementById('aiContextBar');
+  if (!bar || result.confidence === 'low') return;
+  document.getElementById('aiContextName').textContent = result.name + ' — ';
+  document.getElementById('aiContextReason').textContent = result.reason;
+  const confEl = document.getElementById('aiContextConfidence');
+  const labels = { high: '● Hög relevans', medium: '● Medel' };
+  const cls = { high: 'ai-confidence-high', medium: 'ai-confidence-medium' };
+  confEl.textContent = labels[result.confidence] || '';
+  confEl.className = 'ai-context-confidence ' + (cls[result.confidence] || '');
+  bar.classList.add('visible');
+}
+
+async function analyzeNewsContext(headlines) {
+  try {
+    const res = await fetch('/.netlify/functions/news-context', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ headlines }),
+    });
+    const result = await res.json();
+    if (result.symbol && result.symbol !== 'OMXSTO:OMXS30') {
+      initChart(result.symbol);
+      showAiContextBar(result);
+    }
+  } catch {
+    // Tyst fel — behåll OMXS30
+  }
+}
+
 // ─── NEWS ─────────────────────────────────────────────────────────────────────
 let newsCache = [];
 
@@ -1868,6 +1954,10 @@ async function loadNews() {
 
     newsCache = data.articles;
     renderNews();
+
+    // Skicka rubriker till AI för att välja rätt graf
+    const headlines = newsCache.slice(0, 8).map(a => a.title);
+    analyzeNewsContext(headlines);
   } catch (err) {
     grid.innerHTML = '<div class="news-loading">Kunde inte hämta nyheter just nu. Försök igen senare.</div>';
   }
@@ -2243,6 +2333,7 @@ document.getElementById('marketLabel').textContent = MARKET_LABELS['SE'];
 renderTable();
 renderPortfolioSelect();
 renderPortfolio();
+initChart('OMXSTO:OMXS30');
 loadNews();
 
 // Aktivera rätt månadsknapp (aktuell månad = april = index 3)
