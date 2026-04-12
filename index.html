@@ -120,15 +120,7 @@
   .section-title::before { content: ''; width: 3px; height: 18px; background: #2962FF; border-radius: 2px; }
 
   /* INDEX CARDS */
-  /* Kompakt indexrad */
-  .index-ticker-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
-  .index-tick-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px 4px; }
-  .itc-name { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
-  .itc-widget { height: 48px; }
-  @media (max-width: 900px) { .index-ticker-row { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 560px) { .index-ticker-row { grid-template-columns: repeat(2, 1fr); } }
-
-  .index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+.index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
   .index-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.2s, box-shadow 0.2s; }
   .index-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
   .index-name { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 8px; }
@@ -582,66 +574,10 @@
 </div>
 
 <main>
-  <!-- MARKNADSÖVERSIKT – kompakt indexrad + OMXS30 -->
+  <!-- MARKNADSÖVERSIKT – indexkort + OMXS30 -->
   <section id="marknad">
-    <!-- Kompakta indexkort -->
-    <div class="index-ticker-row" id="indexTickerRow">
-      <div class="index-tick-card" id="itc-omxs30">
-        <div class="itc-name">OMXS30</div>
-        <div class="itc-widget">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-            {"symbol":"OMXSTO:OMXS30","width":"100%","colorTheme":"dark","isTransparent":true,"locale":"sv_SE"}
-            </script>
-          </div>
-        </div>
-      </div>
-      <div class="index-tick-card" id="itc-spx">
-        <div class="itc-name">S&amp;P 500</div>
-        <div class="itc-widget">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-            {"symbol":"SP:SPX","width":"100%","colorTheme":"dark","isTransparent":true,"locale":"sv_SE"}
-            </script>
-          </div>
-        </div>
-      </div>
-      <div class="index-tick-card" id="itc-dji">
-        <div class="itc-name">Dow Jones</div>
-        <div class="itc-widget">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-            {"symbol":"DJ:DJI","width":"100%","colorTheme":"dark","isTransparent":true,"locale":"sv_SE"}
-            </script>
-          </div>
-        </div>
-      </div>
-      <div class="index-tick-card" id="itc-dax">
-        <div class="itc-name">DAX</div>
-        <div class="itc-widget">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-            {"symbol":"INDEX:DAX","width":"100%","colorTheme":"dark","isTransparent":true,"locale":"sv_SE"}
-            </script>
-          </div>
-        </div>
-      </div>
-      <div class="index-tick-card" id="itc-nky">
-        <div class="itc-name">Nikkei 225</div>
-        <div class="itc-widget">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-            {"symbol":"INDEX:NKY","width":"100%","colorTheme":"dark","isTransparent":true,"locale":"sv_SE"}
-            </script>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Indexkort renderas av renderIndexCharts() -->
+    <div class="index-grid" id="indexGrid" style="margin-bottom:16px"></div>
 
     <!-- OMXS30 kompakt graf -->
     <div style="height:320px; border-radius:12px; overflow:hidden; margin-bottom:24px;">
@@ -670,7 +606,7 @@
   </section>
 
   <!-- INDEX KORT -->
-  <div class="index-grid" id="indexGrid" style="margin-bottom:32px"></div>
+
 
   <!-- VÄRMEKARTA – TradingView Treemap -->
   <section class="heatmap" id="heatmapSection">
