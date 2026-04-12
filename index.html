@@ -570,6 +570,50 @@
     .ai-fab { bottom: 16px; left: 16px; }
   }
 
+  /* AKTIESIDA */
+  #stockPage { display: none; }
+  .sp-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0 20px; border: none; background: none; transition: color 0.15s; }
+  .sp-back:hover { color: var(--accent); }
+  .sp-hero { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+  .sp-logo { width: 56px; height: 56px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border); object-fit: contain; padding: 6px; flex-shrink: 0; }
+  .sp-logo-placeholder { width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, var(--accent) 0%, #6366F1 100%); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .sp-hero-info { flex: 1; }
+  .sp-name { font-size: 24px; font-weight: 800; color: var(--text); line-height: 1.2; }
+  .sp-ticker-exchange { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .sp-price-row { display: flex; align-items: baseline; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+  .sp-price { font-size: 32px; font-weight: 800; color: var(--text); }
+  .sp-change { font-size: 16px; font-weight: 700; padding: 4px 10px; border-radius: 8px; }
+  .sp-change.up { background: rgba(22,163,74,0.15); color: #16A34A; }
+  .sp-change.down { background: rgba(220,38,38,0.15); color: #DC2626; }
+  .sp-hero-meta { display: flex; gap: 24px; margin-top: 8px; flex-wrap: wrap; }
+  .sp-meta-item { font-size: 12px; color: var(--text2); }
+  .sp-meta-item strong { color: var(--text); font-weight: 600; }
+  .sp-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-bottom: 24px; }
+  .sp-chart-box { border-radius: 14px; overflow: hidden; height: 400px; }
+  .sp-stats-box { display: flex; flex-direction: column; gap: 12px; }
+  .sp-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  .sp-card-title { font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+  .sp-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .sp-stat-row:last-child { border-bottom: none; }
+  .sp-stat-label { color: var(--text2); }
+  .sp-stat-value { font-weight: 700; color: var(--text); }
+  .sp-ai-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  .sp-ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .sp-ai-icon { background: linear-gradient(135deg,#1B4FD8,#6366F1); color:#fff; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .sp-ai-title { font-size: 14px; font-weight: 800; color: var(--text); }
+  .sp-ai-body { font-size: 14px; color: var(--text2); line-height: 1.75; }
+  .sp-news-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+  .sp-news-list { display: flex; flex-direction: column; gap: 1px; }
+  .sp-news-item { display: flex; gap: 12px; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; }
+  .sp-news-item:hover { background: var(--bg3); }
+  .sp-news-img { width: 72px; height: 54px; object-fit: cover; border-radius: 7px; background: var(--bg3); flex-shrink: 0; }
+  .sp-news-content { flex: 1; min-width: 0; }
+  .sp-news-headline { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sp-news-meta { font-size: 11px; color: var(--text2); }
+  .sp-news-source { font-weight: 600; color: var(--accent); }
+  .sp-loading { text-align: center; padding: 60px 20px; color: var(--text2); font-size: 14px; }
+  @media (max-width: 900px) { .sp-grid { grid-template-columns: 1fr; } }
+
   /* FOOTER */
   .site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 40px 24px 32px; margin-top: 32px; }
   .footer-inner { max-width: 1400px; margin: 0 auto; }
@@ -933,6 +977,14 @@
 
 
 </main>
+
+<!-- AKTIESIDA -->
+<div id="stockPage">
+  <main class="main-content">
+    <button class="sp-back" onclick="navigateTo('/')">← Tillbaka till börsen</button>
+    <div id="spContent"><div class="sp-loading">⏳ Laddar bolagsdata...</div></div>
+  </main>
+</div>
 
 <!-- FOOTER -->
 <footer class="site-footer">
@@ -1445,7 +1497,7 @@ function renderHeatmap() {
     const div = document.createElement('div');
     div.className = 'heat-rect';
     div.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg};`;
-    div.onclick = () => openModal(r.ticker);
+    div.onclick = () => goToStock(r.ticker);
 
     const sign = pct >= 0 ? '+' : '';
     div.innerHTML = `
@@ -1473,7 +1525,7 @@ function renderWinnersLosers() {
   function makeItem(s, rank) {
     const sign = s.changePct >= 0 ? '+' : '';
     const cls  = s.changePct >= 0 ? 'up' : 'down';
-    return `<div class="wl-item" onclick="openModal('${s.ticker}')">
+    return `<div class="wl-item" onclick="goToStock('${s.ticker}')">
       <div class="wl-rank">${rank}</div>
       <div class="wl-info">
         <div class="wl-name">${s.name}</div>
@@ -1530,7 +1582,7 @@ function renderTable() {
     const inWl = isInWatchlist(s.ticker);
     return `
     <tr>
-      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}${badge}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td><span class="stock-name" onclick="goToStock('${s.ticker}')">${s.name}${badge}<span class="stock-ticker">${s.ticker}</span></span></td>
       <td>${s.price.toFixed(2)} ${s.currency}</td>
       <td class="change-cell ${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)} ${s.currency}</td>
       <td class="change-cell ${s.changePct >= 0 ? 'up' : 'down'}">${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%</td>
@@ -2294,7 +2346,7 @@ function renderMobileCards(stocks) {
   el.innerHTML = stocks.slice(0, 30).map(s => {
     const sign = s.changePct >= 0 ? '+' : '';
     const col  = s.changePct >= 0 ? '#26A69A' : '#EF5350';
-    return `<div class="stock-card-item" onclick="openModal('${s.ticker}')">
+    return `<div class="stock-card-item" onclick="goToStock('${s.ticker}')">
       <div class="sc-left">
         <div class="sc-name">${s.name}</div>
         <div class="sc-ticker">${s.ticker}</div>
@@ -2741,7 +2793,7 @@ function renderWatchlist() {
     const sign = s.changePct >= 0 ? '+' : '';
     const cls  = s.changePct >= 0 ? 'up' : 'down';
     return `<tr>
-      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td><span class="stock-name" onclick="goToStock('${s.ticker}')">${s.name}<span class="stock-ticker">${s.ticker}</span></span></td>
       <td>${s.price.toFixed(2)} ${s.currency}</td>
       <td class="change-cell ${cls}">${sign}${s.changePct.toFixed(2)}%</td>
       <td><input type="text" placeholder="Anteckning..." value="${(w.note||'').replace(/"/g,'&quot;')}"
@@ -2852,7 +2904,7 @@ function runScreener(preset) {
       ? `<span class="market-badge ${s.market}">${s.market}</span>`
       : '';
     return `<tr>
-      <td><span class="stock-name" onclick="openModal('${s.ticker}')">${s.name}${badgeHtml}<span class="stock-ticker">${s.ticker}</span></span></td>
+      <td><span class="stock-name" onclick="goToStock('${s.ticker}')">${s.name}${badgeHtml}<span class="stock-ticker">${s.ticker}</span></span></td>
       <td>${s.ticker}</td>
       <td style="font-size:10px;color:var(--text2)">${s.market}</td>
       <td>${s.peVal.toFixed(1)}x</td>
@@ -3037,6 +3089,213 @@ async function sendAiMessage() {
 document.getElementById('aiInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiMessage(); }
 });
+
+// ─── ROUTER ──────────────────────────────────────────────────────────────────
+function navigateTo(path) {
+  history.pushState({}, '', path);
+  handleRoute();
+}
+
+function handleRoute() {
+  const path = window.location.pathname;
+  const stockMatch = path.match(/^\/aktie\/(.+)$/);
+  if (stockMatch) {
+    const ticker = decodeURIComponent(stockMatch[1]);
+    showStockPage(ticker);
+  } else {
+    showMainPage();
+  }
+}
+
+function showMainPage() {
+  document.getElementById('stockPage').style.display = 'none';
+  document.querySelector('main.main-content') && (document.querySelector('main.main-content').style.display = '');
+  document.getElementById('stockPage').style.display = 'none';
+  // Visa alla main-sektioner
+  document.querySelectorAll('main > section, .chart-news-split, .macro-bar, .heatmap').forEach(el => el.style.display = '');
+  document.getElementById('stockPage').style.display = 'none';
+}
+
+function showStockPage(ticker) {
+  // Dölj övriga sektioner
+  document.querySelectorAll('main > *:not(#stockPage)').forEach(el => el.style.display = 'none');
+  document.getElementById('stockPage').style.display = 'block';
+  document.getElementById('spContent').innerHTML = '<div class="sp-loading">⏳ Laddar bolagsdata...</div>';
+  window.scrollTo(0, 0);
+  loadStockPage(ticker);
+}
+
+// Klick på aktie i tabellen → navigera till aktiesida
+function goToStock(ticker) {
+  navigateTo('/aktie/' + encodeURIComponent(ticker));
+}
+
+async function loadStockPage(ticker) {
+  // Hitta aktie i lokal data
+  const allStocks = [...seStocks, ...noStocks, ...fiStocks, ...usStocks, ...deStocks];
+  const stock = allStocks.find(s => s.ticker === ticker);
+
+  const symbol = stock ? stock.tvSymbol : ticker;
+  // Konvertera tvSymbol till Finnhub-format (OMXSTO:ERIC_B → OMXSTO:ERIC_B)
+  const finnhubSymbol = symbol;
+
+  let profile = {}, quote = {}, news = [];
+  try {
+    const res = await fetch(`/.netlify/functions/stock-profile?symbol=${encodeURIComponent(finnhubSymbol)}`);
+    const data = await res.json();
+    profile = data.profile || {};
+    quote   = data.quote   || {};
+    news    = data.news    || [];
+  } catch {}
+
+  const name      = profile.name || stock?.name || ticker;
+  const currency  = profile.currency || stock?.currency || 'kr';
+  const industry  = profile.finnhubIndustry || '';
+  const exchange  = profile.exchange || '';
+  const logo      = profile.logo || '';
+  const webUrl    = profile.weburl || '';
+  const mcap      = profile.marketCapitalization ? formatMcap(profile.marketCapitalization) : (stock?.mcap ? stock.mcap + ' Mdr' : '—');
+
+  const price     = quote.c || stock?.price || 0;
+  const change    = quote.d || 0;
+  const changePct = quote.dp || 0;
+  const high      = quote.h || 0;
+  const low       = quote.l || 0;
+  const prevClose = quote.pc || 0;
+
+  const isUp      = change >= 0;
+  const changeStr = `${isUp ? '+' : ''}${changePct.toFixed(2)}%`;
+  const initials  = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const logoHtml = logo
+    ? `<img class="sp-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(name)}" onerror="this.style.display='none'">`
+    : `<div class="sp-logo-placeholder">${initials}</div>`;
+
+  const statsHtml = [
+    ['Senast',        `${price.toFixed(2)} ${currency}`],
+    ['Förändring',    `<span class="${isUp?'up':'down'}" style="color:${isUp?'#16A34A':'#DC2626'}">${isUp?'+':''}${change.toFixed(2)} (${changeStr})</span>`],
+    ['Dagens max',    high ? `${high.toFixed(2)} ${currency}` : '—'],
+    ['Dagens min',    low  ? `${low.toFixed(2)} ${currency}` : '—'],
+    ['Föregående',    prevClose ? `${prevClose.toFixed(2)} ${currency}` : '—'],
+    ['Börsvärde',     mcap],
+    ['Sektor',        industry || '—'],
+  ].map(([label, value]) => `
+    <div class="sp-stat-row">
+      <span class="sp-stat-label">${label}</span>
+      <span class="sp-stat-value">${value}</span>
+    </div>`).join('');
+
+  const newsHtml = news.length ? news.map(n => `
+    <div class="sp-news-item" onclick="window.open('${escapeHTML(n.url)}','_blank')">
+      ${n.image ? `<img class="sp-news-img" src="${escapeHTML(n.image)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+      <div class="sp-news-content">
+        <div class="sp-news-headline">${escapeHTML(n.title)}</div>
+        <div class="sp-news-meta"><span class="sp-news-source">${escapeHTML(n.source)}</span> · ${n.time ? formatNewsTime(n.time) : ''}</div>
+      </div>
+    </div>`).join('')
+  : '<div style="color:var(--text2);font-size:13px;padding:12px 0">Inga nyheter hittades.</div>';
+
+  document.getElementById('spContent').innerHTML = `
+    <div class="sp-hero">
+      ${logoHtml}
+      <div class="sp-hero-info">
+        <div class="sp-name">${escapeHTML(name)}</div>
+        <div class="sp-ticker-exchange">${escapeHTML(ticker)}${exchange ? ' · ' + escapeHTML(exchange) : ''}${webUrl ? ` · <a href="${escapeHTML(webUrl)}" target="_blank" rel="noopener" style="color:var(--accent)">${escapeHTML(webUrl.replace(/https?:\/\//,''))}</a>` : ''}</div>
+        <div class="sp-price-row">
+          <span class="sp-price">${price.toFixed(2)} <small style="font-size:16px;font-weight:500">${currency}</small></span>
+          <span class="sp-change ${isUp?'up':'down'}">${isUp?'▲':'▼'} ${changeStr}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-grid">
+      <div class="sp-chart-box" id="spChart"></div>
+      <div class="sp-stats-box">
+        <div class="sp-card">
+          <div class="sp-card-title">Nyckeltal</div>
+          ${statsHtml}
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-ai-card" id="spAiCard">
+      <div class="sp-ai-header">
+        <div class="sp-ai-icon">✦</div>
+        <div class="sp-ai-title">AI-Analys</div>
+      </div>
+      <div class="sp-ai-body" id="spAiBody">Genererar analys...</div>
+    </div>
+
+    <div class="sp-card" style="margin-bottom:24px">
+      <div class="sp-news-title">📰 Senaste nyheter om ${escapeHTML(name)}</div>
+      <div class="sp-news-list">${newsHtml}</div>
+    </div>
+  `;
+
+  // Initiera TradingView-chart
+  initStockChart(symbol);
+
+  // Hämta AI-analys
+  fetchStockAI(name, ticker, price, changePct, industry);
+}
+
+function initStockChart(symbol) {
+  const container = document.getElementById('spChart');
+  if (!container) return;
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.height = '100%';
+  const widgetDiv = document.createElement('div');
+  widgetDiv.className = 'tradingview-widget-container__widget';
+  widgetDiv.style.height = '100%';
+  wrapper.appendChild(widgetDiv);
+  container.appendChild(wrapper);
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    autosize: true, symbol, interval: 'D',
+    timezone: 'Europe/Stockholm', theme: 'dark',
+    style: '1', locale: 'sv_SE',
+    backgroundColor: 'rgba(19,23,34,0)',
+    gridColor: 'rgba(42,46,57,0.3)',
+    hide_top_toolbar: false, hide_legend: false,
+    save_image: false, studies: ['RSI@tv-basicstudies'],
+    support_host: 'https://www.tradingview.com',
+  });
+  wrapper.appendChild(script);
+}
+
+async function fetchStockAI(name, ticker, price, changePct, industry) {
+  const el = document.getElementById('spAiBody');
+  if (!el) return;
+  try {
+    const question = `Ge en kort börsmässig AI-analys av ${name} (${ticker}), pris ${price.toFixed(2)}, ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% idag${industry ? ', verksam inom ' + industry : ''}. Max 3 meningar.`;
+    const res  = await fetch('/.netlify/functions/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    const data = await res.json();
+    if (data.answer) el.textContent = data.answer;
+    else el.textContent = 'Kunde inte generera analys just nu.';
+  } catch {
+    el.textContent = 'Kunde inte generera analys just nu.';
+  }
+}
+
+function formatMcap(m) {
+  if (m >= 1000) return (m / 1000).toFixed(1) + ' Bdr USD';
+  return m.toFixed(0) + ' Mdr USD';
+}
+
+// Hantera back/forward i webbläsaren
+window.addEventListener('popstate', handleRoute);
+
+// Starta routern
+handleRoute();
 </script>
 </body>
 </html>
