@@ -14,9 +14,10 @@ Svara ALLTID med exakt detta JSON-format utan markdown eller extra text:
 }
 
 TradingView-symboler att använda:
-- Råolja (WTI): NYMEX:CL1!
-- Guld: COMEX:GC1!
-- Silver: COMEX:SI1!
+- Råolja (WTI): TVC:USOIL
+- Brent-olja: TVC:UKOIL
+- Guld: TVC:GOLD
+- Silver: TVC:SILVER
 - OMXS30: OMXSTO:OMXS30
 - OMXS30 (default): OMXSTO:OMXS30
 - S&P 500: SP:SPX
@@ -35,9 +36,9 @@ TradingView-symboler att använda:
 - ABB: OMXSTO:ABB
 - Hexagon: OMXSTO:HEXA_B
 - Riksbank/ränta: OMXSTO:OMXS30
-- Naturgas: NYMEX:NG1!
-- Koppar: COMEX:HG1!
-- Vete: CBOT:ZW1!
+- Naturgas: TVC:NATGAS
+- Koppar: TVC:COPPER
+- Vete: TVC:WHEAT
 
 Om nyheterna inte tydligt pekar på ett specifikt instrument, returnera OMXS30 som default med "low" confidence.
 Prioritera alltid svenska/nordiska instrument om relevant.`;
