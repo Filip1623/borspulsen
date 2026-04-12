@@ -3167,10 +3167,25 @@ async function loadStockPage(ticker) {
     ? `<img class="sp-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(name)}" onerror="this.style.display='none'">`
     : `<div class="sp-logo-placeholder">${initials}</div>`;
 
-  const pe  = metrics.peNormalizedAnnual || metrics.peBasicExclExtraTTM || metrics.peTTM || null;
-  const ps  = metrics.psTTM || metrics.psAnnual || null;
-  const pb  = metrics.pbAnnual || null;
+  // P/E — försök direkt, annars beräkna från pris / EPS
+  let pe = metrics.peNormalizedAnnual || metrics.peExclExtraAnnual || metrics.peBasicExclExtraTTM || metrics.peExclExtraTTM || null;
+  if (!pe) {
+    const eps = metrics.epsNormalizedAnnual || metrics.epsBasicExclExtraItemsAnnual || metrics.epsExclExtraItemsAnnual || null;
+    if (eps && eps > 0 && price > 0) pe = price / eps;
+  }
+
+  // P/S — försök direkt, annars beräkna från pris / intäkter per aktie
+  let ps = metrics.psTTM || metrics.psAnnual || null;
+  if (!ps) {
+    const revPerShare = metrics.revenuePerShareTTM || metrics.revenuePerShareAnnual || null;
+    if (revPerShare && revPerShare > 0 && price > 0) ps = price / revPerShare;
+  }
+
+  const pb  = metrics.pbAnnual || metrics.pbQuarterly || null;
   const div = metrics.dividendYieldIndicatedAnnual || null;
+  const grossMargin = metrics.grossMarginTTM || metrics.grossMarginAnnual || null;
+  const netMargin   = metrics.netProfitMarginTTM || metrics.netProfitMarginAnnual || null;
+  const roe         = metrics.roeTTM || metrics.roeRfy || null;
   const w52High = metrics['52WeekHigh'] || null;
   const w52Low  = metrics['52WeekLow']  || null;
 
