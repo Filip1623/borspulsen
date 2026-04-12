@@ -739,7 +739,7 @@
   <a href="#utdelning"  onclick="closeMobileMenu()">💰 Utdelningskalender</a>
 </div>
 
-<main>
+<main id="mainPage">
   <!-- MARKNADSÖVERSIKT – indexkort + OMXS30 -->
   <section id="marknad">
     <!-- Indexkort renderas av renderIndexCharts() -->
@@ -3108,17 +3108,12 @@ function handleRoute() {
 }
 
 function showMainPage() {
-  document.getElementById('stockPage').style.display = 'none';
-  document.querySelector('main.main-content') && (document.querySelector('main.main-content').style.display = '');
-  document.getElementById('stockPage').style.display = 'none';
-  // Visa alla main-sektioner
-  document.querySelectorAll('main > section, .chart-news-split, .macro-bar, .heatmap').forEach(el => el.style.display = '');
+  document.getElementById('mainPage').style.display = '';
   document.getElementById('stockPage').style.display = 'none';
 }
 
 function showStockPage(ticker) {
-  // Dölj övriga sektioner
-  document.querySelectorAll('main > *:not(#stockPage)').forEach(el => el.style.display = 'none');
+  document.getElementById('mainPage').style.display = 'none';
   document.getElementById('stockPage').style.display = 'block';
   document.getElementById('spContent').innerHTML = '<div class="sp-loading">⏳ Laddar bolagsdata...</div>';
   window.scrollTo(0, 0);
