@@ -3135,13 +3135,20 @@ async function loadStockPage(ticker) {
   const finnhubSymbol = symbol;
 
   let profile = {}, quote = {}, news = [], metrics = {};
+  let yahoo = {};
   try {
-    const res = await fetch(`/.netlify/functions/stock-profile?symbol=${encodeURIComponent(finnhubSymbol)}`);
-    const data = await res.json();
+    // Hämta Finnhub-data och Yahoo Finance-data parallellt
+    const [finnhubRes, yahooRes] = await Promise.all([
+      fetch(`/.netlify/functions/stock-profile?symbol=${encodeURIComponent(finnhubSymbol)}`),
+      fetch(`/.netlify/functions/stock-fundamentals?symbol=${encodeURIComponent(finnhubSymbol)}`),
+    ]);
+    const data = await finnhubRes.json();
     profile = data.profile  || {};
     quote   = data.quote    || {};
     news    = data.news     || [];
     metrics = data.metrics  || {};
+    const yahooData = await yahooRes.json();
+    if (!yahooData.error) yahoo = yahooData;
   } catch {}
 
   const name      = profile.name || stock?.name || ticker;
@@ -3167,25 +3174,38 @@ async function loadStockPage(ticker) {
     ? `<img class="sp-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(name)}" onerror="this.style.display='none'">`
     : `<div class="sp-logo-placeholder">${initials}</div>`;
 
-  // P/E — försök direkt, annars beräkna från pris / EPS
-  let pe = metrics.peNormalizedAnnual || metrics.peExclExtraAnnual || metrics.peBasicExclExtraTTM || metrics.peExclExtraTTM || null;
-  if (!pe) {
-    const eps = metrics.epsNormalizedAnnual || metrics.epsBasicExclExtraItemsAnnual || metrics.epsExclExtraItemsAnnual || null;
-    if (eps && eps > 0 && price > 0) pe = price / eps;
-  }
+  // Nyckeltal — Yahoo Finance prioriteras (har riktig data för svenska aktier),
+  // Finnhub-metrics används som fallback
 
-  // P/S — försök direkt, annars beräkna från pris / intäkter per aktie
-  let ps = metrics.psTTM || metrics.psAnnual || null;
+  // P/E
+  let pe = yahoo.pe || null;
+  if (!pe) {
+    pe = metrics.peNormalizedAnnual || metrics.peExclExtraAnnual || metrics.peBasicExclExtraTTM || metrics.peExclExtraTTM || null;
+    if (!pe) {
+      const eps = metrics.epsNormalizedAnnual || metrics.epsBasicExclExtraItemsAnnual || metrics.epsExclExtraItemsAnnual || null;
+      if (eps && eps > 0 && price > 0) pe = price / eps;
+    }
+  }
+  if (pe && pe < 0) pe = null; // dölj negativt P/E (förlustbolag)
+
+  // P/S
+  let ps = yahoo.ps || metrics.psTTM || metrics.psAnnual || null;
   if (!ps) {
     const revPerShare = metrics.revenuePerShareTTM || metrics.revenuePerShareAnnual || null;
     if (revPerShare && revPerShare > 0 && price > 0) ps = price / revPerShare;
   }
 
-  const pb  = metrics.pbAnnual || metrics.pbQuarterly || null;
-  const div = metrics.dividendYieldIndicatedAnnual || null;
-  const grossMargin = metrics.grossMarginTTM || metrics.grossMarginAnnual || null;
-  const netMargin   = metrics.netProfitMarginTTM || metrics.netProfitMarginAnnual || null;
-  const roe         = metrics.roeTTM || metrics.roeRfy || null;
+  // P/B
+  const pb  = yahoo.pb  || metrics.pbAnnual || metrics.pbQuarterly || null;
+
+  // Direktavkastning — Yahoo returnerar 0.05 (5%), gånger 100
+  let div = yahoo.dividendYield ? yahoo.dividendYield * 100 : null;
+  if (!div) div = metrics.dividendYieldIndicatedAnnual || null;
+
+  // Marginaler & lönsamhet (Yahoo returnerar 0.23 = 23%, gånger 100)
+  const grossMargin  = yahoo.grossMargin  ? yahoo.grossMargin  * 100 : (metrics.grossMarginTTM  || metrics.grossMarginAnnual  || null);
+  const netMargin    = yahoo.netMargin    ? yahoo.netMargin    * 100 : (metrics.netProfitMarginTTM || metrics.netProfitMarginAnnual || null);
+  const roe          = yahoo.roe          ? yahoo.roe          * 100 : (metrics.roeTTM || metrics.roeRfy || null);
   const w52High = metrics['52WeekHigh'] || null;
   const w52Low  = metrics['52WeekLow']  || null;
 
