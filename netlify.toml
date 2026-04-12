@@ -9,6 +9,12 @@
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net s3.tradingview.com *.tradingview.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com data:; img-src 'self' data: blob: media.giphy.com *.giphy.com; connect-src 'self' api.frankfurter.app *.tradingview.com borspulsen-production.up.railway.app; frame-src *.tradingview.com; worker-src blob:;"
 
 [[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
