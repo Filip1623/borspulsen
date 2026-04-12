@@ -226,6 +226,24 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .modal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+  /* Bull & Bear panel */
+  .bb-panel { margin-top: 20px; }
+  .bb-panel-title { font-size: 15px; font-weight: 700; color: #d1d4dc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .bb-loading { color: #787b86; font-size: 13px; text-align: center; padding: 20px; }
+  .bb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bb-col-bull { background: rgba(38,166,154,0.08); border: 1px solid rgba(38,166,154,0.25); border-radius: 10px; padding: 14px; }
+  .bb-col-bear { background: rgba(239,83,80,0.08); border: 1px solid rgba(239,83,80,0.25); border-radius: 10px; padding: 14px; }
+  .bb-col-header { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .bb-col-bull .bb-col-header { color: #26A69A; }
+  .bb-col-bear .bb-col-header { color: #EF5350; }
+  .bb-arg { margin-bottom: 10px; }
+  .bb-arg:last-child { margin-bottom: 0; }
+  .bb-arg-title { font-size: 12px; font-weight: 600; color: #d1d4dc; margin-bottom: 3px; }
+  .bb-arg-desc { font-size: 12px; color: #787b86; line-height: 1.5; }
+  .bb-summary { margin-top: 10px; font-size: 12px; color: #787b86; font-style: italic; text-align: center; padding: 0 8px; }
+  .bb-updated { font-size: 11px; color: #4a4e5a; text-align: right; margin-top: 6px; }
+  @media (max-width: 600px) { .bb-cols { grid-template-columns: 1fr; } }
   .stat-box { background: #2a2e39; border-radius: 10px; padding: 14px; }
   .stat-label { font-size: 11px; color: #787b86; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-value { font-size: 17px; font-weight: 700; color: #d1d4dc; }
@@ -944,6 +962,12 @@
       <div class="stat-box"><div class="stat-label">52v Lägsta</div><div class="stat-value" id="stat52L">—</div></div>
       <div class="stat-box"><div class="stat-label">Marknadsvärde</div><div class="stat-value" id="statMcap">—</div></div>
     </div>
+
+    <!-- Bull & Bear AI-analys -->
+    <div class="bb-panel" id="bbPanel" style="display:none">
+      <div class="bb-panel-title">🤖 Bull &amp; Bear-case (AI-analys)</div>
+      <div id="bbContent"><div class="bb-loading">Analyserar aktien...</div></div>
+    </div>
   </div>
 </div>
 
@@ -1504,6 +1528,10 @@ function openModal(ticker) {
 
   document.getElementById('stockModal').classList.add('show');
   document.body.style.overflow = 'hidden';
+
+  // Bull & Bear AI-analys
+  const yahooTicker = ticker.replace(/-/g, '-') + '.ST';
+  loadBullBear(yahooTicker, s.name);
 }
 
 function closeModal() {
@@ -1515,6 +1543,48 @@ function closeModal() {
   currentStock = null;
   window.location.hash = '';
   document.title = 'BörsPulsen - Svenska Börsen i Realtid';
+  const bbPanel = document.getElementById('bbPanel');
+  bbPanel.style.display = 'none';
+  document.getElementById('bbContent').innerHTML = '<div class="bb-loading">Analyserar aktien...</div>';
+}
+
+const BB_CACHE = {};
+async function loadBullBear(symbol, companyName) {
+  const panel = document.getElementById('bbPanel');
+  const content = document.getElementById('bbContent');
+  panel.style.display = 'block';
+
+  if (BB_CACHE[symbol]) { renderBullBear(BB_CACHE[symbol]); return; }
+  content.innerHTML = '<div class="bb-loading">🤖 AI analyserar ' + escHtml(companyName) + '...</div>';
+
+  try {
+    const res = await fetch('https://borspulsen-production.up.railway.app/api/bull-bear/' + encodeURIComponent(symbol));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    BB_CACHE[symbol] = data;
+    renderBullBear(data);
+  } catch (e) {
+    content.innerHTML = '<div class="bb-loading" style="color:#EF5350">Kunde inte ladda analys just nu.</div>';
+  }
+}
+
+function renderBullBear(data) {
+  const content = document.getElementById('bbContent');
+  const bullArgs = data.bull.map(a =>
+    `<div class="bb-arg"><div class="bb-arg-title">${escHtml(a.title)}</div><div class="bb-arg-desc">${escHtml(a.description)}</div></div>`
+  ).join('');
+  const bearArgs = data.bear.map(a =>
+    `<div class="bb-arg"><div class="bb-arg-title">${escHtml(a.title)}</div><div class="bb-arg-desc">${escHtml(a.description)}</div></div>`
+  ).join('');
+  const updated = data.updated_at ? new Date(data.updated_at).toLocaleString('sv-SE', {hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'}) : '';
+  content.innerHTML = `
+    <div class="bb-cols">
+      <div class="bb-col-bull"><div class="bb-col-header">🐂 Bull-case</div>${bullArgs}</div>
+      <div class="bb-col-bear"><div class="bb-col-header">🐻 Bear-case</div>${bearArgs}</div>
+    </div>
+    ${data.summary ? `<div class="bb-summary">${escHtml(data.summary)}</div>` : ''}
+    ${updated ? `<div class="bb-updated">Uppdaterad ${updated}</div>` : ''}
+  `;
 }
 
 document.getElementById('stockModal').onclick = e => {
