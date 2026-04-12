@@ -3134,13 +3134,14 @@ async function loadStockPage(ticker) {
   // Konvertera tvSymbol till Finnhub-format (OMXSTO:ERIC_B → OMXSTO:ERIC_B)
   const finnhubSymbol = symbol;
 
-  let profile = {}, quote = {}, news = [];
+  let profile = {}, quote = {}, news = [], metrics = {};
   try {
     const res = await fetch(`/.netlify/functions/stock-profile?symbol=${encodeURIComponent(finnhubSymbol)}`);
     const data = await res.json();
-    profile = data.profile || {};
-    quote   = data.quote   || {};
-    news    = data.news    || [];
+    profile = data.profile  || {};
+    quote   = data.quote    || {};
+    news    = data.news     || [];
+    metrics = data.metrics  || {};
   } catch {}
 
   const name      = profile.name || stock?.name || ticker;
@@ -3166,12 +3167,22 @@ async function loadStockPage(ticker) {
     ? `<img class="sp-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(name)}" onerror="this.style.display='none'">`
     : `<div class="sp-logo-placeholder">${initials}</div>`;
 
+  const pe  = metrics.peNormalizedAnnual || metrics.peBasicExclExtraTTM || metrics.peTTM || null;
+  const ps  = metrics.psTTM || metrics.psAnnual || null;
+  const pb  = metrics.pbAnnual || null;
+  const div = metrics.dividendYieldIndicatedAnnual || null;
+  const w52High = metrics['52WeekHigh'] || null;
+  const w52Low  = metrics['52WeekLow']  || null;
+
   const statsHtml = [
     ['Senast',        `${price.toFixed(2)} ${currency}`],
-    ['Förändring',    `<span class="${isUp?'up':'down'}" style="color:${isUp?'#16A34A':'#DC2626'}">${isUp?'+':''}${change.toFixed(2)} (${changeStr})</span>`],
-    ['Dagens max',    high ? `${high.toFixed(2)} ${currency}` : '—'],
-    ['Dagens min',    low  ? `${low.toFixed(2)} ${currency}` : '—'],
-    ['Föregående',    prevClose ? `${prevClose.toFixed(2)} ${currency}` : '—'],
+    ['Förändring',    `<span style="color:${isUp?'#16A34A':'#DC2626'}">${isUp?'+':''}${change.toFixed(2)} (${changeStr})</span>`],
+    ['P/E-tal',       pe  ? pe.toFixed(1)  : '—'],
+    ['P/S-tal',       ps  ? ps.toFixed(2)  : '—'],
+    ['P/B-tal',       pb  ? pb.toFixed(2)  : '—'],
+    ['Direktavk.',    div ? div.toFixed(2) + '%' : '—'],
+    ['52v max',       w52High ? `${w52High.toFixed(2)} ${currency}` : '—'],
+    ['52v min',       w52Low  ? `${w52Low.toFixed(2)} ${currency}`  : '—'],
     ['Börsvärde',     mcap],
     ['Sektor',        industry || '—'],
   ].map(([label, value]) => `

@@ -17,17 +17,21 @@ exports.handler = async function (event) {
 
   try {
     const base = 'https://finnhub.io/api/v1';
-    const [profileRes, quoteRes, newsRes] = await Promise.all([
+    const [profileRes, quoteRes, newsRes, metricsRes] = await Promise.all([
       fetch(`${base}/stock/profile2?symbol=${encodeURIComponent(symbol)}&token=${token}`),
       fetch(`${base}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`),
       fetch(`${base}/company-news?symbol=${encodeURIComponent(symbol)}&from=${getFromDate()}&to=${getToDate()}&token=${token}`),
+      fetch(`${base}/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all&token=${token}`),
     ]);
 
-    const [profile, quote, newsRaw] = await Promise.all([
+    const [profile, quote, newsRaw, metricsData] = await Promise.all([
       profileRes.json(),
       quoteRes.json(),
       newsRes.json(),
+      metricsRes.json(),
     ]);
+
+    const metrics = metricsData?.metric || {};
 
     const news = Array.isArray(newsRaw)
       ? newsRaw.filter(n => n.headline && n.url).slice(0, 6).map(n => ({
@@ -43,7 +47,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' },
-      body: JSON.stringify({ profile, quote, news }),
+      body: JSON.stringify({ profile, quote, news, metrics }),
     };
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) };
