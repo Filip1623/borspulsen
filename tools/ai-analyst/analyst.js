@@ -80,6 +80,7 @@ function parseArgs(argv) {
     region: 'global',
     marketCap: 'any',
     horizon: 'medium',
+    dryRun: false,
   };
 
   const positionals = [];
@@ -89,6 +90,7 @@ function parseArgs(argv) {
     else if (a === '--region') flags.region = args[++i];
     else if (a === '--market-cap') flags.marketCap = args[++i];
     else if (a === '--horizon') flags.horizon = args[++i];
+    else if (a === '--dry-run') flags.dryRun = true;
     else positionals.push(a);
   }
 
@@ -117,9 +119,10 @@ Flaggor:
   --region R         global | us | europe | nordic | asia (default global)
   --market-cap SIZE  any | large | mid | small (default any)
   --horizon H        short | medium | long (default medium)
+  --dry-run          Visa request-payload utan att anropa API:t
 
 Miljö:
-  ANTHROPIC_API_KEY  krävs
+  ANTHROPIC_API_KEY  krävs (utom vid --dry-run)
 `);
 }
 
@@ -166,6 +169,35 @@ async function main() {
     process.exit(0);
   }
 
+  const userPrompt = buildUserPrompt(flags);
+  const request = {
+    model: 'claude-opus-4-7',
+    max_tokens: 64000,
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'high' },
+    system: SYSTEM_PROMPT,
+    tools: [
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 15 },
+      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 10 },
+    ],
+    messages: [{ role: 'user', content: userPrompt }],
+  };
+
+  if (flags.dryRun) {
+    process.stdout.write('=== DRY RUN — skickar inte något till API:t ===\n\n');
+    process.stdout.write(`Model:         ${request.model}\n`);
+    process.stdout.write(`Max tokens:    ${request.max_tokens}\n`);
+    process.stdout.write(`Thinking:      ${JSON.stringify(request.thinking)}\n`);
+    process.stdout.write(`Effort:        ${request.output_config.effort}\n`);
+    process.stdout.write(`Tools:         ${request.tools.map((t) => t.name).join(', ')}\n\n`);
+    process.stdout.write('--- SYSTEM PROMPT ---\n');
+    process.stdout.write(request.system + '\n\n');
+    process.stdout.write('--- USER MESSAGE ---\n');
+    process.stdout.write(userPrompt + '\n\n');
+    process.stdout.write(`--- ---\nSystem: ${request.system.length} tecken | User: ${userPrompt.length} tecken\n`);
+    return;
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     process.stderr.write('Fel: ANTHROPIC_API_KEY saknas. Sätt miljövariabeln först.\n');
     process.exit(1);
@@ -177,18 +209,7 @@ async function main() {
   process.stderr.write(`  Region: ${flags.region} | Market cap: ${flags.marketCap} | Horisont: ${flags.horizon}\n`);
   process.stderr.write(`  Hämtar färsk marknadsdata via web search…\n\n`);
 
-  const stream = client.messages.stream({
-    model: 'claude-opus-4-7',
-    max_tokens: 64000,
-    thinking: { type: 'adaptive' },
-    output_config: { effort: 'high' },
-    system: SYSTEM_PROMPT,
-    tools: [
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 15 },
-      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 10 },
-    ],
-    messages: [{ role: 'user', content: buildUserPrompt(flags) }],
-  });
+  const stream = client.messages.stream(request);
 
   let sawThinking = false;
   let sawText = false;
