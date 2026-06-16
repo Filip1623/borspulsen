@@ -29,7 +29,9 @@
   }
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <style>
@@ -70,7 +72,22 @@
     --glow: none;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; position: relative; overflow-x: hidden; }
+  h1, h2, h3, .logo-text, .section-title, .index-price, .sp-name, .sp-price, .nl-title, .wl-pct, .popup-title { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+
+  /* AMBIENT BACKGROUND GLOW ORBS */
+  .bg-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .bg-orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.5; }
+  .bg-orb-1 { width: 520px; height: 520px; top: -180px; left: -120px; background: radial-gradient(circle, rgba(59,123,255,0.35), transparent 70%); }
+  .bg-orb-2 { width: 460px; height: 460px; top: 30%; right: -160px; background: radial-gradient(circle, rgba(99,102,241,0.28), transparent 70%); }
+  .bg-orb-3 { width: 400px; height: 400px; bottom: -120px; left: 30%; background: radial-gradient(circle, rgba(16,185,129,0.14), transparent 70%); }
+  [data-theme="light"] .bg-orb { opacity: 0.22; }
+  .ticker-wrap, .macro-bar, header, main, .site-footer { position: relative; z-index: 1; }
+
+  /* SCROLL REVEAL */
+  .reveal { opacity: 0; transform: translateY(28px); filter: blur(6px); transition: opacity 0.8s cubic-bezier(0.22,0.61,0.36,1), transform 0.8s cubic-bezier(0.22,0.61,0.36,1), filter 0.8s cubic-bezier(0.22,0.61,0.36,1); will-change: transform, opacity; }
+  .reveal.in { opacity: 1; transform: translateY(0); filter: blur(0); }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; filter: none; transition: none; } }
 
   /* TICKER */
   .ticker-wrap { background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); overflow: hidden; padding: 7px 0; }
@@ -129,9 +146,9 @@
 
   /* INDEX CARDS */
   .index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-  .index-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: var(--card-shadow); position: relative; overflow: hidden; }
-  .index-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); }
-  .index-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: rgba(59,123,255,0.2); }
+  .index-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px; transition: transform 0.5s cubic-bezier(0.32,0.72,0,1), box-shadow 0.5s cubic-bezier(0.32,0.72,0,1), border-color 0.4s ease; box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,0.04); position: relative; overflow: hidden; }
+  .index-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); }
+  .index-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover), inset 0 1px 0 rgba(255,255,255,0.06); border-color: rgba(59,123,255,0.3); }
   .index-name { font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 10px; letter-spacing: 0.3px; text-transform: uppercase; }
   .index-price { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 4px; letter-spacing: -0.8px; }
   .index-change { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
@@ -316,10 +333,11 @@
 
   /* NEWS */
   .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-  .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s; display: flex; flex-direction: column; box-shadow: var(--card-shadow); }
-  .news-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: rgba(59,123,255,0.2); }
+  .news-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform 0.5s cubic-bezier(0.32,0.72,0,1), box-shadow 0.5s cubic-bezier(0.32,0.72,0,1), border-color 0.4s ease; display: flex; flex-direction: column; box-shadow: var(--card-shadow); }
+  .news-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); border-color: rgba(59,123,255,0.3); }
   .news-card:hover .news-title { color: var(--accent); }
-  .news-card-img { width: 100%; height: 168px; object-fit: cover; background: var(--bg3); display: block; }
+  .news-card:hover .news-card-img { transform: scale(1.05); }
+  .news-card-img { width: 100%; height: 168px; object-fit: cover; background: var(--bg3); display: block; transition: transform 0.7s cubic-bezier(0.32,0.72,0,1); }
   .news-card-img-placeholder { width: 100%; height: 168px; background: linear-gradient(135deg, var(--bg3) 0%, var(--border) 100%); display: flex; align-items: center; justify-content: center; font-size: 36px; }
   .news-card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
   .news-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 10px; }
@@ -688,6 +706,13 @@
 </style>
 </head>
 <body>
+
+<!-- AMBIENT BACKGROUND -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
 
 <!-- TICKER -->
 <div class="ticker-wrap">
@@ -3348,6 +3373,22 @@ window.addEventListener('popstate', handleRoute);
 
 // Starta routern
 handleRoute();
+
+// ── SCROLL REVEAL (IntersectionObserver) ──
+(function initScrollReveal() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const targets = document.querySelectorAll('main > section, main > div.index-grid, main > .table-wrap');
+  targets.forEach(el => el.classList.add('reveal'));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  targets.forEach(el => io.observe(el));
+})();
 </script>
 </body>
 </html>
