@@ -841,34 +841,14 @@
     <!-- Indexlista renderas av renderIndexCharts() -->
     <div class="index-list-wrap" id="indexGrid"></div>
 
-    <!-- SPLIT: Graf vänster + Nyheter höger -->
-    <div class="chart-news-split">
-      <!-- Graf + AI-banner -->
-      <div class="chart-col">
-        <!-- AI kontextbanner -->
-        <div class="ai-context-bar" id="aiContextBar">
-          <span class="ai-context-icon">✦</span>
-          <div class="ai-context-text">
-            <span class="ai-context-label" id="aiContextName"></span>
-            <span class="ai-context-reason" id="aiContextReason"></span>
-          </div>
-          <span class="ai-context-confidence" id="aiContextConfidence"></span>
-          <button class="ai-context-reset" onclick="resetChart()">↩ OMXS30</button>
-        </div>
-
-        <!-- Dynamisk TradingView-graf -->
-        <div id="mainChartContainer" style="height:420px; border-radius:12px; overflow:hidden;"></div>
+    <!-- NYHETER – full bredd -->
+    <div class="news-sidebar" id="newsSidebar" style="height:320px; border-radius:16px; margin-bottom:28px;">
+      <div class="news-sidebar-header">
+        <span class="news-sidebar-title">📰 Senaste nyheter</span>
+        <button class="news-refresh-btn" onclick="loadNews()" id="newsRefreshBtn">↻</button>
       </div>
-
-      <!-- Nyheter sidebar -->
-      <div class="news-sidebar" id="newsSidebar">
-        <div class="news-sidebar-header">
-          <span class="news-sidebar-title">📰 Senaste nyheter</span>
-          <button class="news-refresh-btn" onclick="loadNews()" id="newsRefreshBtn">↻</button>
-        </div>
-        <div class="news-sidebar-list" id="newsGrid">
-          <div class="news-sidebar-loading">Laddar nyheter...</div>
-        </div>
+      <div class="news-sidebar-list" id="newsGrid">
+        <div class="news-sidebar-loading">Laddar nyheter...</div>
       </div>
     </div>
   </section>
@@ -2592,7 +2572,6 @@ document.getElementById('marketLabel').textContent = MARKET_LABELS['SE'];
 renderTable();
 renderPortfolioSelect();
 renderPortfolio();
-initChart('OMXSTO:OMXS30');
 loadNews();
 
 // Aktivera rätt månadsknapp (aktuell månad = april = index 3)
