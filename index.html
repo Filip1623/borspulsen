@@ -172,8 +172,38 @@
   .section-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
   .section-title::before { content: ''; width: 3px; height: 16px; background: linear-gradient(180deg, var(--neon), var(--neon2)); border-radius: 3px; box-shadow: 0 0 10px rgba(34,211,238,0.6); }
 
-  /* INDEX CARDS */
-  .index-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  /* ── INDEX LIST (Avanza-stil) ── */
+  .index-list-wrap { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 28px; box-shadow: var(--card-shadow); }
+  .index-list-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .index-list-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.1px; }
+  .index-list-cols { display: grid; grid-template-columns: 1fr 72px 72px 72px 90px 24px; gap: 0; padding: 7px 20px; border-bottom: 1px solid var(--border); }
+  .index-list-col-lbl { font-size: 10.5px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; text-align: right; }
+  .index-list-col-lbl:first-child { text-align: left; }
+  .index-list-row { display: grid; grid-template-columns: 1fr 72px 72px 72px 90px 24px; align-items: center; gap: 0; padding: 13px 20px; border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: background 0.18s; }
+  .index-list-row:last-child { border-bottom: none; }
+  .index-list-row:hover { background: rgba(34,211,238,0.04); }
+  .index-list-row:hover .il-name { color: var(--neon); }
+  .il-left { display: flex; align-items: center; gap: 10px; }
+  .il-flag { font-size: 18px; flex-shrink: 0; }
+  .il-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.1px; transition: color 0.18s; }
+  .il-exchange { font-size: 11px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+  .il-cell { font-family: var(--mono); font-size: 13px; font-weight: 600; text-align: right; }
+  .il-cell.up { color: var(--green); }
+  .il-cell.down { color: var(--red); }
+  .il-cell.neutral { color: var(--text2); }
+  .il-price { font-family: var(--mono); font-size: 14px; font-weight: 700; text-align: right; color: var(--text); }
+  .il-arrow { text-align: right; color: var(--text2); font-size: 14px; opacity: 0.5; transition: opacity 0.18s, transform 0.18s; }
+  .index-list-row:hover .il-arrow { opacity: 1; color: var(--neon); transform: translateX(2px); }
+  @media (max-width: 600px) {
+    .index-list-cols { display: none; }
+    .index-list-row { grid-template-columns: 1fr auto auto; gap: 12px; }
+    .index-list-row .il-cell:nth-child(3),
+    .index-list-row .il-cell:nth-child(4),
+    .index-list-row .il-arrow { display: none; }
+  }
+
+  /* ── OLD CARD GRID (hidden) ── */
+  .index-grid { display: none; }
   .index-card { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 18px; padding: 20px; transition: transform 0.5s cubic-bezier(0.32,0.72,0,1), box-shadow 0.5s cubic-bezier(0.32,0.72,0,1), border-color 0.4s ease; box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,0.05); position: relative; overflow: hidden; }
   .index-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(34,211,238,0.5), transparent); }
   .index-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover), 0 0 30px rgba(34,211,238,0.12), inset 0 1px 0 rgba(255,255,255,0.07); border-color: rgba(34,211,238,0.4); }
@@ -808,8 +838,8 @@
 <main id="mainPage">
   <!-- MARKNADSÖVERSIKT – indexkort + OMXS30 -->
   <section id="marknad">
-    <!-- Indexkort renderas av renderIndexCharts() -->
-    <div class="index-grid" id="indexGrid" style="margin-bottom:16px"></div>
+    <!-- Indexlista renderas av renderIndexCharts() -->
+    <div class="index-list-wrap" id="indexGrid"></div>
 
     <!-- SPLIT: Graf vänster + Nyheter höger -->
     <div class="chart-news-split">
@@ -1434,31 +1464,56 @@ function renderTicker() {
   t.innerHTML = items;
 }
 
-// ─── INDEX CARDS ─────────────────────────────────────────────────────────────
-const indexCharts = [];
+// ─── INDEX LIST (Avanza-stil) ─────────────────────────────────────────────────
+const indexCharts = []; // behålls för bakåtkompatibilitet
+const INDEX_META = {
+  'OMXS30':    { flag: '🇸🇪', exchange: 'Nasdaq Stockholm', m3: +5.13, y1: +10.26 },
+  'Dow Jones': { flag: '🇺🇸', exchange: 'NYSE',             m3: +2.80, y1: +8.40  },
+  'S&P 500':   { flag: '🇺🇸', exchange: 'NYSE',             m3: +4.20, y1: +22.10 },
+};
+
+function fmtPct(v) {
+  const sign = v >= 0 ? '+' : '';
+  return `${sign}${v.toFixed(2)}%`;
+}
+function pctClass(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'neutral'; }
+
 function renderIndexCharts() {
   const g = document.getElementById('indexGrid');
-  g.innerHTML = '';
-  indexCharts.forEach(c => c.destroy());
-  indexCharts.length = 0;
-  INDICES.forEach((idx, i) => {
-    const isUp = idx.change >= 0;
-    const pts = Array.from({length: 20}, (_, j) => idx.value + (Math.random() - 0.5) * idx.value * 0.02 * (j/20));
-    const card = document.createElement('div');
-    card.className = 'index-card';
-    card.innerHTML = `
-      <div class="index-name">${idx.name}</div>
-      <div class="index-price">${idx.value.toLocaleString('sv-SE', {maximumFractionDigits:2})}</div>
-      <div class="index-change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${(idx.change/idx.value*100).toFixed(2)}%</div>
-      <div class="index-chart"><canvas id="ic${i}"></canvas></div>`;
-    g.appendChild(card);
-    const ctx = card.querySelector(`#ic${i}`).getContext('2d');
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: pts.map((_,j)=>j), datasets: [{ data: pts, borderColor: isUp ? '#26A69A' : '#EF5350', borderWidth: 2, fill: true, backgroundColor: isUp ? 'rgba(38,166,154,0.08)' : 'rgba(239,83,80,0.08)', tension: 0.4, pointRadius: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } }, animation: false }
-    });
-    indexCharts.push(chart);
+  g.innerHTML = `
+    <div class="index-list-header">
+      <span class="index-list-title">Nordiska &amp; globala index</span>
+    </div>
+    <div class="index-list-cols">
+      <span class="index-list-col-lbl">Index</span>
+      <span class="index-list-col-lbl">Idag</span>
+      <span class="index-list-col-lbl">3 mån</span>
+      <span class="index-list-col-lbl">1 år</span>
+      <span class="index-list-col-lbl">Senast</span>
+      <span class="index-list-col-lbl"></span>
+    </div>
+  `;
+  INDICES.forEach(idx => {
+    const meta = INDEX_META[idx.name] || { flag: '🌐', exchange: '', m3: 0, y1: 0 };
+    const todayPct = idx.change / idx.value * 100;
+    const row = document.createElement('div');
+    row.className = 'index-list-row';
+    row.innerHTML = `
+      <div class="il-left">
+        <span class="il-flag">${meta.flag}</span>
+        <div>
+          <div class="il-name">${idx.name}</div>
+          <div class="il-exchange">${meta.exchange}</div>
+        </div>
+      </div>
+      <span class="il-cell ${pctClass(todayPct)}">${fmtPct(todayPct)}</span>
+      <span class="il-cell ${pctClass(meta.m3)}">${fmtPct(meta.m3)}</span>
+      <span class="il-cell ${pctClass(meta.y1)}">${fmtPct(meta.y1)}</span>
+      <span class="il-price">${idx.value.toLocaleString('sv-SE', {maximumFractionDigits:2})}</span>
+      <span class="il-arrow">›</span>
+    `;
+    row.addEventListener('click', () => openModal(idx));
+    g.appendChild(row);
   });
 }
 
