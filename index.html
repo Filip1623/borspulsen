@@ -613,6 +613,14 @@
   .xpl-f-fill.neg { background:linear-gradient(90deg,#DC2626,#EF4444); right:50%; }
   .xpl-buyrow { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
   .xpl-disclaimer { margin-top:18px; font-size:11px; color:var(--text2); opacity:0.7; line-height:1.5; }
+  .xpl-mtf { margin-top:16px; padding:14px 16px; background:var(--bg2); border:1px solid var(--border); border-radius:12px; }
+  .xpl-mtf-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+  .xpl-mtf-row:last-child { border-bottom:none; }
+  .xpl-mtf-label { font-size:13px; font-weight:700; color:var(--text2); letter-spacing:0.3px; }
+  .xpl-mtf-badge { font-size:12px; font-weight:800; padding:3px 10px; border-radius:20px; }
+  .mtf-bull { background:rgba(22,163,74,0.15); color:#16A34A; border:1px solid rgba(22,163,74,0.3); }
+  .mtf-bear { background:rgba(220,38,38,0.15); color:#EF4444; border:1px solid rgba(220,38,38,0.3); }
+  .mtf-neutral { background:var(--bg3); color:var(--text2); border:1px solid var(--border); }
   .xpl-ai-section { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
   .xpl-ai-text { margin-top:10px; font-size:13.5px; line-height:1.65; color:var(--text); }
   .xpl-ai-spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--neon); border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:middle; }
@@ -4521,6 +4529,39 @@ const AIQ = (function () {
     return Math.tanh((s[d]/hi-0.85)*12);
   }
 
+  // Multi-Timeframe (MTF) analys: bull/neutral/bear på 4H, Daily, Weekly
+  // Daglig serie → 4H proxy (korta EMAs), Daily (standard), Weekly (aggregerat)
+  function mtfAnalysis(s, d){
+    if(d < 10) return { h4:'neutral', daily:'neutral', weekly:'neutral', score:0 };
+
+    // 4H proxy: EMA5 vs EMA10 + 3-dagars momentum
+    const e5=emaOf(s,d,5), e10=emaOf(s,d,10);
+    const m3=mom(s,d,3);
+    const h4bull = e5>e10 && m3>0.003;
+    const h4bear = e5<e10 && m3<-0.003;
+    const h4 = h4bull?'bull':h4bear?'bear':'neutral';
+
+    // Daily: EMA20 vs EMA50 + RSI + MACD
+    const e20=emaOf(s,d,20), e50=emaOf(s,d,50);
+    const r=rsi(s,d);
+    const dailyBull = e20>e50 && r>45 && r<75;
+    const dailyBear = e20<e50 && (r<55);
+    const daily = dailyBull?'bull':dailyBear?'bear':'neutral';
+
+    // Weekly proxy: 4-veckorsmom (≈20d) + EMA50 vs EMA100
+    const m20=mom(s,d,20);
+    const e100=emaOf(s,d,Math.min(d,100));
+    const weeklyBull = m20>0.01 && e50>e100;
+    const weeklyBear = m20<-0.01 || e50<e100*0.98;
+    const weekly = weeklyBull?'bull':weeklyBear?'bear':'neutral';
+
+    // Alignmentpoäng: fler bullish TF = starkare signal
+    const bulls=[h4,daily,weekly].filter(x=>x==='bull').length;
+    const bears=[h4,daily,weekly].filter(x=>x==='bear').length;
+    const score = (bulls-bears)/3; // -1..+1
+    return { h4, daily, weekly, score };
+  }
+
   // ── RISKMODELL (institutionell) ──
   // Dagliga avkastningar för en serie över fönster n fram till dag d
   function returnsOf(s,d,n=60){ if(d-n<1) n=d-1; const r=[]; for(let i=d-n+1;i<=d;i++) r.push(s[i]/s[i-1]-1); return r; }
@@ -4664,6 +4705,7 @@ const AIQ = (function () {
     const macdSig  = macdSignal(s,d);
     const bSig     = bollingerB(s,d);
     const h52Sig   = high52(s,d);
+    const mtf      = mtfAnalysis(s,d);
     const sm=sectMom[u.sector]||0;
     const W=STRATS[strat].w;
     const pef = peScore(u.pe, m20);
@@ -4687,9 +4729,11 @@ const AIQ = (function () {
       bollinger: bSig,
       high52: h52Sig,
     };
-    const comp = W.mom20*f.mom20 + W.mom60*f.mom60 + W.trend*f.trend + W.ema50*f.ema50 + W.ema100*f.ema100 + W.rsi*f.rsi + W.sect*f.sect + W.news*f.news - W.vol*f.vol + W.pe*f.pe + (W.tline||0)*f.tline + (W.breakout||0)*f.breakout + (W.macd||0)*f.macd + (W.bollinger||0)*f.bollinger + (W.high52||0)*f.high52 + winBonus;
+    // MTF-alignment bonus: +0.3 per bullish TF, -0.3 per bearish TF
+    const mtfBonus = mtf.score * 0.9;
+    const comp = W.mom20*f.mom20 + W.mom60*f.mom60 + W.trend*f.trend + W.ema50*f.ema50 + W.ema100*f.ema100 + W.rsi*f.rsi + W.sect*f.sect + W.news*f.news - W.vol*f.vol + W.pe*f.pe + (W.tline||0)*f.tline + (W.breakout||0)*f.breakout + (W.macd||0)*f.macd + (W.bollinger||0)*f.bollinger + (W.high52||0)*f.high52 + winBonus + mtfBonus;
     const sc = Math.round(100/(1+Math.exp(-comp*1.5)));
-    return { sc, m20, m60, r, v, trend, ema50, ema100, tline:tlineSig, breakout:breakoutSig, macd:macdSig, bb:bSig, h52:h52Sig, sm, pef, pe: u.pe, f };
+    return { sc, m20, m60, r, v, trend, ema50, ema100, tline:tlineSig, breakout:breakoutSig, macd:macdSig, bb:bSig, h52:h52Sig, mtf, sm, pef, pe: u.pe, f };
   }
 
   function priceOf(u){ return u.series[present]; }
@@ -4969,8 +5013,14 @@ const AIQ = (function () {
       hEl.innerHTML=list.map(x=>{
         const w=(x.val/eq*100);
         const flag = x.u.region==='US'?'🇺🇸':x.u.region==='SE'?'🇸🇪':'';
+        const sm2=sectorMomentum(present);
+        const sc2=score(x.u,present,sm2,(x.px-x.h.avgPrice)/x.h.avgPrice);
+        const mtf=sc2.mtf;
+        const tfChip=(label,tf)=>{const c=tf==='bull'?'#16A34A':tf==='bear'?'#EF4444':'#6B7280';const ic=tf==='bull'?'▲':tf==='bear'?'▼':'→';return `<span style="font-size:10px;font-weight:700;color:${c};background:${c}18;border:1px solid ${c}30;border-radius:10px;padding:1px 6px;margin-right:3px">${label} ${ic}</span>`;};
         return `<div class="aiq-holding" onclick="aiqExplain('${x.u.ticker}')" title="Klicka för AI:ns motivering">
-          <div><div class="aiq-h-name">${flag} ${x.u.name} <span class="aiq-h-why">varför?</span></div><div class="aiq-h-meta">${x.h.shares} st · ${x.px.toFixed(0)} kr${x.u.pe>0?' · P/E '+x.u.pe:''}</div>
+          <div><div class="aiq-h-name">${flag} ${x.u.name} <span class="aiq-h-why">varför?</span></div>
+            <div style="margin:3px 0 4px">${tfChip('4H',mtf.h4)}${tfChip('D',mtf.daily)}${tfChip('W',mtf.weekly)}</div>
+            <div class="aiq-h-meta">${x.h.shares} st · ${x.px.toFixed(0)} kr${x.u.pe>0?' · P/E '+x.u.pe:''}</div>
             <div class="aiq-score-bar"><div class="aiq-score-fill" style="width:${Math.min(100,w*4).toFixed(0)}%"></div></div></div>
           <div class="aiq-h-weight">${w.toFixed(1)}%</div>
           <div class="aiq-h-pl ${x.pl>=0?'up':'down'}">${x.pl>=0?'+':''}${x.pl.toFixed(1)}%</div>
@@ -5200,6 +5250,16 @@ function aiqExplain(ticker){
       <div class="xpl-stat"><label>Avkastning</label><div class="v ${x.pl>=0?'up':'down'}" style="color:${x.pl>=0?'#16A34A':'#DC2626'}">${x.pl>=0?'+':''}${(x.pl*100).toFixed(1)}%</div></div>
       <div class="xpl-stat"><label>RSI</label><div class="v">${x.info.r.toFixed(0)}</div></div>
       <div class="xpl-stat"><label>Volatilitet</label><div class="v">${(x.info.v*100).toFixed(1)}%</div></div>
+    </div>
+    <div class="xpl-mtf">
+      <div class="xpl-sec-title" style="margin-bottom:10px">Multi-Timeframe analys</div>
+      ${['4H','Daily','Weekly'].map((label,i)=>{
+        const tf=[x.info.mtf.h4, x.info.mtf.daily, x.info.mtf.weekly][i];
+        const cls=tf==='bull'?'mtf-bull':tf==='bear'?'mtf-bear':'mtf-neutral';
+        const icon=tf==='bull'?'▲':tf==='bear'?'▼':'→';
+        const txt=tf==='bull'?'Bullish':tf==='bear'?'Bearish':'Neutral';
+        return `<div class="xpl-mtf-row"><span class="xpl-mtf-label">${label}</span><span class="xpl-mtf-badge ${cls}">${icon} ${txt}</span></div>`;
+      }).join('')}
     </div>
     <div class="xpl-sec-title">Signalbidrag till poängen</div>
     ${factors}
