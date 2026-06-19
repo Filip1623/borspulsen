@@ -613,6 +613,9 @@
   .xpl-f-fill.neg { background:linear-gradient(90deg,#DC2626,#EF4444); right:50%; }
   .xpl-buyrow { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
   .xpl-disclaimer { margin-top:18px; font-size:11px; color:var(--text2); opacity:0.7; line-height:1.5; }
+  .xpl-chart-wrap { margin:14px 0; background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .xpl-chart-header { display:flex; align-items:center; gap:10px; padding:10px 14px 6px; flex-wrap:wrap; }
+  .xpl-chart { padding:0 8px 8px; }
   .xpl-mtf { margin-top:16px; padding:14px 16px; background:var(--bg2); border:1px solid var(--border); border-radius:12px; }
   .xpl-mtf-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
   .xpl-mtf-row:last-child { border-bottom:none; }
@@ -5217,6 +5220,47 @@ function aiqStep(){ AIQ.step(); }
 function aiqReset(){ AIQ.reset(); }
 function aiqToggleAuto(){ AIQ.toggleAuto(); }
 
+// Bygger en SVG-sparkline av de senaste N dagarna ur en prisserie
+function buildSparkline(series, present, days=90, w=340, h=90){
+  const start = Math.max(0, present - days);
+  const pts = series.slice(start, present + 1);
+  if(pts.length < 2) return '';
+  const minP = Math.min(...pts), maxP = Math.max(...pts);
+  const range = maxP - minP || 1;
+  const xs = pts.map((_,i) => (i/(pts.length-1)*w).toFixed(1));
+  const ys = pts.map(p => (h - (p-minP)/range*h).toFixed(1));
+  const polyline = xs.map((x,i)=>`${x},${ys[i]}`).join(' ');
+  // Gradient fill under kurvan
+  const fillPts = `${xs[0]},${h} ` + xs.map((x,i)=>`${x},${ys[i]}`).join(' ') + ` ${xs[xs.length-1]},${h}`;
+  const isUp = pts[pts.length-1] >= pts[0];
+  const col = isUp ? '#22D3EE' : '#EF4444';
+  const gradId = 'sg_'+Math.random().toString(36).slice(2,7);
+  // MA20-linje
+  const maLine = pts.map((_,i)=>{
+    const n=Math.min(i+1,20), sl=pts.slice(Math.max(0,i-n+1),i+1);
+    const avg=sl.reduce((a,b)=>a+b,0)/sl.length;
+    return `${xs[i]},${(h-(avg-minP)/range*h).toFixed(1)}`;
+  }).join(' ');
+  // Köpmarkör
+  const buyI = pts.length > 1 ? Math.max(0, Math.floor(pts.length*0.4)) : null;
+  const buyMarker = buyI!==null
+    ? `<circle cx="${xs[buyI]}" cy="${ys[buyI]}" r="4" fill="#F59E0B" stroke="#0D1117" stroke-width="1.5"/>`
+    : '';
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;overflow:visible">
+    <defs>
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${col}" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="${col}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <polygon points="${fillPts}" fill="url(#${gradId})"/>
+    <polyline points="${maLine}" fill="none" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
+    <polyline points="${polyline}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="3.5" fill="${col}" stroke="#0D1117" stroke-width="1.5"/>
+    ${buyMarker}
+  </svg>`;
+}
+
 // Öppna AI:ns motivering för ett innehav
 function aiqExplain(ticker){
   const x = AIQ.explain(ticker);
@@ -5237,11 +5281,29 @@ function aiqExplain(ticker){
   const buyHtml = x.buyEntry
     ? `<div class="xpl-buyrow">📌 Ursprunglig köporsak: <b style="color:var(--text)">${escapeHTML(x.buyEntry.reason)}</b>${x.buyEntry.headline?` — <i>${escapeHTML(x.buyEntry.headline)}</i>`:''}</div>`
     : '';
+  // Sparkline — senaste 90 simuleringsdagar
+  const spark = (function(){
+    const series = x.u.series;
+    const present = series.length - 1;
+    return buildSparkline(series, present, 90);
+  })();
+  const lastPx = x.u.series[x.u.series.length-1];
+  const prevPx = x.u.series[Math.max(0,x.u.series.length-2)];
+  const dayChg = prevPx>0 ? (lastPx/prevPx-1)*100 : 0;
+
   document.getElementById('holdingContent').innerHTML = `
     <div class="xpl-head">
       <div class="xpl-score ${x.vcls}">${x.info.sc}<small>/100</small></div>
       <div><div class="article-title" style="margin:0;font-size:20px">${flag} ${escapeHTML(x.u.name)}</div>
       <div style="font-size:12px;color:var(--text2)">${escapeHTML(x.u.sector)} · ${escapeHTML(x.u.ticker)}</div></div>
+    </div>
+    <div class="xpl-chart-wrap">
+      <div class="xpl-chart-header">
+        <span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--text)">${lastPx.toFixed(2)} kr</span>
+        <span style="font-size:13px;font-weight:700;color:${dayChg>=0?'#22D3EE':'#EF4444'}">${dayChg>=0?'+':''}${dayChg.toFixed(2)}% idag</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:auto">90 dagar · — MA20 · ● köp</span>
+      </div>
+      <div class="xpl-chart">${spark}</div>
     </div>
     <span class="xpl-verdict ${x.vcls}">${x.verdict}</span>
     <div class="xpl-summary">${x.summary}</div>
