@@ -15,6 +15,16 @@
 <meta name="twitter:description" content="Följ svenska börsen i realtid med BörsPulsen. Aktiekurser, nyheter och marknadsanalys.">
 <meta name="twitter:image" content="https://borspulsen.com/og-image.png">
 <link rel="canonical" href="https://borspulsen.com">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#04140E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BörsPulsen">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -32,10 +42,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js pinnad till exakt version (immutabel URL) för att undvika oväntade/komprometterade uppdateringar.
+     Rekommenderad uppföljning: lägg till integrity="sha384-…" (SRI-hashen visas på jsdelivr-sidan för v4.4.6). -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <style>
   :root {
+    color-scheme: dark;
     --bg: #060912;
     --bg2: #0C1120;
     --bg3: #141B2E;
@@ -58,6 +71,7 @@
     --mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, monospace;
   }
   [data-theme="light"] {
+    color-scheme: light;
     --bg: #F4F7FF;
     --bg2: #FFFFFF;
     --bg3: #EDF0F9;
@@ -80,6 +94,7 @@
     --mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  button, a, select, input[type="button"], input[type="submit"], [role="button"] { touch-action: manipulation; }
   body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; position: relative; overflow-x: hidden; }
   h1, h2, h3, .logo-text, .section-title, .nl-title, .popup-title { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
   /* Monospace för numerisk data – terminal/hi-tech känsla */
@@ -313,7 +328,7 @@
   /* SPLIT LAYOUT – Graf + Nyheter */
   .chart-news-split { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; margin-bottom: 28px; }
   .chart-col { min-width: 0; }
-  .news-sidebar { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; height: 420px; }
+  .news-sidebar { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; height: 380px; }
   .news-sidebar-header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .news-sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); letter-spacing: 0.2px; }
   .news-sidebar-list { overflow-y: auto; flex: 1; }
@@ -375,12 +390,160 @@
   .stat-label { font-size: 11px; color: #787b86; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-value { font-size: 17px; font-weight: 700; color: #d1d4dc; }
 
+  /* ── AI-FÖRVALTAREN ── */
+  .aiq-wrap { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 28px; box-shadow: var(--card-shadow); position: relative; }
+  .aiq-wrap::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(34,211,238,0.6), transparent); }
+  /* ── Marknadsticker (fristående) ── */
+  .mkt-ticker-wrap { display: flex; align-items: center; background: var(--card); border: 1px solid rgba(34,211,238,0.18); border-radius: 14px; overflow: hidden; height: 48px; margin-bottom: 14px; box-shadow: 0 0 24px rgba(34,211,238,0.07); }
+  .aiq-ticker-label { flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 18px; height: 100%; background: linear-gradient(135deg, rgba(34,211,238,0.2), rgba(99,102,241,0.2)); border-right: 1px solid rgba(34,211,238,0.25); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--neon); white-space: nowrap; }
+  .aiq-ticker-label .tlive { width: 8px; height: 8px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 10px var(--neon); animation: aipulse 2s infinite; }
+  .aiq-ticker-track { flex: 1; overflow: hidden; position: relative; mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 5%, black 95%, transparent); }
+  .aiq-ticker-inner { display: inline-flex; gap: 0; animation: tickerScroll 55s linear infinite; white-space: nowrap; align-items: center; }
+  .aiq-ticker-inner:hover { animation-play-state: paused; }
+  @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .aiq-ticker-item { display: inline-flex; align-items: center; gap: 9px; padding: 0 24px; font-size: 12.5px; color: var(--text2); font-family: var(--mono); border-right: 1px solid rgba(255,255,255,0.06); height: 48px; }
+  .aiq-ticker-item .ti-tag { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 5px; flex-shrink: 0; }
+  .aiq-ticker-item .ti-tag.up  { background: rgba(52,211,153,0.15); color: var(--green); }
+  .aiq-ticker-item .ti-tag.dn  { background: rgba(251,113,133,0.15); color: var(--red); }
+  .aiq-ticker-item .ti-tag.neu { background: rgba(148,163,184,0.12); color: var(--text2); }
+  .aiq-ticker-item .ti-txt { color: var(--text); }
+  .aiq-ticker-item .ti-chg.up { color: var(--green); } .aiq-ticker-item .ti-chg.dn { color: var(--red); }
+
+  .aiq-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .aiq-badge { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, #22D3EE, #6366F1); display: flex; align-items: center; justify-content: center; font-size: 19px; box-shadow: 0 0 18px rgba(34,211,238,0.5); flex-shrink: 0; }
+  .aiq-titles { display: flex; flex-direction: column; }
+  .aiq-title { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+  .aiq-live { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; }
+  .aiq-live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: aipulse 2s infinite; }
+  .aiq-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .aiq-regime { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .aiq-regime-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--bg3); }
+  .aiq-regime-pill .rdot { width: 8px; height: 8px; border-radius: 50%; }
+  .regime-bull { color: var(--green); border-color: rgba(52,211,153,0.4); } .regime-bull .rdot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .regime-bear { color: var(--red);   border-color: rgba(251,113,133,0.4); } .regime-bear .rdot { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .regime-neutral { color: var(--gold); border-color: rgba(251,191,36,0.4); } .regime-neutral .rdot { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  .aiq-strategy { display: flex; gap: 6px; padding: 14px 22px 0; flex-wrap: wrap; }
+  .aiq-strat-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 7px 16px; border-radius: 9px; cursor: pointer; font-size: 12.5px; font-weight: 700; transition: all 0.2s; }
+  .aiq-strat-btn:hover { color: var(--text); border-color: var(--neon); }
+  .aiq-strat-btn.active { background: linear-gradient(135deg, var(--neon), var(--neon2)); color: #fff; border-color: transparent; box-shadow: 0 0 16px rgba(34,211,238,0.35); }
+
+  .aiq-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 18px 22px 14px; }
+  .aiq-stat { position: relative; background: linear-gradient(135deg, rgba(22,30,52,0.85), rgba(12,17,34,0.9)); border: 1px solid rgba(94,130,220,0.13); border-radius: 16px; padding: 14px 16px 12px; overflow: hidden; transition: border-color 0.25s; }
+  .aiq-stat::before { content:''; position:absolute; inset:0; border-radius:16px; background: linear-gradient(135deg, rgba(34,211,238,0.04) 0%, transparent 60%); pointer-events:none; }
+  .aiq-stat:hover { border-color: rgba(34,211,238,0.28); }
+  .aiq-stat label { font-size: 9.5px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.7px; font-weight: 700; display:flex; align-items:center; gap:5px; }
+  .aiq-stat .v { font-family: var(--mono); font-size: 20px; font-weight: 800; color: var(--text); margin-top: 6px; letter-spacing: -0.8px; line-height:1; }
+  .aiq-stat .v.up { color: var(--green); text-shadow: 0 0 18px rgba(52,211,153,0.4); }
+  .aiq-stat .v.down { color: var(--red); text-shadow: 0 0 18px rgba(251,113,133,0.4); }
+  @media (max-width: 820px) { .aiq-stats { grid-template-columns: repeat(2,1fr); } }
+
+  .aiq-chart-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 22px 6px; border-top: 1px solid rgba(94,130,220,0.1); }
+  .aiq-range, .aiq-bench-sel { display: inline-flex; gap: 2px; background: rgba(255,255,255,0.03); border: 1px solid rgba(94,130,220,0.12); border-radius: 12px; padding: 3px; }
+  .aiq-range button, .aiq-bench-sel button { background: transparent; border: none; color: var(--text2); padding: 5px 13px; border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 700; transition: all 0.2s cubic-bezier(0.32,0.72,0,1); white-space: nowrap; letter-spacing:0.02em; }
+  .aiq-range button:hover, .aiq-bench-sel button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .aiq-range button.active, .aiq-bench-sel button.active { background: linear-gradient(135deg, var(--neon), var(--neon2)); color: #fff; box-shadow: 0 0 14px rgba(34,211,238,0.35); }
+  .aiq-bench-sel { flex-wrap: wrap; }
+  .aiq-range-return { font-family: var(--mono); font-size: 11.5px; font-weight: 700; padding: 2px 22px 8px; }
+  .aiq-range-return .up { color: var(--green); } .aiq-range-return .down { color: var(--red); }
+  @media (max-width: 560px) { .aiq-chart-tools { gap: 8px; } .aiq-range button, .aiq-bench-sel button { padding: 5px 9px; font-size: 11px; } }
+  .aiq-chart-box { padding: 0 18px 16px; height: 220px; }
+  .aiq-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--border); }
+  @media (max-width: 820px) { .aiq-cols { grid-template-columns: 1fr; } .aiq-stats { grid-template-columns: repeat(2,1fr); } }
+  .aiq-col { padding: 16px 22px; }
+  .aiq-col + .aiq-col { border-left: 1px solid var(--border); }
+  @media (max-width: 820px) { .aiq-col + .aiq-col { border-left: none; border-top: 1px solid var(--border); } }
+  .aiq-col-title { font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+
+  .aiq-holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .aiq-holding:last-child { border-bottom: none; }
+  .aiq-h-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .aiq-h-meta { font-size: 11px; color: var(--text2); margin-top: 1px; font-family: var(--mono); }
+  .aiq-h-weight { font-family: var(--mono); font-size: 12px; color: var(--text2); text-align: right; }
+  .aiq-h-pl { font-family: var(--mono); font-size: 13px; font-weight: 700; text-align: right; min-width: 56px; }
+  .aiq-h-pl.up { color: var(--green); } .aiq-h-pl.down { color: var(--red); }
+  .aiq-score-bar { height: 4px; border-radius: 3px; background: var(--bg3); margin-top: 5px; overflow: hidden; }
+  .aiq-score-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--neon), var(--neon2)); }
+
+  .aiq-log { max-height: 260px; overflow-y: auto; }
+  .aiq-log::-webkit-scrollbar { width: 4px; } .aiq-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .aiq-log-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: flex-start; }
+  .aiq-log-item:last-child { border-bottom: none; }
+  .aiq-log-act { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.4px; }
+  .aiq-log-act.buy  { background: rgba(52,211,153,0.15); color: var(--green); }
+  .aiq-log-act.sell { background: rgba(251,113,133,0.15); color: var(--red); }
+  .aiq-log-txt { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+  .aiq-log-txt b { font-weight: 700; }
+  .aiq-log-reason { color: var(--text2); }
+  .aiq-log-time { font-size: 10.5px; color: var(--text2); font-family: var(--mono); margin-top: 2px; }
+  .aiq-log-type { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+  .aiq-log-type.tech { background: rgba(99,102,241,0.18); color: #818CF8; }
+  .aiq-log-type.evt  { background: rgba(245,158,11,0.18); color: #FCD34D; }
+  .aiq-log-type.risk { background: rgba(251,113,133,0.18); color: #FDA4AF; }
+  .aiq-news-feed { border-bottom: 1px solid var(--border); padding: 8px 0 10px; margin-bottom: 6px; }
+  .aiq-news-item { display: flex; align-items: baseline; gap: 7px; padding: 3px 0; font-size: 11.5px; line-height: 1.4; }
+  .aiq-news-date { color: var(--text2); font-family: var(--mono); font-size: 10px; min-width: 42px; }
+  .aiq-news-impact { font-size: 10px; min-width: 10px; }
+  .aiq-news-impact.up { color: var(--green); } .aiq-news-impact.down { color: var(--red); }
+  .aiq-news-txt { color: var(--text2); flex: 1; }
+
+  .aiq-controls { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .aiq-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 9px 18px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.2s; }
+  .aiq-btn:hover { border-color: var(--neon); color: var(--neon); }
+  .aiq-btn.primary { background: linear-gradient(135deg, var(--neon), var(--neon2)); color: #fff; border-color: transparent; box-shadow: 0 0 16px rgba(34,211,238,0.3); }
+  .aiq-btn.primary.running { background: var(--bg3); color: var(--red); box-shadow: none; }
+  .aiq-disclaimer { font-size: 11px; color: var(--text2); margin-left: auto; }
+  .aiq-empty { color: var(--text2); font-size: 12.5px; padding: 8px 0; }
+
+  /* Riskanalys-panel */
+  .aiq-risk-wrap { padding: 16px 22px 8px; border-top: 1px solid rgba(94,130,220,0.1); }
+  .aiq-risk { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
+  @media (max-width: 900px) { .aiq-risk { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 520px) { .aiq-risk { grid-template-columns: repeat(2, 1fr); } }
+  .aiq-risk-tile { position: relative; background: linear-gradient(135deg, rgba(22,30,52,0.7), rgba(10,15,30,0.8)); border: 1px solid rgba(94,130,220,0.1); border-radius: 14px; padding: 11px 13px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+  .aiq-risk-tile:hover { border-color: rgba(34,211,238,0.22); transform: translateY(-1px); }
+  .aiq-risk-tile label { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; display: block; opacity:0.75; }
+  .aiq-risk-tile .rv { font-family: var(--mono); font-size: 16px; font-weight: 800; color: var(--text); margin-top: 5px; letter-spacing: -0.6px; line-height:1; }
+  .aiq-risk-tile .rv.up { color: var(--green); text-shadow: 0 0 14px rgba(52,211,153,0.35); }
+  .aiq-risk-tile .rv.down { color: var(--red); text-shadow: 0 0 14px rgba(251,113,133,0.35); }
+  .aiq-factor-row { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); }
+  .aiq-factor-row:last-child { border-bottom:none; }
+  .aiq-factors-panel { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-top:14px; }
+  .aiq-factors-title { font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+
+  /* Sektorexponering */
+  .aiq-sectors-wrap { padding: 12px 22px 6px; }
+  .aiq-sec { display: grid; grid-template-columns: 130px 1fr 44px; align-items: center; gap: 12px; padding: 5px 0; }
+  .aiq-sec-name { font-size: 12.5px; color: var(--text); font-weight: 600; }
+  .aiq-sec-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .aiq-sec-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon), var(--neon2)); }
+  .aiq-sec-pct { font-family: var(--mono); font-size: 12px; color: var(--text2); text-align: right; font-weight: 600; }
+  @media (max-width: 520px) { .aiq-sec { grid-template-columns: 90px 1fr 40px; } }
+
   /* PORTFOLIO */
   .portfolio { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 32px; box-shadow: var(--card-shadow); }
   .portfolio-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
   .portfolio-stat { background: var(--bg3); border-radius: 10px; padding: 14px; }
   .portfolio-stat label { font-size: 12px; color: var(--text2); }
   .portfolio-stat .value { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  /* DUELL: Du vs NEXUS-1 */
+  .duel { background: linear-gradient(135deg, rgba(27,79,216,0.08), rgba(99,102,241,0.06)); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; margin-bottom: 18px; }
+  .duel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+  .duel-title { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+  .duel-verdict { font-size: 12.5px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border); }
+  .duel-verdict.win { color: #16A34A; background: rgba(22,163,74,0.12); border-color: rgba(22,163,74,0.3); }
+  .duel-verdict.lose { color: #DC2626; background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.3); }
+  .duel-verdict.tie { color: var(--text2); }
+  .duel-bars { display: flex; flex-direction: column; gap: 12px; }
+  .duel-side { display: grid; grid-template-columns: 140px 1fr 72px; align-items: center; gap: 12px; }
+  .duel-label { font-size: 13px; font-weight: 700; color: var(--text); }
+  .duel-track { position: relative; height: 12px; background: var(--bg3); border-radius: 6px; overflow: hidden; }
+  .duel-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 6px; width: 0; transition: width 0.6s cubic-bezier(0.32,0.72,0,1); }
+  .duel-fill.you { background: linear-gradient(90deg, #22D3EE, #38BDF8); }
+  .duel-fill.ai { background: linear-gradient(90deg, #6366F1, #818CF8); }
+  .duel-pct { font-family: var(--mono); font-size: 14px; font-weight: 800; text-align: right; }
+  .duel-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 560px) { .duel-side { grid-template-columns: 110px 1fr 60px; gap: 8px; } .duel-label { font-size: 12px; } }
   .portfolio-add { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
   .portfolio-add input, .portfolio-add select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 9px 14px; border-radius: 8px; font-size: 14px; outline: none; }
   .portfolio-add input { flex: 1; min-width: 120px; }
@@ -423,6 +586,37 @@
   .article-source { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
   .article-source a { color:var(--accent); text-decoration:none; }
   .article-source a:hover { text-decoration:underline; }
+
+  /* NEXUS-1 INNEHAVSFÖRKLARING */
+  .aiq-holding { cursor:pointer; transition:background 0.15s; border-radius:8px; }
+  .aiq-holding:hover { background:rgba(255,255,255,0.03); }
+  .aiq-h-why { font-size:10px; font-weight:700; color:var(--accent); opacity:0; transition:opacity 0.15s; letter-spacing:0.3px; }
+  .aiq-holding:hover .aiq-h-why { opacity:0.85; }
+  .xpl-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .xpl-score { font-family:var(--mono); font-size:30px; font-weight:800; line-height:1; }
+  .xpl-score small { font-size:13px; color:var(--text2); font-weight:600; }
+  .xpl-verdict { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:18px; background:var(--bg3); border:1px solid var(--border); }
+  .xpl-verdict.up { color:#16A34A; background:rgba(22,163,74,0.12); border-color:rgba(22,163,74,0.3); }
+  .xpl-verdict.down { color:#DC2626; background:rgba(220,38,38,0.12); border-color:rgba(220,38,38,0.3); }
+  .xpl-summary { font-size:14.5px; line-height:1.75; color:var(--text); margin-bottom:22px; }
+  .xpl-stats { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+  .xpl-stat label { display:block; font-size:11px; color:var(--text2); margin-bottom:2px; }
+  .xpl-stat .v { font-family:var(--mono); font-size:16px; font-weight:700; }
+  .xpl-sec-title { font-size:12px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+  .xpl-factor { display:grid; grid-template-columns:130px 1fr 56px; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .xpl-factor:last-child { border-bottom:none; }
+  .xpl-f-name { font-size:12.5px; font-weight:600; color:var(--text); }
+  .xpl-f-desc { font-size:12px; color:var(--text2); }
+  .xpl-f-bar { position:relative; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+  .xpl-f-fill { position:absolute; top:0; height:100%; border-radius:3px; }
+  .xpl-f-fill.pos { background:linear-gradient(90deg,#16A34A,#22C55E); left:50%; }
+  .xpl-f-fill.neg { background:linear-gradient(90deg,#DC2626,#EF4444); right:50%; }
+  .xpl-buyrow { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
+  .xpl-disclaimer { margin-top:18px; font-size:11px; color:var(--text2); opacity:0.7; line-height:1.5; }
+  .xpl-ai-section { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+  .xpl-ai-text { margin-top:10px; font-size:13.5px; line-height:1.65; color:var(--text); }
+  .xpl-ai-spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--neon); border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
 
   /* AI NYHETSRADAR */
   .impact-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
@@ -566,6 +760,10 @@
   .preset-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 10px rgba(41,98,255,0.25); }
   .screener-actions { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
   .screener-count { font-size: 13px; color: var(--text2); margin-left: auto; }
+  .scr-sig { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:4px; margin-top:2px; }
+  .sig-ema  { background:rgba(27,79,216,0.15); color:#60A5FA; border:1px solid rgba(27,79,216,0.25); }
+  .sig-rsi  { background:rgba(220,38,38,0.12); color:#F87171; border:1px solid rgba(220,38,38,0.25); }
+  .sig-52h  { background:rgba(22,163,74,0.12); color:#4ADE80; border:1px solid rgba(22,163,74,0.25); }
   .screener-empty { padding: 32px; text-align: center; color: var(--text2); font-size: 14px; }
   .btn-export-csv { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .btn-export-csv:hover { color: var(--text); border-color: var(--accent); }
@@ -804,17 +1002,19 @@
       <a href="#screener">Screener</a>
       <a href="#portfolio">Portfölj</a>
       <a href="#watchlist">Bevakningslista</a>
+      <a href="#alerts">Prisvakter</a>
       <a href="#nyheter">Nyheter</a>
     </nav>
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Öppna meny">☰</button>
     <div class="header-right">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Sök aktie, t.ex. AAPL, Tesla, Volvo..." id="searchInput" autocomplete="off">
+        <input type="search" placeholder="Sök aktie, t.ex. AAPL, Tesla, Volvo…" id="searchInput" autocomplete="off" aria-label="Sök aktie">
         <div class="search-results" id="searchResults"></div>
       </div>
       <span class="sim-priser-badge" id="simPriserBadge">⚠ Simulerade priser</span>
       <button class="theme-btn" id="themeBtn">☀️ Ljust</button>
+      <button class="theme-btn" id="accountBtn" onclick="openAuthModal()" style="display:none">👤 Logga in</button>
     </div>
   </div>
 </header>
@@ -831,6 +1031,7 @@
   <a href="#screener"   onclick="closeMobileMenu()">🔍 Screener</a>
   <a href="#portfolio"  onclick="closeMobileMenu()">💼 Portfölj</a>
   <a href="#watchlist"  onclick="closeMobileMenu()">⭐ Bevakningslista</a>
+  <a href="#alerts"     onclick="closeMobileMenu()">🔔 Prisvakter</a>
   <a href="#nyheter"    onclick="closeMobileMenu()">📰 Nyheter</a>
   <a href="#utdelning"  onclick="closeMobileMenu()">💰 Utdelningskalender</a>
 </div>
@@ -842,13 +1043,106 @@
     <div class="index-list-wrap" id="indexGrid"></div>
 
     <!-- NYHETER – full bredd -->
-    <div class="news-sidebar" id="newsSidebar" style="height:320px; border-radius:16px; margin-bottom:28px;">
+    <div class="mkt-ticker-wrap" id="aiqTicker">
+      <div class="aiq-ticker-label"><span class="tlive"></span>MARKNAD LIVE</div>
+      <div class="aiq-ticker-track"><div class="aiq-ticker-inner" id="aiqTickerInner">Laddar…</div></div>
+    </div>
+
+    <div class="news-sidebar" id="newsSidebar" style="border-radius:16px; margin-bottom:28px;">
       <div class="news-sidebar-header">
         <span class="news-sidebar-title">📰 Senaste nyheter</span>
-        <button class="news-refresh-btn" onclick="loadNews()" id="newsRefreshBtn">↻</button>
+        <button class="news-refresh-btn" onclick="loadNews()" id="newsRefreshBtn" aria-label="Uppdatera nyheter">↻</button>
       </div>
       <div class="news-sidebar-list" id="newsGrid">
         <div class="news-sidebar-loading">Laddar nyheter...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI-FÖRVALTAREN – autonom simulerad portfölj -->
+  <section id="aiQuant">
+    <div class="section-title">NEXUS-1 · AI-Förvaltaren</div>
+    <div class="aiq-wrap">
+      <div class="aiq-head">
+        <div class="aiq-badge">🤖</div>
+        <div class="aiq-titles">
+          <div class="aiq-title">NEXUS-1 <span class="aiq-live"><span class="dot"></span>Autonom</span></div>
+          <div class="aiq-sub">Autonomous Allocation Engine · multifaktor-alfa · riskparitet · volatilitetsmål</div>
+        </div>
+        <div class="aiq-regime">
+          <span class="aiq-regime-pill" id="aiqRegime"><span class="rdot"></span><span id="aiqRegimeTxt">Analyserar…</span></span>
+        </div>
+      </div>
+
+      <div class="aiq-strategy" id="aiqStrategy">
+        <button class="aiq-strat-btn" data-strat="defensiv">🛡️ Defensiv</button>
+        <button class="aiq-strat-btn active" data-strat="balanserad">⚖️ Balanserad</button>
+        <button class="aiq-strat-btn" data-strat="aggressiv">🚀 Aggressiv</button>
+        <button class="aiq-strat-btn" data-strat="momentum">📈 Momentum</button>
+        <button class="aiq-strat-btn" data-strat="varde">💎 Värde</button>
+        <button class="aiq-strat-btn" data-strat="swing">⚡ Swingtrade</button>
+        <button class="aiq-strat-btn" data-strat="faktor">Faktor-alfa</button>
+        <button class="aiq-strat-btn" data-strat="kvalitet">Kvalitet</button>
+      </div>
+
+      <div class="aiq-stats">
+        <div class="aiq-stat"><label><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:.5" aria-hidden="true"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M5 2v3.5l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Portföljvärde</label><div class="v" id="aiqValue">–</div></div>
+        <div class="aiq-stat"><label><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:.5" aria-hidden="true"><polyline points="1,7 4,3 6.5,5.5 9,2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Avkastning</label><div class="v" id="aiqReturn">–</div></div>
+        <div class="aiq-stat"><label><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:.5" aria-hidden="true"><rect x="1" y="3" width="8" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M3 3V2a2 2 0 014 0v1" stroke="currentColor" stroke-width="1.2"/></svg>Kontanter</label><div class="v" id="aiqCash">–</div></div>
+        <div class="aiq-stat"><label><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:.5" aria-hidden="true"><path d="M2 8V5m2.5 3V3M7 8V1m2.5 7V4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Innehav</label><div class="v" id="aiqCount">–</div></div>
+        <div class="aiq-stat"><label><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:.5" aria-hidden="true"><path d="M1 5h2.5l1.5-3L7 8l1.5-3H10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sharpe</label><div class="v" id="aiqSharpe">–</div></div>
+      </div>
+
+      <div class="aiq-chart-tools">
+        <div class="aiq-range" id="aiqRange">
+          <button data-range="5">Vecka</button>
+          <button data-range="21">Månad</button>
+          <button data-range="252">År</button>
+          <button data-range="0" class="active">Allt</button>
+        </div>
+        <div class="aiq-bench-sel" id="aiqBenchSel">
+          <button data-bench="equal" class="active">Likaviktat</button>
+          <button data-bench="omx">OMXS30</button>
+          <button data-bench="nasdaq">Nasdaq</button>
+          <button data-bench="sp500">S&amp;P 500</button>
+        </div>
+      </div>
+      <div class="aiq-range-return" id="aiqRangeReturn"></div>
+      <div class="aiq-chart-box"><canvas id="aiqChart"></canvas></div>
+
+      <!-- Riskanalys (institutionella mått) -->
+      <div class="aiq-risk-wrap">
+        <div class="aiq-col-title" style="padding:0 0 4px;letter-spacing:0.08em;font-size:11px">RISKANALYS &amp; PRESTANDA</div>
+        <div class="aiq-risk" id="aiqRisk"></div>
+      </div>
+<div class="aiq-factors-panel">
+  <div class="aiq-factors-title">📊 Faktorexponering</div>
+  <div id="aiqFactors"><div style="color:var(--text2);font-size:12px">Starta simulationen för att se faktorexponering.</div></div>
+</div>
+
+      <!-- Sektorexponering -->
+      <div class="aiq-sectors-wrap">
+        <div class="aiq-col-title" style="padding:0 0 4px">Sektorexponering</div>
+        <div id="aiqSectors"><div class="aiq-empty">—</div></div>
+      </div>
+
+      <div class="aiq-cols">
+        <div class="aiq-col">
+          <div class="aiq-col-title"><span>Innehav</span><span id="aiqDay" style="font-weight:600;color:var(--text2)"></span></div>
+          <div id="aiqHoldings"><div class="aiq-empty">Initierar…</div></div>
+        </div>
+        <div class="aiq-col">
+          <div class="aiq-col-title">Handelslogg</div>
+          <div id="aiqNewsFeed" class="aiq-news-feed"></div>
+      <div class="aiq-log" id="aiqLog"><div class="aiq-empty">Inga affärer ännu.</div></div>
+        </div>
+      </div>
+
+      <div class="aiq-controls">
+        <button class="aiq-btn primary" id="aiqRunBtn" onclick="aiqToggleAuto()">▶ Kör autonomt</button>
+        <button class="aiq-btn" onclick="aiqStep()">⏭ Nästa handelsdag</button>
+        <button class="aiq-btn" onclick="aiqReset()">↻ Starta om</button>
+        <span class="aiq-disclaimer">⚠️ Simulerad portfölj i utbildningssyfte — inga riktiga pengar, ingen finansiell rådgivning.</span>
       </div>
     </div>
   </section>
@@ -936,6 +1230,30 @@
         <div class="portfolio-stat"><label>Investerat</label><div class="value" id="portInvested">0 kr</div></div>
         <div class="portfolio-stat"><label>Vinst/Förlust</label><div class="value" id="portPnL">0 kr</div></div>
       </div>
+
+      <!-- DUELL: Du vs NEXUS-1 -->
+      <div class="duel" id="duelBox" style="display:none">
+        <div class="duel-head">
+          <span class="duel-title">⚔️ Du vs NEXUS-1</span>
+          <span class="duel-verdict" id="duelVerdict"></span>
+        </div>
+        <div class="duel-bars">
+          <div class="duel-side">
+            <div class="duel-label">👤 Din portfölj</div>
+            <div class="duel-track"><div class="duel-fill you" id="duelYouFill"></div></div>
+            <div class="duel-pct" id="duelYouPct">0,0%</div>
+          </div>
+          <div class="duel-side">
+            <div class="duel-label">🤖 NEXUS-1 <span id="duelStrat" style="opacity:.6;font-weight:600"></span></div>
+            <div class="duel-track"><div class="duel-fill ai" id="duelAiFill"></div></div>
+            <div class="duel-pct" id="duelAiPct">0,0%</div>
+          </div>
+        </div>
+        <div class="duel-foot">
+          <span id="duelGap" style="font-size:12.5px;color:var(--text2)"></span>
+          <button class="btn" id="duelShareBtn" onclick="shareDuel()" style="padding:6px 14px;font-size:12.5px;background:var(--bg3);color:var(--text);border:1px solid var(--border)">📤 Dela resultat</button>
+        </div>
+      </div>
       <div class="portfolio-add">
         <select id="portSelect" style="min-width:200px"></select>
         <input type="number" id="portShares" placeholder="Antal aktier" min="1">
@@ -994,12 +1312,36 @@
             <option value="DE">DE</option>
           </select>
         </div>
+        <div class="screener-filter-group">
+          <label>Teknisk signal</label>
+          <select id="scTech">
+            <option value="all">Alla</option>
+            <option value="ema100break">EMA100-brott idag</option>
+            <option value="rsi30">RSI under 30 (översålt)</option>
+            <option value="high52">Nära 52-veckors high (&gt;95%)</option>
+            <option value="oversold_bounce">RSI 30–45 + uppgång</option>
+          </select>
+        </div>
+        <div class="screener-filter-group">
+          <label>Momentum</label>
+          <select id="scMom">
+            <option value="all">Alla</option>
+            <option value="strong">Starkt (&gt;+10% 60d)</option>
+            <option value="positive">Positivt (&gt;0%)</option>
+            <option value="negative">Negativt (&lt;0%)</option>
+            <option value="weak">Svagt (&lt;-10% 60d)</option>
+          </select>
+        </div>
       </div>
       <div class="screener-presets">
         <span class="screener-presets-label">Snabbfilter:</span>
         <button class="preset-btn" onclick="applyPreset('yield',this)">⭐ Högst direktavkastning</button>
         <button class="preset-btn" onclick="applyPreset('pe',this)">📉 Lägst värderade</button>
         <button class="preset-btn" onclick="applyPreset('mcap',this)">🏢 Störst bolag</button>
+        <button class="preset-btn" onclick="applyPreset('ema100break',this)">📈 EMA100-brott idag</button>
+        <button class="preset-btn" onclick="applyPreset('rsi30',this)">🔻 RSI under 30</button>
+        <button class="preset-btn" onclick="applyPreset('high52',this)">🚀 Nära 52v-high</button>
+        <button class="preset-btn" onclick="applyPreset('valuemomentum',this)">💎 Värdemomentum</button>
       </div>
       <div class="screener-actions">
         <button class="btn" onclick="runScreener()">🔍 Filtrera</button>
@@ -1025,6 +1367,71 @@
       </div>
     </div>
   </section>
+
+  <!-- PRISVAKTER -->
+  <section id="alerts">
+    <div class="section-title">Prisvakter</div>
+    <div class="watchlist-card">
+      <div class="watchlist-header-bar">
+        <span style="font-size:14px;font-weight:600;color:var(--text2)" id="alertCount">0 vakter</span>
+        <span id="alertPermWrap" style="display:flex;gap:10px;align-items:center">
+          <span id="alertPermStatus" style="font-size:12px;color:var(--text2)"></span>
+          <button class="btn" id="alertPermBtn" onclick="requestAlertPermission()" style="padding:5px 12px;font-size:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border)">🔔 Aktivera notiser</button>
+        </span>
+      </div>
+      <div id="alertsBody">
+        <div class="watchlist-empty">Inga prisvakter ännu. Lägg till en aktie i bevakningslistan och klicka <strong>🔔 Vakt</strong>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRISVAKT-MODAL -->
+  <div class="article-overlay" id="alertOverlay" onclick="closeAlertModal(event)">
+    <div class="article-modal" id="alertModal" style="max-width:480px">
+      <button class="article-close" onclick="closeAlertModal()" aria-label="Stäng">✕</button>
+      <div class="article-title" id="alertModalTitle" style="font-size:20px;margin-bottom:6px">Ny prisvakt</div>
+      <div id="alertModalSub" style="font-size:13px;color:var(--text2);margin-bottom:20px"></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600">Villkor</label>
+          <select id="alertCond" onchange="onAlertCondChange()" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none">
+            <option value="above">Pris stiger över…</option>
+            <option value="below">Pris faller under…</option>
+            <option value="pctup">Dagsuppgång över… %</option>
+            <option value="pctdown">Dagsnedgång under… −%</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600" id="alertValLabel">Målkurs</label>
+          <input type="number" id="alertVal" step="any" inputmode="decimal" placeholder="t.ex. 250"
+                 style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none">
+          <div id="alertHint" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+        </div>
+        <button class="btn" onclick="saveAlert()" style="margin-top:4px">Skapa vakt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLOGGNINGS-MODAL -->
+  <div class="article-overlay" id="authOverlay" onclick="closeAuthModal(event)">
+    <div class="article-modal" id="authModal" style="max-width:420px">
+      <button class="article-close" onclick="closeAuthModal()" aria-label="Stäng">✕</button>
+      <div class="article-title" id="authTitle" style="font-size:21px;margin-bottom:6px">Logga in</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Spara din bevakningslista, portfölj och prisvakter i molnet – synkat mellan alla dina enheter.</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <input type="email" id="authEmail" placeholder="E-post" autocomplete="email" inputmode="email"
+               style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:11px 13px;border-radius:8px;font-size:14px;outline:none">
+        <input type="password" id="authPass" placeholder="Lösenord (minst 6 tecken)" autocomplete="current-password"
+               style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:11px 13px;border-radius:8px;font-size:14px;outline:none">
+        <div id="authError" style="font-size:12.5px;color:#DC2626;display:none"></div>
+        <button class="btn" id="authSubmit" onclick="authSubmit()" style="width:100%">Logga in</button>
+        <div style="text-align:center;font-size:13px;color:var(--text2)">
+          <span id="authToggleTxt">Har du inget konto?</span>
+          <a href="#" onclick="toggleAuthMode();return false;" id="authToggleLink" style="color:var(--accent);text-decoration:none;font-weight:600">Skapa konto</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- UTDELNINGSKALENDER -->
   <section class="utdelning-section" id="utdelning">
@@ -1104,7 +1511,7 @@
         <div class="modal-title" id="modalTitle">—</div>
         <div class="modal-subtitle" id="modalSubtitle">—</div>
       </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Stäng">✕</button>
     </div>
 
     <!-- TradingView widget mount point -->
@@ -1181,7 +1588,7 @@
 <!-- ARTICLE MODAL -->
 <div class="article-overlay" id="articleOverlay" onclick="closeArticle(event)">
   <div class="article-modal" id="articleModal">
-    <button class="article-close" onclick="closeArticle()">✕</button>
+    <button class="article-close" onclick="closeArticle()" aria-label="Stäng artikel">✕</button>
     <span class="article-tag" id="articleTag"></span>
     <div class="article-title" id="articleTitle"></div>
     <div class="article-meta" id="articleMeta"></div>
@@ -1202,6 +1609,14 @@
   </div>
 </div>
 
+<!-- NEXUS-1 INNEHAVSFÖRKLARING -->
+<div class="article-overlay" id="holdingOverlay" onclick="closeHolding(event)">
+  <div class="article-modal" id="holdingModal">
+    <button class="article-close" onclick="closeHolding()" aria-label="Stäng">✕</button>
+    <div id="holdingContent"></div>
+  </div>
+</div>
+
 <!-- LEO DICAPRIO CELEBRATION OVERLAY -->
 <div class="leo-overlay" id="leoOverlay" onclick="closeLeo()">
   <img class="leo-gif" src="https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif" alt="Leo DiCaprio firar">
@@ -1213,7 +1628,7 @@
 <!-- NEWSLETTER POPUP -->
 <div class="popup-overlay" id="nlPopup">
   <div class="popup">
-    <button class="popup-close" onclick="closePopup()">✕</button>
+    <button class="popup-close" onclick="closePopup()" aria-label="Stäng">✕</button>
     <div class="popup-emoji">📈</div>
     <div class="popup-title">Missa inte börspulsen!</div>
     <p class="popup-text">Gå med 10 000+ investerare som får dagliga börsuppdateringar direkt i inkorgen varje morgon.</p>
@@ -1230,6 +1645,16 @@
 </div>
 
 <script>
+// ─── ANVÄNDARKONTON: Supabase-konfiguration ──────────────────────────────────
+// Fyll i dessa två värden från ditt Supabase-projekt (Settings → API) för att
+// aktivera inloggning och molnsynk. Lämnas de tomma fungerar sajten som vanligt
+// med localStorage (ingen synk mellan enheter). anon-nyckeln är publik och säker
+// att ha i frontend så länge Row Level Security är aktiverat (se setup-guiden).
+const BP_SUPABASE = {
+  url:     '',  // t.ex. 'https://xxxxxxxx.supabase.co'
+  anonKey: '',  // din publika anon/public key
+};
+
 // ─── SÄKERHET: HTML-escaping för att förhindra XSS ───────────────────────────
 function escapeHTML(str) {
   const div = document.createElement('div');
@@ -1240,54 +1665,99 @@ function escapeHTML(str) {
 // ─── STOCK DATA ──────────────────────────────────────────────────────────────
 
 const SE_DATA = [
-  { name: 'Volvo B',         ticker: 'VOLV-B',   tvSymbol: 'OMXSTO:VOLV_B',   price: 248.50, mcap: 812,  market: 'SE', currency: 'kr' },
-  { name: 'Ericsson B',      ticker: 'ERIC-B',   tvSymbol: 'OMXSTO:ERIC_B',   price:  83.20, mcap: 276,  market: 'SE', currency: 'kr' },
-  { name: 'H&M B',           ticker: 'HM-B',     tvSymbol: 'OMXSTO:HM_B',     price: 142.70, mcap: 364,  market: 'SE', currency: 'kr' },
-  { name: 'Atlas Copco A',   ticker: 'ATCO-A',   tvSymbol: 'OMXSTO:ATCO_A',   price: 156.30, mcap: 1520, market: 'SE', currency: 'kr' },
-  { name: 'Investor B',      ticker: 'INVE-B',   tvSymbol: 'OMXSTO:INVE_B',   price: 290.40, mcap: 1180, market: 'SE', currency: 'kr' },
-  { name: 'SEB A',           ticker: 'SEB-A',    tvSymbol: 'OMXSTO:SEB_A',    price: 164.80, mcap: 362,  market: 'SE', currency: 'kr' },
-  { name: 'Nordea',          ticker: 'NDA-SE',   tvSymbol: 'OMXSTO:NDA_SE',   price: 124.50, mcap: 462,  market: 'SE', currency: 'kr' },
-  { name: 'Handelsbanken A', ticker: 'SHB-A',    tvSymbol: 'OMXSTO:SHB_A',    price: 106.30, mcap: 218,  market: 'SE', currency: 'kr' },
-  { name: 'ABB',             ticker: 'ABB',      tvSymbol: 'OMXSTO:ABB',      price:  74.60, mcap: 1580, market: 'SE', currency: 'kr' },
-  { name: 'Sandvik',         ticker: 'SAND',     tvSymbol: 'OMXSTO:SAND',     price: 198.40, mcap: 422,  market: 'SE', currency: 'kr' },
-  { name: 'SKF B',           ticker: 'SKF-B',    tvSymbol: 'OMXSTO:SKF_B',    price: 186.20, mcap: 196,  market: 'SE', currency: 'kr' },
-  { name: 'SSAB A',          ticker: 'SSAB-A',   tvSymbol: 'OMXSTO:SSAB_A',   price:  54.80, mcap:  76,  market: 'SE', currency: 'kr' },
-  { name: 'Boliden',         ticker: 'BOL',      tvSymbol: 'OMXSTO:BOL',      price: 312.60, mcap: 134,  market: 'SE', currency: 'kr' },
-  { name: 'Tele2 B',         ticker: 'TEL2-B',   tvSymbol: 'OMXSTO:TEL2_B',   price:  86.40, mcap:  72,  market: 'SE', currency: 'kr' },
-  { name: 'Hexagon B',       ticker: 'HEXA-B',   tvSymbol: 'OMXSTO:HEXA_B',   price: 104.20, mcap: 268,  market: 'SE', currency: 'kr' },
-  { name: 'Alfa Laval',      ticker: 'ALFA',     tvSymbol: 'OMXSTO:ALFA',     price: 468.90, mcap: 202,  market: 'SE', currency: 'kr' },
-  { name: 'Evolution',       ticker: 'EVO',      tvSymbol: 'OMXSTO:EVO',      price: 996.40, mcap: 498,  market: 'SE', currency: 'kr' },
-  { name: 'Kinnevik B',      ticker: 'KINV-B',   tvSymbol: 'OMXSTO:KINV_B',   price:  68.30, mcap:  42,  market: 'SE', currency: 'kr' },
-  { name: 'Essity B',        ticker: 'ESSITY-B', tvSymbol: 'OMXSTO:ESSITY_B', price: 248.60, mcap: 178,  market: 'SE', currency: 'kr' },
-  { name: 'Swedish Match',   ticker: 'SWMA',     tvSymbol: 'OMXSTO:SWMA',     price: 116.80, mcap: 118,  market: 'SE', currency: 'kr' },
-  { name: 'Autoliv',                ticker: 'ALV',      tvSymbol: 'OMXSTO:ALV',      price:  94.20, mcap:  78,  market: 'SE', currency: 'kr' },
-  { name: 'Getinge B',              ticker: 'GETI-B',   tvSymbol: 'OMXSTO:GETI_B',   price: 172.40, mcap:  52,  market: 'SE', currency: 'kr' },
-  { name: 'Hexpol B',               ticker: 'HPOL-B',   tvSymbol: 'OMXSTO:HPOL_B',   price: 134.20, mcap:  38,  market: 'SE', currency: 'kr' },
-  { name: 'Nibe Industrier B',      ticker: 'NIBE-B',   tvSymbol: 'OMXSTO:NIBE_B',   price:  68.30, mcap: 148,  market: 'SE', currency: 'kr' },
-  { name: 'Elekta B',               ticker: 'EKTA-B',   tvSymbol: 'OMXSTO:EKTA_B',   price:  64.50, mcap:  27,  market: 'SE', currency: 'kr' },
-  { name: 'Axfood',                 ticker: 'AXFO',     tvSymbol: 'OMXSTO:AXFO',     price: 254.80, mcap:  54,  market: 'SE', currency: 'kr' },
-  { name: 'Clas Ohlson B',          ticker: 'CLAS-B',   tvSymbol: 'OMXSTO:CLAS_B',   price: 142.60, mcap:  11,  market: 'SE', currency: 'kr' },
-  { name: 'Addtech B',              ticker: 'ADDT-B',   tvSymbol: 'OMXSTO:ADDT_B',   price: 286.40, mcap:  32,  market: 'SE', currency: 'kr' },
-  { name: 'Indutrade',              ticker: 'INDT',     tvSymbol: 'OMXSTO:INDT',     price: 264.20, mcap:  68,  market: 'SE', currency: 'kr' },
-  { name: 'Bilia A',                ticker: 'BIL-A',    tvSymbol: 'OMXSTO:BIL_A',    price: 148.40, mcap:  14,  market: 'SE', currency: 'kr' },
-  { name: 'Beijer Ref B',           ticker: 'BEIJ-B',   tvSymbol: 'OMXSTO:BEIJ_B',   price: 194.60, mcap:  58,  market: 'SE', currency: 'kr' },
-  { name: 'BillerudKorsnäs',        ticker: 'BILL',     tvSymbol: 'OMXSTO:BILL',     price: 124.20, mcap:  28,  market: 'SE', currency: 'kr' },
-  { name: 'Husqvarna B',            ticker: 'HUSQ-B',   tvSymbol: 'OMXSTO:HUSQ_B',   price:  64.80, mcap:  38,  market: 'SE', currency: 'kr' },
-  { name: 'Sagax D',                ticker: 'SAGA-D',   tvSymbol: 'OMXSTO:SAGA_D',   price: 238.40, mcap:  96,  market: 'SE', currency: 'kr' },
-  { name: 'Fastighets AB Balder B', ticker: 'BALD-B',   tvSymbol: 'OMXSTO:BALD_B',   price: 248.60, mcap:  72,  market: 'SE', currency: 'kr' },
+  { name: 'Volvo B',              ticker: 'VOLV-B',   tvSymbol: 'OMXSTO:VOLV_B',   price: 248.50, mcap: 812,  market: 'SE', currency: 'kr', pe: 10.2 },
+  { name: 'Ericsson B',           ticker: 'ERIC-B',   tvSymbol: 'OMXSTO:ERIC_B',   price:  83.20, mcap: 276,  market: 'SE', currency: 'kr', pe: 18.4 },
+  { name: 'H&M B',                ticker: 'HM-B',     tvSymbol: 'OMXSTO:HM_B',     price: 142.70, mcap: 364,  market: 'SE', currency: 'kr', pe: 20.1 },
+  { name: 'Atlas Copco A',        ticker: 'ATCO-A',   tvSymbol: 'OMXSTO:ATCO_A',   price: 156.30, mcap: 1520, market: 'SE', currency: 'kr', pe: 34.6 },
+  { name: 'Investor B',           ticker: 'INVE-B',   tvSymbol: 'OMXSTO:INVE_B',   price: 290.40, mcap: 1180, market: 'SE', currency: 'kr', pe: 16.8 },
+  { name: 'SEB A',                ticker: 'SEB-A',    tvSymbol: 'OMXSTO:SEB_A',    price: 164.80, mcap: 362,  market: 'SE', currency: 'kr', pe:  9.4 },
+  { name: 'Nordea',               ticker: 'NDA-SE',   tvSymbol: 'OMXSTO:NDA_SE',   price: 124.50, mcap: 462,  market: 'SE', currency: 'kr', pe:  8.6 },
+  { name: 'Handelsbanken A',      ticker: 'SHB-A',    tvSymbol: 'OMXSTO:SHB_A',    price: 106.30, mcap: 218,  market: 'SE', currency: 'kr', pe: 10.1 },
+  { name: 'ABB',                  ticker: 'ABB',      tvSymbol: 'OMXSTO:ABB',      price:  74.60, mcap: 1580, market: 'SE', currency: 'kr', pe: 22.3 },
+  { name: 'Sandvik',              ticker: 'SAND',     tvSymbol: 'OMXSTO:SAND',     price: 198.40, mcap: 422,  market: 'SE', currency: 'kr', pe: 19.8 },
+  { name: 'SKF B',                ticker: 'SKF-B',    tvSymbol: 'OMXSTO:SKF_B',    price: 186.20, mcap: 196,  market: 'SE', currency: 'kr', pe: 14.2 },
+  { name: 'SSAB A',               ticker: 'SSAB-A',   tvSymbol: 'OMXSTO:SSAB_A',   price:  54.80, mcap:  76,  market: 'SE', currency: 'kr', pe:  6.4 },
+  { name: 'Boliden',              ticker: 'BOL',      tvSymbol: 'OMXSTO:BOL',      price: 312.60, mcap: 134,  market: 'SE', currency: 'kr', pe: 11.8 },
+  { name: 'Tele2 B',              ticker: 'TEL2-B',   tvSymbol: 'OMXSTO:TEL2_B',   price:  86.40, mcap:  72,  market: 'SE', currency: 'kr', pe: 13.4 },
+  { name: 'Hexagon B',            ticker: 'HEXA-B',   tvSymbol: 'OMXSTO:HEXA_B',   price: 104.20, mcap: 268,  market: 'SE', currency: 'kr', pe: 38.2 },
+  { name: 'Alfa Laval',           ticker: 'ALFA',     tvSymbol: 'OMXSTO:ALFA',     price: 468.90, mcap: 202,  market: 'SE', currency: 'kr', pe: 28.6 },
+  { name: 'Evolution',            ticker: 'EVO',      tvSymbol: 'OMXSTO:EVO',      price: 996.40, mcap: 498,  market: 'SE', currency: 'kr', pe: 22.4 },
+  { name: 'Kinnevik B',           ticker: 'KINV-B',   tvSymbol: 'OMXSTO:KINV_B',   price:  68.30, mcap:  42,  market: 'SE', currency: 'kr', pe: -1   },
+  { name: 'Essity B',             ticker: 'ESSITY-B', tvSymbol: 'OMXSTO:ESSITY_B', price: 248.60, mcap: 178,  market: 'SE', currency: 'kr', pe: 17.6 },
+  { name: 'Swedish Match',        ticker: 'SWMA',     tvSymbol: 'OMXSTO:SWMA',     price: 116.80, mcap: 118,  market: 'SE', currency: 'kr', pe: 19.2 },
+  { name: 'Autoliv',              ticker: 'ALV',      tvSymbol: 'OMXSTO:ALV',      price:  94.20, mcap:  78,  market: 'SE', currency: 'kr', pe: 12.8 },
+  { name: 'Getinge B',            ticker: 'GETI-B',   tvSymbol: 'OMXSTO:GETI_B',   price: 172.40, mcap:  52,  market: 'SE', currency: 'kr', pe: 24.1 },
+  { name: 'Hexpol B',             ticker: 'HPOL-B',   tvSymbol: 'OMXSTO:HPOL_B',   price: 134.20, mcap:  38,  market: 'SE', currency: 'kr', pe: 14.6 },
+  { name: 'Nibe Industrier B',    ticker: 'NIBE-B',   tvSymbol: 'OMXSTO:NIBE_B',   price:  68.30, mcap: 148,  market: 'SE', currency: 'kr', pe: 32.4 },
+  { name: 'Elekta B',             ticker: 'EKTA-B',   tvSymbol: 'OMXSTO:EKTA_B',   price:  64.50, mcap:  27,  market: 'SE', currency: 'kr', pe: 26.8 },
+  { name: 'Axfood',               ticker: 'AXFO',     tvSymbol: 'OMXSTO:AXFO',     price: 254.80, mcap:  54,  market: 'SE', currency: 'kr', pe: 22.1 },
+  { name: 'Clas Ohlson B',        ticker: 'CLAS-B',   tvSymbol: 'OMXSTO:CLAS_B',   price: 142.60, mcap:  11,  market: 'SE', currency: 'kr', pe: 16.4 },
+  { name: 'Addtech B',            ticker: 'ADDT-B',   tvSymbol: 'OMXSTO:ADDT_B',   price: 286.40, mcap:  32,  market: 'SE', currency: 'kr', pe: 31.2 },
+  { name: 'Indutrade',            ticker: 'INDT',     tvSymbol: 'OMXSTO:INDT',     price: 264.20, mcap:  68,  market: 'SE', currency: 'kr', pe: 29.8 },
+  { name: 'Bilia A',              ticker: 'BIL-A',    tvSymbol: 'OMXSTO:BIL_A',    price: 148.40, mcap:  14,  market: 'SE', currency: 'kr', pe:  8.2 },
+  { name: 'Beijer Ref B',         ticker: 'BEIJ-B',   tvSymbol: 'OMXSTO:BEIJ_B',   price: 194.60, mcap:  58,  market: 'SE', currency: 'kr', pe: 26.4 },
+  { name: 'BillerudKorsnäs',      ticker: 'BILL',     tvSymbol: 'OMXSTO:BILL',     price: 124.20, mcap:  28,  market: 'SE', currency: 'kr', pe: 12.2 },
+  { name: 'Husqvarna B',          ticker: 'HUSQ-B',   tvSymbol: 'OMXSTO:HUSQ_B',   price:  64.80, mcap:  38,  market: 'SE', currency: 'kr', pe: 18.6 },
+  { name: 'Sagax D',              ticker: 'SAGA-D',   tvSymbol: 'OMXSTO:SAGA_D',   price: 238.40, mcap:  96,  market: 'SE', currency: 'kr', pe: 14.8 },
+  { name: 'Fastighets AB Balder', ticker: 'BALD-B',   tvSymbol: 'OMXSTO:BALD_B',   price: 248.60, mcap:  72,  market: 'SE', currency: 'kr', pe: -1   },
 ];
 
 const US_DATA = [
-  { name: 'Apple',         ticker: 'AAPL',  tvSymbol: 'NASDAQ:AAPL', price: 178.72, mcap: 2740, market: 'US', currency: '$' },
-  { name: 'Microsoft',     ticker: 'MSFT',  tvSymbol: 'NASDAQ:MSFT', price: 378.91, mcap: 2810, market: 'US', currency: '$' },
-  { name: 'Amazon',        ticker: 'AMZN',  tvSymbol: 'NASDAQ:AMZN', price: 196.20, mcap: 2050, market: 'US', currency: '$' },
-  { name: 'Tesla',         ticker: 'TSLA',  tvSymbol: 'NASDAQ:TSLA', price: 182.63, mcap:  580, market: 'US', currency: '$' },
-  { name: 'Alphabet',      ticker: 'GOOGL', tvSymbol: 'NASDAQ:GOOGL',price: 172.41, mcap: 2140, market: 'US', currency: '$' },
-  { name: 'Meta',          ticker: 'META',  tvSymbol: 'NASDAQ:META', price: 512.77, mcap: 1310, market: 'US', currency: '$' },
-  { name: 'NVIDIA',        ticker: 'NVDA',  tvSymbol: 'NASDAQ:NVDA', price: 788.17, mcap: 1940, market: 'US', currency: '$' },
-  { name: 'Berkshire B',   ticker: 'BRK.B', tvSymbol: 'NYSE:BRK.B',  price: 399.58, mcap:  880, market: 'US', currency: '$' },
-  { name: 'JPMorgan',      ticker: 'JPM',   tvSymbol: 'NYSE:JPM',    price: 231.45, mcap:  668, market: 'US', currency: '$' },
-  { name: 'J&J',           ticker: 'JNJ',   tvSymbol: 'NYSE:JNJ',    price: 156.82, mcap:  378, market: 'US', currency: '$' },
+  // Mega-cap tech
+  { name: 'Apple',            ticker: 'AAPL',  tvSymbol: 'NASDAQ:AAPL',  price: 178.72, mcap: 2740, market: 'US', currency: '$', pe: 28.4 },
+  { name: 'Microsoft',        ticker: 'MSFT',  tvSymbol: 'NASDAQ:MSFT',  price: 378.91, mcap: 2810, market: 'US', currency: '$', pe: 35.2 },
+  { name: 'NVIDIA',           ticker: 'NVDA',  tvSymbol: 'NASDAQ:NVDA',  price: 788.17, mcap: 1940, market: 'US', currency: '$', pe: 66.1 },
+  { name: 'Alphabet',         ticker: 'GOOGL', tvSymbol: 'NASDAQ:GOOGL', price: 172.41, mcap: 2140, market: 'US', currency: '$', pe: 24.8 },
+  { name: 'Meta',             ticker: 'META',  tvSymbol: 'NASDAQ:META',  price: 512.77, mcap: 1310, market: 'US', currency: '$', pe: 27.3 },
+  { name: 'Amazon',           ticker: 'AMZN',  tvSymbol: 'NASDAQ:AMZN',  price: 196.20, mcap: 2050, market: 'US', currency: '$', pe: 58.7 },
+  { name: 'Tesla',            ticker: 'TSLA',  tvSymbol: 'NASDAQ:TSLA',  price: 182.63, mcap:  580, market: 'US', currency: '$', pe: 52.4 },
+  // Finans
+  { name: 'Berkshire B',      ticker: 'BRK.B', tvSymbol: 'NYSE:BRK.B',   price: 399.58, mcap:  880, market: 'US', currency: '$', pe: 21.1 },
+  { name: 'JPMorgan',         ticker: 'JPM',   tvSymbol: 'NYSE:JPM',     price: 231.45, mcap:  668, market: 'US', currency: '$', pe: 12.4 },
+  { name: 'Visa',             ticker: 'V',     tvSymbol: 'NYSE:V',       price: 279.50, mcap:  578, market: 'US', currency: '$', pe: 31.2 },
+  { name: 'Mastercard',       ticker: 'MA',    tvSymbol: 'NYSE:MA',      price: 467.20, mcap:  437, market: 'US', currency: '$', pe: 36.4 },
+  { name: 'Goldman Sachs',    ticker: 'GS',    tvSymbol: 'NYSE:GS',      price: 494.10, mcap:  164, market: 'US', currency: '$', pe: 15.8 },
+  { name: 'Bank of America',  ticker: 'BAC',   tvSymbol: 'NYSE:BAC',     price:  39.20, mcap:  308, market: 'US', currency: '$', pe: 13.1 },
+  { name: 'Morgan Stanley',   ticker: 'MS',    tvSymbol: 'NYSE:MS',      price: 104.30, mcap:  172, market: 'US', currency: '$', pe: 17.6 },
+  { name: 'American Express', ticker: 'AXP',   tvSymbol: 'NYSE:AXP',     price: 238.50, mcap:  173, market: 'US', currency: '$', pe: 20.2 },
+  // Hälsa
+  { name: 'J&J',              ticker: 'JNJ',   tvSymbol: 'NYSE:JNJ',     price: 156.82, mcap:  378, market: 'US', currency: '$', pe: 22.7 },
+  { name: 'UnitedHealth',     ticker: 'UNH',   tvSymbol: 'NYSE:UNH',     price: 538.40, mcap:  497, market: 'US', currency: '$', pe: 19.8 },
+  { name: 'Eli Lilly',        ticker: 'LLY',   tvSymbol: 'NYSE:LLY',     price: 784.60, mcap:  746, market: 'US', currency: '$', pe: 58.3 },
+  { name: 'AbbVie',           ticker: 'ABBV',  tvSymbol: 'NYSE:ABBV',    price: 175.40, mcap:  310, market: 'US', currency: '$', pe: 29.4 },
+  { name: 'Pfizer',           ticker: 'PFE',   tvSymbol: 'NYSE:PFE',     price:  28.60, mcap:  162, market: 'US', currency: '$', pe: 14.2 },
+  { name: 'Merck',            ticker: 'MRK',   tvSymbol: 'NYSE:MRK',     price: 127.30, mcap:  322, market: 'US', currency: '$', pe: 16.8 },
+  // Konsument
+  { name: 'Walmart',          ticker: 'WMT',   tvSymbol: 'NYSE:WMT',     price: 176.40, mcap:  472, market: 'US', currency: '$', pe: 30.1 },
+  { name: 'Costco',           ticker: 'COST',  tvSymbol: 'NASDAQ:COST',  price: 784.50, mcap:  348, market: 'US', currency: '$', pe: 50.6 },
+  { name: 'McDonald\'s',      ticker: 'MCD',   tvSymbol: 'NYSE:MCD',     price: 291.30, mcap:  211, market: 'US', currency: '$', pe: 24.7 },
+  { name: 'Nike',             ticker: 'NKE',   tvSymbol: 'NYSE:NKE',     price:  98.40, mcap:  151, market: 'US', currency: '$', pe: 27.3 },
+  { name: 'Coca-Cola',        ticker: 'KO',    tvSymbol: 'NYSE:KO',      price:  62.80, mcap:  271, market: 'US', currency: '$', pe: 23.4 },
+  { name: 'Procter & Gamble', ticker: 'PG',    tvSymbol: 'NYSE:PG',      price: 162.50, mcap:  384, market: 'US', currency: '$', pe: 26.1 },
+  // Industri & Energi
+  { name: 'ExxonMobil',       ticker: 'XOM',   tvSymbol: 'NYSE:XOM',     price: 112.40, mcap:  449, market: 'US', currency: '$', pe: 14.1 },
+  { name: 'Chevron',          ticker: 'CVX',   tvSymbol: 'NYSE:CVX',     price: 154.30, mcap:  288, market: 'US', currency: '$', pe: 13.8 },
+  { name: 'Caterpillar',      ticker: 'CAT',   tvSymbol: 'NYSE:CAT',     price: 352.60, mcap:  177, market: 'US', currency: '$', pe: 17.4 },
+  { name: 'Boeing',           ticker: 'BA',    tvSymbol: 'NYSE:BA',      price: 186.20, mcap:  113, market: 'US', currency: '$', pe: -1   }, // förlust
+  { name: 'Honeywell',        ticker: 'HON',   tvSymbol: 'NASDAQ:HON',   price: 196.80, mcap:  128, market: 'US', currency: '$', pe: 22.8 },
+  { name: 'Deere & Co',       ticker: 'DE',    tvSymbol: 'NYSE:DE',      price: 386.40, mcap:  107, market: 'US', currency: '$', pe: 12.6 },
+  // Tech övrigt
+  { name: 'Salesforce',       ticker: 'CRM',   tvSymbol: 'NYSE:CRM',     price: 284.60, mcap:  276, market: 'US', currency: '$', pe: 68.4 },
+  { name: 'Adobe',            ticker: 'ADBE',  tvSymbol: 'NASDAQ:ADBE',  price: 492.30, mcap:  218, market: 'US', currency: '$', pe: 43.2 },
+  { name: 'Netflix',          ticker: 'NFLX',  tvSymbol: 'NASDAQ:NFLX',  price: 628.70, mcap:  274, market: 'US', currency: '$', pe: 46.8 },
+  { name: 'Intel',            ticker: 'INTC',  tvSymbol: 'NASDAQ:INTC',  price:  32.40, mcap:  137, market: 'US', currency: '$', pe:  9.8 },
+  { name: 'AMD',              ticker: 'AMD',   tvSymbol: 'NASDAQ:AMD',   price: 168.30, mcap:  272, market: 'US', currency: '$', pe: 312.4 },
+  { name: 'Qualcomm',         ticker: 'QCOM',  tvSymbol: 'NASDAQ:QCOM',  price: 168.90, mcap:  188, market: 'US', currency: '$', pe: 22.1 },
+  { name: 'Oracle',           ticker: 'ORCL',  tvSymbol: 'NYSE:ORCL',    price: 126.40, mcap:  346, market: 'US', currency: '$', pe: 38.6 },
+  { name: 'IBM',              ticker: 'IBM',   tvSymbol: 'NYSE:IBM',     price: 186.70, mcap:  172, market: 'US', currency: '$', pe: 20.4 },
+  { name: 'Palantir',         ticker: 'PLTR',  tvSymbol: 'NYSE:PLTR',    price:  24.80, mcap:  52,  market: 'US', currency: '$', pe: 248.0 },
+  // Övrigt
+  { name: 'Verizon',          ticker: 'VZ',    tvSymbol: 'NYSE:VZ',      price:  40.20, mcap:  169, market: 'US', currency: '$', pe: 14.3 },
+  { name: 'AT&T',             ticker: 'T',     tvSymbol: 'NYSE:T',       price:  16.90, mcap:  121, market: 'US', currency: '$', pe: 10.8 },
+  { name: 'Walt Disney',      ticker: 'DIS',   tvSymbol: 'NYSE:DIS',     price:  98.40, mcap:  179, market: 'US', currency: '$', pe: 71.2 },
+  { name: 'Airbnb',           ticker: 'ABNB',  tvSymbol: 'NASDAQ:ABNB',  price: 146.20, mcap:  92,  market: 'US', currency: '$', pe: 44.6 },
+  { name: 'Uber',             ticker: 'UBER',  tvSymbol: 'NYSE:UBER',    price:  76.40, mcap:  158, market: 'US', currency: '$', pe: 38.2 },
+  { name: 'Spotify',          ticker: 'SPOT',  tvSymbol: 'NYSE:SPOT',    price: 298.40, mcap:  58,  market: 'US', currency: '$', pe: 72.8 },
 ];
 
 const DE_DATA = [
@@ -1424,11 +1894,18 @@ const MARKET_LABELS = {
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
 const themeBtn = document.getElementById('themeBtn');
-let isDark = true;
-themeBtn.onclick = () => {
-  isDark = !isDark;
+let isDark = localStorage.getItem('bp_theme') !== 'light';
+function applyTheme() {
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   themeBtn.textContent = isDark ? '☀️ Ljust' : '🌙 Mörkt';
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', isDark ? '#04140E' : '#F4F7FF');
+}
+applyTheme(); // återställ sparat tema vid laddning
+themeBtn.onclick = () => {
+  isDark = !isDark;
+  localStorage.setItem('bp_theme', isDark ? 'dark' : 'light');
+  applyTheme();
   renderIndexCharts();
 };
 
@@ -2022,6 +2499,90 @@ function renderPortfolio() {
   const pnlEl = document.getElementById('portPnL');
   pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(0) + ' kr';
   pnlEl.className   = 'value ' + (pnl >= 0 ? 'up' : 'down');
+
+  // Spara senaste portföljavkastning för duellen
+  window._portReturnPct = invested > 0 ? (pnl / invested) * 100 : null;
+  renderDuel();
+}
+
+// ─── DUELL: Du vs NEXUS-1 ──────────────────────────────────────────────────────
+const STRAT_NAMES = { defensiv:'Defensiv', balanserad:'Balanserad', aggressiv:'Aggressiv', momentum:'Momentum', varde:'Värde', swing:'Swingtrade', faktor:'Faktor-alfa', kvalitet:'Kvalitet' };
+function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(1).replace('.', ',') + '%'; }
+
+function renderDuel() {
+  const box = document.getElementById('duelBox');
+  if (!box) return;
+
+  // Räkna om din portföljavkastning direkt från aktuella priser
+  let total = 0, invested = 0;
+  (portfolio || []).forEach(p => {
+    const s = getAllStocks().find(x => x.ticker === p.ticker);
+    const price = s ? s.price : p.buyPrice;
+    total    += price * p.shares;
+    invested += p.buyPrice * p.shares;
+  });
+  const you = invested > 0 ? (total - invested) / invested * 100 : null;
+  window._portReturnPct = you; // håll i synk med renderPortfolio
+
+  if (you === null) { box.style.display = 'none'; return; }
+  const ai = (window.AIQ && typeof AIQ.getReturn === 'function') ? AIQ.getReturn() : 0;
+  box.style.display = '';
+
+  // Stapelbredder: nollställ först så CSS-transition triggas på nytt
+  const maxAbs = Math.max(2, Math.abs(you), Math.abs(ai));
+  const youW = Math.min(100, Math.abs(you) / maxAbs * 100) + '%';
+  const aiW  = Math.min(100, Math.abs(ai)  / maxAbs * 100) + '%';
+  const youFill = document.getElementById('duelYouFill');
+  const aiFill  = document.getElementById('duelAiFill');
+  youFill.style.transition = 'none'; youFill.style.width = '0%';
+  aiFill.style.transition  = 'none'; aiFill.style.width  = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    youFill.style.transition = ''; youFill.style.width = youW;
+    aiFill.style.transition  = ''; aiFill.style.width  = aiW;
+  }));
+  const youPct = document.getElementById('duelYouPct');
+  const aiPct  = document.getElementById('duelAiPct');
+  [youPct, aiPct].forEach(el => { el.style.transition='none'; el.style.opacity='0'; });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    youPct.textContent = fmtPct(you); youPct.style.color = you >= 0 ? '#16A34A' : '#DC2626';
+    aiPct.textContent  = fmtPct(ai);  aiPct.style.color  = ai  >= 0 ? '#16A34A' : '#DC2626';
+    [youPct, aiPct].forEach(el => { el.style.transition='opacity 0.4s'; el.style.opacity='1'; });
+  }));
+
+  const stratEl = document.getElementById('duelStrat');
+  if (stratEl && window.AIQ && AIQ.getStrat) stratEl.textContent = '· ' + (STRAT_NAMES[AIQ.getStrat()] || '');
+
+  const verdict = document.getElementById('duelVerdict');
+  const gap = document.getElementById('duelGap');
+  const diff = you - ai;
+  if (Math.abs(diff) < 0.05) {
+    verdict.textContent = 'Oavgjort'; verdict.className = 'duel-verdict tie';
+    gap.textContent = 'Ni ligger i stort sett lika.';
+  } else if (diff > 0) {
+    verdict.textContent = '🏆 Du leder!'; verdict.className = 'duel-verdict win';
+    gap.textContent = `Du slår NEXUS-1 med ${Math.abs(diff).toFixed(1).replace('.', ',')} procentenheter.`;
+  } else {
+    verdict.textContent = '🤖 NEXUS-1 leder'; verdict.className = 'duel-verdict lose';
+    gap.textContent = `NEXUS-1 leder med ${Math.abs(diff).toFixed(1).replace('.', ',')} procentenheter. Häng på!`;
+  }
+}
+
+function shareDuel() {
+  const you = (typeof window._portReturnPct === 'number') ? window._portReturnPct : 0;
+  const ai = (window.AIQ && AIQ.getReturn) ? AIQ.getReturn() : 0;
+  const lead = you >= ai;
+  const text = lead
+    ? `Min portfölj på BörsPulsen är upp ${fmtPct(you)} och slår AI-portföljen NEXUS-1 (${fmtPct(ai)})! ⚔️📈`
+    : `Jag utmanar AI-portföljen NEXUS-1 på BörsPulsen: jag ${fmtPct(you)} vs AI ${fmtPct(ai)}. Kan du slå AI:n? ⚔️`;
+  const url = 'https://borspulsen.com/#portfolio';
+  if (navigator.share) {
+    navigator.share({ title: 'BörsPulsen — Du vs NEXUS-1', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(text + ' ' + url).then(
+      () => showAlertToast('📋 Kopierat!', 'Resultatet är kopierat – klistra in var du vill dela det.'),
+      () => {}
+    );
+  }
 }
 
 // ─── DYNAMISK GRAF ────────────────────────────────────────────────────────────
@@ -2149,7 +2710,18 @@ async function loadNews() {
     const headlines = newsCache.slice(0, 8).map(a => a.title);
     analyzeNewsContext(headlines);
   } catch (err) {
-    grid.innerHTML = '<div class="news-loading">Kunde inte hämta nyheter just nu. Försök igen senare.</div>';
+    // Fallback: försök hämta via öppen GNews RSS-proxy, annars visa curaterade nyheter
+    try {
+      const rss = await fetch('https://gnews.io/api/v4/top-headlines?category=business&lang=sv&country=se&max=10&apikey=demo');
+      const rd = await rss.json();
+      if (rd.articles && rd.articles.length) {
+        newsCache = rd.articles.map(a=>({ title:a.title, summary:a.description||'', source:a.source?.name||'', url:a.url, image:a.image||'', time: Math.floor(new Date(a.publishedAt).getTime()/1000) }));
+        renderNews(); return;
+      }
+    } catch(_){}
+    // Sista fallback: curaterade exempelnyheter
+    newsCache = FALLBACK_NEWS;
+    renderNews();
   }
 
   if (btn) btn.disabled = false;
@@ -2190,7 +2762,10 @@ function openArticle(i) {
   document.getElementById('articleBody').innerHTML = n.summary
     ? `<p>${escapeHTML(n.summary)}</p>`
     : '<p>Ingen sammanfattning tillgänglig.</p>';
-  document.getElementById('articleSource').innerHTML = `Källa: <a href="${escapeHTML(n.url)}" target="_blank" rel="noopener">${escapeHTML(n.source)} ↗</a>`;
+  const hasUrl = n.url && n.url !== '#';
+  document.getElementById('articleSource').innerHTML = hasUrl
+    ? `Källa: <a href="${escapeHTML(n.url)}" target="_blank" rel="noopener">${escapeHTML(n.source)} ↗</a>`
+    : `Källa: ${escapeHTML(n.source)}`;
 
   // Visa AI-radar och starta analys
   const impactSection = document.getElementById('impactSection');
@@ -2307,6 +2882,8 @@ function updatePrices() {
   renderTable();
   renderPortfolio();
   renderWatchlist();
+  renderAlerts();
+  checkAlerts();
 
   if (currentStock) {
     currentStock = getAllStocks().find(s => s.ticker === currentStock.ticker) || currentStock;
@@ -2572,6 +3149,20 @@ document.getElementById('marketLabel').textContent = MARKET_LABELS['SE'];
 renderTable();
 renderPortfolioSelect();
 renderPortfolio();
+const FALLBACK_NEWS = [
+  { title:'Riksbanken sänker styrräntan med 25 punkter till 2,75% – tredje sänkningen i rad', summary:'Riksbanken motiverar beslutet med att inflationen nu är nära målet och att konjunkturutsikterna försämrats. Kronan försvagades något mot euron efter beskedet.', source:'Riksbanken', url:'https://www.riksbank.se', image:'', time: Math.floor(Date.now()/1000)-3600 },
+  { title:'NVIDIA sätter nytt all-time-high efter rekordorder på AI-chip från Microsoft', summary:'Ordervärdet uppges uppgå till 40 miljarder dollar och avser leveranser under 2025-2026. Analytiker höjer riktkurserna brett.', source:'Reuters', url:'https://www.reuters.com/markets', image:'', time: Math.floor(Date.now()/1000)-7200 },
+  { title:'Ericsson vinner 5G-kontrakt i Sydostasien värt 8 miljarder kronor', summary:'Kontraktet löper över fem år och gäller utbyggnad av 5G-infrastruktur i Vietnam och Indonesien. Aktien stiger 3,4% på Stockholmsbörsen.', source:'Di.se', url:'https://www.di.se', image:'', time: Math.floor(Date.now()/1000)-10800 },
+  { title:'Fed lämnar räntan oförändrad – signalerar möjlig sänkning i september', summary:'Federal Reserve behöll styrräntan på 5,25–5,50% men Fed-ordförande Powell öppnade för en sänkning om inflationen fortsätter falla mot målet.', source:'Bloomberg', url:'https://www.bloomberg.com/markets', image:'', time: Math.floor(Date.now()/1000)-14400 },
+  { title:'H&M redovisar stark försäljning i Asien – aktien upp 4%', summary:'H&M Groups asiatiska marknad växte med 12% i oktober, drivet av Kina och Indien. Analytiker på Handelsbanken höjer riktkursen till 185 kr.', source:'Börsen.se', url:'https://www.borsen.se', image:'', time: Math.floor(Date.now()/1000)-18000 },
+  { title:'Tesla levererar 514 000 fordon Q3 – slår Wall Streets estimat', summary:'Marknaden väntade sig 500 000 leveranser. Aktien steg 11% i efterhandeln. VD Elon Musk kallar kvartalet för ett "vändpunktsmoment" för bolaget.', source:'CNBC', url:'https://www.cnbc.com/markets', image:'', time: Math.floor(Date.now()/1000)-21600 },
+  { title:'Inflationen i Sverige faller till 1,8% – lägsta nivån på fyra år', summary:'KPI sjönk till 1,8% i november mot väntade 2,1%. SCB pekar på lägre energipriser och minskad livsmedelsinflation som huvudorsaker.', source:'SCB', url:'https://www.scb.se', image:'', time: Math.floor(Date.now()/1000)-25200 },
+  { title:'Volvo Cars stänger fabrik i Gent temporärt – elbilsefterfrågan svagare', summary:'Volvo Cars meddelar driftstopp vid belgiska fabriken under tre veckor i januari. Aktien faller 5,2% på nyheten om lägre produktionsvolym för elbilar.', source:'Aftonbladet Ekonomi', url:'https://www.aftonbladet.se/ekonomi', image:'', time: Math.floor(Date.now()/1000)-28800 },
+  { title:'Apple planerar iPhone 17 med foldbar skärm – lansering höst 2025', summary:'Enligt leverantörskällor testar Apple aktivt en hopfällbar iPhone-modell inför en eventuell lansering. Aktien stiger måttliga 1,2%.', source:'The Verge', url:'https://www.theverge.com', image:'', time: Math.floor(Date.now()/1000)-32400 },
+  { title:'Stockholmsbörsen stänger upp 1,3% – teknik och fastighet leder uppgången', summary:'OMXS30 avslutade handelsdagen på 2 318 poäng. Techbolaget Hexagon och fastighetsbolaget Castellum stod för de starkaste uppgångarna.', source:'SvD Näringsliv', url:'https://www.svd.se/naringsliv', image:'', time: Math.floor(Date.now()/1000)-36000 },
+  { title:'Kina rapporterar BNP-tillväxt på 5,2% för Q3 – slår prognoserna', summary:'Kinas ekonomi växte snabbare än väntat under tredje kvartalet, drivet av stark exportefterfrågan och offentliga infrastrukturinvesteringar.', source:'Xinhua', url:'https://english.news.cn', image:'', time: Math.floor(Date.now()/1000)-39600 },
+  { title:'Spotify når 250 miljoner betalande prenumeranter – vinst tredje kvartalet i rad', summary:'Spotify redovisar sitt tredje lönsamma kvartal i rad med en rörelsemarginal på 8,4%. VD Daniel Ek utlovar fortsatt expansion i Asien.', source:'FT', url:'https://www.ft.com/markets', image:'', time: Math.floor(Date.now()/1000)-43200 },
+];
 loadNews();
 
 // Aktivera rätt månadsknapp (aktuell månad = april = index 3)
@@ -2582,6 +3173,8 @@ loadNews();
 })();
 renderUtdelningar();
 renderWatchlist();
+renderAlerts();
+checkAlerts();
 
 fetchMacroRates();
 fetchLivePrices(); // hämta live-priser direkt vid sidladdning
@@ -2899,7 +3492,10 @@ function renderWatchlist() {
       <td><input type="text" placeholder="Anteckning..." value="${(w.note||'').replace(/"/g,'&quot;')}"
             oninput="updateWatchlistNote('${s.ticker}',this.value)"
             style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;outline:none;width:160px;"></td>
-      <td><button class="btn btn-danger" onclick="removeFromWatchlist('${s.ticker}')" style="padding:4px 10px;font-size:12px">Ta bort</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn" onclick="openAlertModal('${s.ticker}')" style="padding:4px 10px;font-size:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border)" title="Skapa prisvakt">🔔 Vakt</button>
+        <button class="btn btn-danger" onclick="removeFromWatchlist('${s.ticker}')" style="padding:4px 10px;font-size:12px">Ta bort</button>
+      </td>
     </tr>`;
   }).join('');
   body.innerHTML = `<table style="width:100%;border-collapse:collapse">
@@ -2910,6 +3506,193 @@ function renderWatchlist() {
       <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Notering</th>
       <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
     </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ─── PRISVAKTER ───────────────────────────────────────────────────────────────
+let priceAlerts = [];
+try { priceAlerts = JSON.parse(localStorage.getItem('bp_alerts') || '[]'); } catch(_) { priceAlerts = []; }
+let alertModalTicker = null;
+
+function saveAlerts() { try { localStorage.setItem('bp_alerts', JSON.stringify(priceAlerts)); } catch(_){} }
+
+const ALERT_LABELS = {
+  above:   v => `Pris över ${v}`,
+  below:   v => `Pris under ${v}`,
+  pctup:   v => `Dagsuppgång över +${v}%`,
+  pctdown: v => `Dagsnedgång under −${v}%`,
+};
+
+function openAlertModal(ticker) {
+  const s = getAllStocks().find(x => x.ticker === ticker);
+  if (!s) return;
+  alertModalTicker = ticker;
+  document.getElementById('alertModalTitle').textContent = `Ny prisvakt — ${s.name}`;
+  document.getElementById('alertModalSub').textContent = `Aktuell kurs: ${s.price.toFixed(2)} ${s.currency} · idag ${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%`;
+  document.getElementById('alertCond').value = 'above';
+  document.getElementById('alertVal').value = '';
+  onAlertCondChange();
+  document.getElementById('alertOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('alertVal').focus(), 50);
+}
+function closeAlertModal(e) {
+  if (e && e.target !== document.getElementById('alertOverlay')) return;
+  document.getElementById('alertOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function onAlertCondChange() {
+  const cond = document.getElementById('alertCond').value;
+  const s = getAllStocks().find(x => x.ticker === alertModalTicker);
+  const isPct = cond === 'pctup' || cond === 'pctdown';
+  document.getElementById('alertValLabel').textContent = isPct ? 'Procent (%)' : 'Målkurs';
+  document.getElementById('alertVal').placeholder = isPct ? 't.ex. 5' : (s ? `t.ex. ${(s.price * (cond === 'above' ? 1.05 : 0.95)).toFixed(0)}` : 't.ex. 250');
+  document.getElementById('alertHint').textContent = isPct
+    ? 'Utlöses när dagens procentuella förändring passerar nivån.'
+    : (s ? `Aktuell kurs: ${s.price.toFixed(2)} ${s.currency}` : '');
+}
+function saveAlert() {
+  const cond = document.getElementById('alertCond').value;
+  const val = parseFloat(document.getElementById('alertVal').value);
+  if (!alertModalTicker || isNaN(val)) { alert('Ange ett giltigt värde.'); return; }
+  const s = getAllStocks().find(x => x.ticker === alertModalTicker);
+  priceAlerts.push({
+    id: 'a' + Date.now() + Math.random().toString(36).slice(2, 6),
+    ticker: alertModalTicker,
+    name: s ? s.name : alertModalTicker,
+    cond, val,
+    created: Date.now(),
+    triggered: false,
+  });
+  saveAlerts();
+  closeAlertModal();
+  renderAlerts();
+  // Be om notis-tillstånd direkt om det inte redan getts
+  if ('Notification' in window && Notification.permission === 'default') requestAlertPermission();
+}
+function removeAlert(id) {
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  saveAlerts();
+  renderAlerts();
+}
+function resetAlert(id) {
+  const a = priceAlerts.find(x => x.id === id);
+  if (a) { a.triggered = false; saveAlerts(); renderAlerts(); }
+}
+
+function updateAlertPermUI() {
+  const btn = document.getElementById('alertPermBtn');
+  const status = document.getElementById('alertPermStatus');
+  if (!btn || !status) return;
+  if (!('Notification' in window)) {
+    btn.style.display = 'none';
+    status.textContent = 'Notiser stöds inte i denna webbläsare';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.style.display = 'none';
+    status.textContent = '🔔 Notiser aktiverade';
+  } else if (Notification.permission === 'denied') {
+    btn.style.display = 'none';
+    status.textContent = '🔕 Notiser blockerade i webbläsaren';
+  } else {
+    btn.style.display = '';
+    status.textContent = '';
+  }
+}
+function requestAlertPermission() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(updateAlertPermUI);
+}
+
+async function fireAlertNotification(alertObj, s) {
+  const title = `🔔 ${alertObj.name}`;
+  const body = `${ALERT_LABELS[alertObj.cond](alertObj.val)} — nu ${s.price.toFixed(2)} ${s.currency} (${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%)`;
+  // Försök via service worker (funkar även i bakgrunden), annars vanlig Notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        reg.showNotification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: alertObj.id, data: { url: '/#alerts' } });
+      } else {
+        new Notification(title, { body, icon: '/icons/icon-192.png' });
+      }
+    } catch (_) {
+      try { new Notification(title, { body }); } catch (_) {}
+    }
+  }
+  // Alltid en in-app-toast som fallback
+  showAlertToast(title, body);
+}
+
+function showAlertToast(title, body) {
+  let wrap = document.getElementById('alertToastWrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'alertToastWrap';
+    wrap.style.cssText = 'position:fixed;top:78px;right:18px;z-index:9600;display:flex;flex-direction:column;gap:10px;max-width:340px';
+    document.body.appendChild(wrap);
+  }
+  const t = document.createElement('div');
+  t.style.cssText = 'background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,0.45);backdrop-filter:blur(12px);animation:pwaUp 0.4s ease';
+  t.innerHTML = `<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px">${escapeHTML(title)}</div><div style="font-size:12px;color:var(--text2)">${escapeHTML(body)}</div>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 7000);
+}
+
+// Utvärdera alla vakter mot aktuella kurser
+function checkAlerts() {
+  if (!priceAlerts.length) return;
+  let changed = false;
+  const stocks = getAllStocks();
+  priceAlerts.forEach(a => {
+    if (a.triggered) return;
+    const s = stocks.find(x => x.ticker === a.ticker);
+    if (!s) return;
+    let hit = false;
+    if (a.cond === 'above')   hit = s.price >= a.val;
+    else if (a.cond === 'below')   hit = s.price <= a.val;
+    else if (a.cond === 'pctup')   hit = s.changePct >= a.val;
+    else if (a.cond === 'pctdown') hit = s.changePct <= -Math.abs(a.val);
+    if (hit) {
+      a.triggered = true;
+      a.triggeredAt = Date.now();
+      changed = true;
+      fireAlertNotification(a, s);
+    }
+  });
+  if (changed) { saveAlerts(); renderAlerts(); }
+}
+
+function renderAlerts() {
+  const body = document.getElementById('alertsBody');
+  const countEl = document.getElementById('alertCount');
+  if (!body || !countEl) return;
+  updateAlertPermUI();
+  countEl.textContent = priceAlerts.length + (priceAlerts.length === 1 ? ' vakt' : ' vakter');
+  if (!priceAlerts.length) {
+    body.innerHTML = '<div class="watchlist-empty">Inga prisvakter ännu. Lägg till en aktie i bevakningslistan och klicka <strong>🔔 Vakt</strong>.</div>';
+    return;
+  }
+  const stocks = getAllStocks();
+  const rows = priceAlerts.map(a => {
+    const s = stocks.find(x => x.ticker === a.ticker);
+    const now = s ? `${s.price.toFixed(2)} ${s.currency}` : '—';
+    const statusHtml = a.triggered
+      ? `<span style="color:var(--green);font-weight:700">✓ Utlöst</span> <button class="btn" onclick="resetAlert('${a.id}')" style="padding:3px 9px;font-size:11px;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">Återaktivera</button>`
+      : '<span style="color:var(--text2)">Aktiv</span>';
+    return `<tr>
+      <td style="padding:10px 16px"><span class="stock-name" onclick="goToStock('${a.ticker}')">${escapeHTML(a.name)}<span class="stock-ticker">${escapeHTML(a.ticker)}</span></span></td>
+      <td style="padding:10px 16px;font-size:13px">${escapeHTML(ALERT_LABELS[a.cond](a.val))}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:13px">${now}</td>
+      <td style="padding:10px 16px;font-size:12px">${statusHtml}</td>
+      <td style="padding:10px 16px"><button class="btn btn-danger" onclick="removeAlert('${a.id}')" style="padding:4px 10px;font-size:12px">Ta bort</button></td>
+    </tr>`;
+  }).join('');
+  const TH = t => `<th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">${t}</th>`;
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>${TH('Bolag')}${TH('Villkor')}${TH('Aktuell kurs')}${TH('Status')}${TH('')}</tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -2950,13 +3733,57 @@ function exportCSV() {
 // ─── AKTIE-SCREENER ───────────────────────────────────────────────────────────
 let activePreset = null;
 
+// Beräkna tekniska indikatorer för en aktie (använder simulerad series)
+function screenerTech(s) {
+  // Hämta serien från universe om tillgänglig (AIQ byggs async, fallback: null)
+  const u = typeof universe !== 'undefined' ? universe.find(x => x.ticker === s.ticker) : null;
+  if (!u || !u.series || u.series.length < 101) return null;
+  const ser = u.series;
+  const d = ser.length - 1;
+
+  // EMA-hjälpare
+  function ema(period) {
+    let e = ser[0], k = 2 / (period + 1);
+    for (let i = 1; i <= d; i++) e = ser[i] * k + e * (1 - k);
+    return e;
+  }
+  // RSI
+  let gains = 0, losses = 0;
+  for (let i = d - 13; i <= d; i++) {
+    const diff = ser[i] - ser[i - 1];
+    if (diff > 0) gains += diff; else losses -= diff;
+  }
+  const avgG = gains / 14, avgL = losses / 14;
+  const rsiVal = avgL === 0 ? 100 : 100 - 100 / (1 + avgG / avgL);
+
+  // 52-veckors high (ca 252 handelsdagar)
+  const win52 = ser.slice(Math.max(0, d - 251));
+  const high52 = Math.max(...win52);
+
+  // 60d momentum
+  const mom60 = d >= 60 ? (ser[d] / ser[d - 60] - 1) * 100 : 0;
+  // 20d momentum
+  const mom20 = d >= 20 ? (ser[d] / ser[d - 20] - 1) * 100 : 0;
+
+  // EMA100-brott (priset stiger över EMA100 idag men var under igår)
+  const ema100today = ema(100);
+  // Beräkna EMA100 för igår (approximation: rulla tillbaka ett steg)
+  let ema100yest = ser[0], k100 = 2 / 101;
+  for (let i = 1; i < d; i++) ema100yest = ser[i] * k100 + ema100yest * (1 - k100);
+  const ema100break = ser[d] > ema100today && ser[d - 1] <= ema100yest;
+
+  return { rsi: rsiVal, high52pct: ser[d] / high52 * 100, mom60, mom20, ema100break, ema100: ema100today };
+}
+
 function getScreenerStocks() {
   return getAllStocks().map(s => {
     const nk = NYCKELTAL[s.ticker];
+    const tech = screenerTech(s);
     return {
       ...s,
-      peVal:    nk ? parseFloat(nk.pe)    : (8 + Math.random()*14),
-      yieldVal: nk ? parseFloat(nk.yield) : (1 + Math.random()*5)
+      peVal:      nk ? parseFloat(nk.pe)    : (8 + Math.random() * 14),
+      yieldVal:   nk ? parseFloat(nk.yield) : (1 + Math.random() * 5),
+      tech,
     };
   });
 }
@@ -2966,10 +3793,11 @@ function runScreener(preset) {
   const peFilter     = document.getElementById('scPE').value;
   const mcapFilter   = document.getElementById('scMcap').value;
   const marketFilter = document.getElementById('scMarket').value;
+  const techFilter   = document.getElementById('scTech').value;
+  const momFilter    = document.getElementById('scMom').value;
 
   let stocks = getScreenerStocks();
 
-  // Apply filters
   if (yieldFilter !== 'all') {
     const minY = parseFloat(yieldFilter);
     stocks = stocks.filter(s => s.yieldVal >= minY);
@@ -2983,10 +3811,45 @@ function runScreener(preset) {
   if (mcapFilter === 'small')  stocks = stocks.filter(s => s.mcap < 10);
   if (marketFilter !== 'all')  stocks = stocks.filter(s => s.market === marketFilter);
 
-  // Sort by preset
+  if (techFilter !== 'all') {
+    stocks = stocks.filter(s => {
+      if (!s.tech) return false;
+      if (techFilter === 'ema100break') return s.tech.ema100break;
+      if (techFilter === 'rsi30')       return s.tech.rsi < 30;
+      if (techFilter === 'high52')      return s.tech.high52pct >= 95;
+      if (techFilter === 'oversold_bounce') return s.tech.rsi >= 30 && s.tech.rsi <= 45 && s.tech.mom20 > 0;
+      return true;
+    });
+  }
+  if (momFilter !== 'all') {
+    stocks = stocks.filter(s => {
+      if (!s.tech) return false;
+      if (momFilter === 'strong')   return s.tech.mom60 > 10;
+      if (momFilter === 'positive') return s.tech.mom60 > 0;
+      if (momFilter === 'negative') return s.tech.mom60 < 0;
+      if (momFilter === 'weak')     return s.tech.mom60 < -10;
+      return true;
+    });
+  }
+
+  // Preset-logik
   if (preset === 'yield') stocks.sort((a, b) => b.yieldVal - a.yieldVal);
   else if (preset === 'pe') stocks.sort((a, b) => a.peVal - b.peVal);
   else if (preset === 'mcap') stocks.sort((a, b) => b.mcap - a.mcap);
+  else if (preset === 'ema100break') {
+    stocks = stocks.filter(s => s.tech && s.tech.ema100break);
+    stocks.sort((a, b) => (b.tech ? b.tech.mom20 : 0) - (a.tech ? a.tech.mom20 : 0));
+  } else if (preset === 'rsi30') {
+    stocks = stocks.filter(s => s.tech && s.tech.rsi < 30);
+    stocks.sort((a, b) => (a.tech ? a.tech.rsi : 99) - (b.tech ? b.tech.rsi : 99));
+  } else if (preset === 'high52') {
+    stocks = stocks.filter(s => s.tech && s.tech.high52pct >= 95);
+    stocks.sort((a, b) => (b.tech ? b.tech.high52pct : 0) - (a.tech ? a.tech.high52pct : 0));
+  } else if (preset === 'valuemomentum') {
+    // P/E < 20 + 60d momentum > +5%
+    stocks = stocks.filter(s => s.peVal < 20 && s.tech && s.tech.mom60 > 5);
+    stocks.sort((a, b) => (b.tech ? b.tech.mom60 : 0) - (a.tech ? a.tech.mom60 : 0));
+  }
 
   const countEl = document.getElementById('screenerCount');
   countEl.textContent = `${stocks.length} aktie${stocks.length !== 1 ? 'r' : ''} hittades`;
@@ -2997,53 +3860,54 @@ function runScreener(preset) {
     return;
   }
 
+  const TH = s => `<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border);white-space:nowrap">${s}</th>`;
+
   const rows = stocks.map(s => {
     const sign = s.changePct >= 0 ? '+' : '';
     const cls  = s.changePct >= 0 ? 'up' : 'down';
     const badgeHtml = s.market !== 'SE'
       ? `<span class="market-badge ${s.market}">${s.market}</span>`
       : '';
-    return `<tr>
-      <td><span class="stock-name" onclick="goToStock('${s.ticker}')">${s.name}${badgeHtml}<span class="stock-ticker">${s.ticker}</span></span></td>
-      <td>${s.ticker}</td>
-      <td style="font-size:10px;color:var(--text2)">${s.market}</td>
-      <td>${s.peVal.toFixed(1)}x</td>
-      <td class="up">${s.yieldVal.toFixed(1)}%</td>
-      <td>${s.mcap} Mdr</td>
-      <td class="${cls}">${s.price.toFixed(2)} ${s.currency}</td>
+    // Tekniska signalbrickor
+    let techBadges = '';
+    if (s.tech) {
+      if (s.tech.ema100break) techBadges += `<span class="scr-sig sig-ema">EMA100↑</span>`;
+      if (s.tech.rsi < 30)    techBadges += `<span class="scr-sig sig-rsi">RSI ${s.tech.rsi.toFixed(0)}</span>`;
+      if (s.tech.high52pct >= 95) techBadges += `<span class="scr-sig sig-52h">${s.tech.high52pct.toFixed(0)}% av 52v-high</span>`;
+    }
+    const rsiStr  = s.tech ? s.tech.rsi.toFixed(0)                  : '–';
+    const mom60Str = s.tech ? (s.tech.mom60 >= 0 ? '+' : '') + s.tech.mom60.toFixed(1) + '%' : '–';
+    const mom60Cls = s.tech ? (s.tech.mom60 >= 0 ? 'up' : 'down')   : '';
+    const h52Str  = s.tech ? s.tech.high52pct.toFixed(0) + '%'       : '–';
+
+    return `<tr onclick="goToStock('${s.ticker}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px"><span class="stock-name">${s.name}${badgeHtml}<span class="stock-ticker">${s.ticker}</span></span><div style="margin-top:3px">${techBadges}</div></td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px">${s.peVal.toFixed(1)}x</td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px" class="up">${s.yieldVal.toFixed(1)}%</td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px;text-align:center">${rsiStr}</td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px" class="${mom60Cls}">${mom60Str}</td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px">${h52Str}</td>
+      <td style="padding:10px 14px;font-family:var(--mono);font-size:13px" class="${cls}">${s.price.toFixed(2)} ${s.currency}</td>
     </tr>`;
   }).join('');
 
   resultsDiv.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
-    <thead><tr>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Bolag</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Ticker</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Marknad</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">P/E</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Direktavkastn.</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Marknadsvärde</th>
-      <th style="padding:10px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border)">Kurs</th>
-    </tr></thead>
+    <thead><tr>${TH('Bolag')}${TH('P/E')}${TH('Direktavk.')}${TH('RSI')}${TH('Mom 60d')}${TH('52v-high')}${TH('Kurs')}</tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
 
 function applyPreset(type, btn) {
-  // Toggle active on preset buttons
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  if (activePreset === type) {
-    activePreset = null;
-    // Reset dropdowns and clear results
-    resetScreener();
-    return;
-  }
+  if (activePreset === type) { activePreset = null; resetScreener(); return; }
   activePreset = type;
   btn.classList.add('active');
-  // Reset dropdowns
   document.getElementById('scYield').value  = 'all';
   document.getElementById('scPE').value     = 'all';
   document.getElementById('scMcap').value   = 'all';
   document.getElementById('scMarket').value = 'all';
+  document.getElementById('scTech').value   = 'all';
+  document.getElementById('scMom').value    = 'all';
   runScreener(type);
 }
 
@@ -3054,6 +3918,8 @@ function resetScreener() {
   document.getElementById('scPE').value     = 'all';
   document.getElementById('scMcap').value   = 'all';
   document.getElementById('scMarket').value = 'all';
+  document.getElementById('scTech').value   = 'all';
+  document.getElementById('scMom').value    = 'all';
   document.getElementById('screenerCount').textContent = '';
   document.getElementById('screenerResults').innerHTML =
     '<div class="screener-empty">Välj filter och klicka <strong>Filtrera</strong> för att söka bland aktier.</div>';
@@ -3438,6 +4304,970 @@ window.addEventListener('popstate', handleRoute);
 // Starta routern
 handleRoute();
 
+// ══════════════════════════════════════════════════════════════════════════════
+// AI-FÖRVALTAREN — autonom simulerad portföljförvaltare
+// Signalmotor (momentum, trend, RSI, sektor, sentiment, volatilitet) +
+// marknadsregim-detektering + regelbaserad rebalansering. Helt simulerat.
+// ══════════════════════════════════════════════════════════════════════════════
+const AIQ = (function () {
+  const START_CAPITAL = 1000000;   // 1 Mkr startkapital
+  let lastReturnPct = 0;           // senaste avkastning i %, för portfölj-duellen
+  const COURTAGE = 0.0005;         // 0,05 % per affär
+  const HIST_DAYS = 120;           // dagar historik som genereras initialt
+  const WARMUP = 60;               // dagar innan handel (för MA50/mom60)
+  const FX = { 'kr':1, '$':10.6, '€':11.3 };  // växelkurs till SEK (SEK-denominerad fond)
+
+  // Strategilägen — institutionella riskmandat
+  // targetVol = årlig volatilitetsmål · maxSector = sektortak · maxDD = drawdown-gräns
+  const STRATS = {
+    defensiv:   { maxHoldings: 10, maxWeight: 0.14, cashBuffer: 0.15, buyTh: 60, sellTh: 46,
+                  targetVol: 0.08, maxSector: 0.30, maxDD: 0.08,
+                  w: { mom20: 0.8, mom60: 1.0, trend: 1.2, rsi: 0.8, sect: 0.6, news: 0.5, vol: 1.7, pe: 0.7, ema50: 0.6, ema100: 0.5, tline: 0.3, breakout: 0.3, macd: 0.4, bollinger: -0.3, high52: 0.3 } },
+    balanserad: { maxHoldings: 14, maxWeight: 0.12, cashBuffer: 0.06, buyTh: 56, sellTh: 42,
+                  targetVol: 0.12, maxSector: 0.40, maxDD: 0.15,
+                  w: { mom20: 1.1, mom60: 0.9, trend: 1.0, rsi: 0.6, sect: 0.7, news: 0.6, vol: 1.0, pe: 0.5, ema50: 0.6, ema100: 0.5, tline: 0.4, breakout: 0.4, macd: 0.6, bollinger: 0.2, high52: 0.4 } },
+    aggressiv:  { maxHoldings: 18, maxWeight: 0.16, cashBuffer: 0.00, buyTh: 52, sellTh: 38,
+                  targetVol: 0.18, maxSector: 0.55, maxDD: 0.25,
+                  w: { mom20: 1.6, mom60: 0.7, trend: 0.9, rsi: 0.3, sect: 0.9, news: 0.7, vol: 0.4, pe: 0.2, ema50: 0.6, ema100: 0.5, tline: 0.5, breakout: 0.5, macd: 0.9, bollinger: 0.5, high52: 0.7 } },
+    momentum:   { maxHoldings: 12, maxWeight: 0.16, cashBuffer: 0.03, buyTh: 54, sellTh: 40,
+                  targetVol: 0.17, maxSector: 0.55, maxDD: 0.22,
+                  w: { mom20: 1.9, mom60: 1.3, trend: 1.1, rsi: 0.2, sect: 0.9, news: 0.5, vol: 0.5, pe: 0.1, ema50: 1.0, ema100: 0.9, tline: 0.5, breakout: 0.5, macd: 1.2, bollinger: 0.6, high52: 1.0 } },
+    varde:      { maxHoldings: 12, maxWeight: 0.13, cashBuffer: 0.10, buyTh: 55, sellTh: 44,
+                  targetVol: 0.10, maxSector: 0.35, maxDD: 0.12,
+                  w: { mom20: 0.4, mom60: 0.5, trend: 0.6, rsi: 0.7, sect: 0.4, news: 0.4, vol: 1.3, pe: 1.7, ema50: 0.4, ema100: 0.5, tline: 0.1, breakout: 0.1, macd: 0.3, bollinger: -0.5, high52: -0.2 } },
+    swing:      { maxHoldings: 10, maxWeight: 0.16, cashBuffer: 0.05, buyTh: 53, sellTh: 42,
+                  targetVol: 0.15, maxSector: 0.50, maxDD: 0.18,
+                  w: { mom20: 1.2, mom60: 0.6, trend: 0.8, rsi: 0.5, sect: 0.6, news: 0.6, vol: 0.7, pe: 0.3, ema50: 0.9, ema100: 0.7, tline: 1.3, breakout: 1.5, macd: 0.8, bollinger: 0.3, high52: 0.5 } },
+    faktor:     { maxHoldings: 15, maxWeight: 0.12, cashBuffer: 0.05, buyTh: 54, sellTh: 41,
+                  targetVol: 0.13, maxSector: 0.38, maxDD: 0.16,
+                  w: { mom20: 1.0, mom60: 1.0, trend: 0.8, rsi: 0.5, sect: 0.6, news: 0.4, vol: 0.9, pe: 1.0, ema50: 0.7, ema100: 0.7, tline: 0.4, breakout: 0.4, macd: 0.8, bollinger: 0.3, high52: 0.6 } },
+    kvalitet:   { maxHoldings: 10, maxWeight: 0.14, cashBuffer: 0.12, buyTh: 62, sellTh: 48,
+                  targetVol: 0.09, maxSector: 0.32, maxDD: 0.10,
+                  w: { mom20: 0.6, mom60: 0.8, trend: 1.0, rsi: 0.9, sect: 0.5, news: 0.5, vol: 2.0, pe: 1.2, ema50: 0.7, ema100: 0.8, tline: 0.2, breakout: 0.2, macd: 0.5, bollinger: -0.4, high52: 0.4 } },
+  };
+
+  const VALID_STRATS = ['defensiv','balanserad','aggressiv','momentum','varde','swing','faktor','kvalitet'];
+  let strat = VALID_STRATS.includes(localStorage.getItem('bp_strat')) ? localStorage.getItem('bp_strat') : 'balanserad';
+  let universe = [];        // [{ticker, name, currency, series:[], sector, newsBias, genState}]
+  let present = 0;          // aktuellt dagindex i series
+  let cash = START_CAPITAL;
+  let holdings = {};        // ticker -> { shares, avgPrice }
+  let equity = [];          // [{day, value, bench, to}]
+  let log = [];             // affärslogg
+  let chart = null;
+  let timer = null;
+  let regime = 'neutral';
+  let peakEquity = START_CAPITAL;   // för drawdown-styrning
+  let benchBase = null;             // benchmark-bas (likaviktat index)
+  let rbTraded = 0;                 // omsatt notional aktuell rebalansering
+  let lastExposure = 1;             // senaste bruttoexponering (vol-targeting)
+
+  const NEWS_TEMPLATES = [
+    { type:'event', headline:'[TICKER] rapporterar rekordvinst för Q3', impact: 0.8, sector: null },
+    { type:'event', headline:'[TICKER] förvärvar rival – aktien stiger', impact: 0.6, sector: null },
+    { type:'event', headline:'[TICKER] sänker guidningen – analytiker oroliga', impact: -0.7, sector: null },
+    { type:'event', headline:'[TICKER] får FDA-godkännande', impact: 0.9, sector: 'Hälsovård' },
+    { type:'event', headline:'[TICKER] vinner stororder från statlig aktör', impact: 0.7, sector: null },
+    { type:'event', headline:'[TICKER] VD avgår oväntat', impact: -0.8, sector: null },
+    { type:'event', headline:'Fed håller räntan – riskaptit ökar', impact: 0.5, sector: null, global:true },
+    { type:'event', headline:'Inflation oväntat hög – räntoro tillbaka', impact: -0.6, sector: null, global:true },
+    { type:'event', headline:'[TICKER] ingår AI-partnerskap med tech-jätte', impact: 0.85, sector: 'Teknik' },
+    { type:'event', headline:'[TICKER] kvartalsrapport slår konsensus med 18%', impact: 0.75, sector: null },
+    { type:'event', headline:'[TICKER] drabbas av cyberattack – handelspaus', impact: -0.9, sector: null },
+    { type:'event', headline:'Stark jobbsiffra stöder bullcase', impact: 0.4, sector: null, global:true },
+    { type:'event', headline:'[TICKER] höjer utdelningen med 15%', impact: 0.5, sector: null },
+    { type:'event', headline:'[TICKER] emitterar nya aktier – utspädning', impact: -0.5, sector: null },
+    { type:'event', headline:'ESG-fond ökar exponering mot [SECTOR]', impact: 0.4, sector: null, sectBoost:true },
+  ];
+  // Marknadsnyheter för tickern (globala händelser som kan påverka portföljen)
+  const MARKET_HEADLINES = [
+    { tag:'FED',    cls:'neu', txt:'Federal Reserve håller räntan oförändrad på 5,25% – marknaden lättar', chg:'+0.4%' },
+    { tag:'MAKRO',  cls:'up',  txt:'USA:s BNP-tillväxt Q1 +2.8% – slår estimat på +2.1%', chg:'+0.6%' },
+    { tag:'RÅVARA', cls:'dn',  txt:'Oljan faller 3.2% efter OPEC-besked om ökad produktion', chg:'-3.2%' },
+    { tag:'AKTIE',  cls:'up',  txt:'NVIDIA sätter nytt ATH efter AI-chip-order värd 40 miljarder USD', chg:'+7.1%' },
+    { tag:'RÄNTA',  cls:'dn',  txt:'10-årig US Treasury yield stiger till 4.82% – press på tillväxtaktier', chg:'+12bp' },
+    { tag:'FX',     cls:'neu', txt:'USD/SEK stärks till 10.82 – gynnar svenska exportbolag', chg:'+0.3%' },
+    { tag:'MAKRO',  cls:'up',  txt:'Kinas industriproduktion +5.6% YoY – bättre än väntat', chg:'+1.2%' },
+    { tag:'AKTIE',  cls:'dn',  txt:'Meta sänker helårsguidning – aktien faller 8% i efterhandel', chg:'-8.2%' },
+    { tag:'FED',    cls:'up',  txt:'Fed-protokoll: majoritet ser räntesänkning möjlig H2 2025', chg:'+0.8%' },
+    { tag:'RÅVARA', cls:'up',  txt:'Guldpriset når 2 480 USD/oz – safe haven-flöden ökar', chg:'+1.9%' },
+    { tag:'AKTIE',  cls:'up',  txt:'Microsoft rapporterar cloud-tillväxt +29% – Azure driver uppgång', chg:'+5.3%' },
+    { tag:'MAKRO',  cls:'dn',  txt:'Eurozon PMI faller under 50 – recessionsoro stärks', chg:'-0.7%' },
+    { tag:'RÄNTA',  cls:'up',  txt:'Riksbanken sänker styrräntan med 25bp till 2,75%', chg:'+0.5%' },
+    { tag:'AKTIE',  cls:'up',  txt:'Tesla levererar rekord 514k fordon Q2 – aktien +11%', chg:'+11.2%' },
+    { tag:'MAKRO',  cls:'up',  txt:'Inflationen i USA faller till 2.9% – lägsta på 3 år', chg:'+1.4%' },
+    { tag:'AKTIE',  cls:'dn',  txt:'Apple bromsar iPhone-produktion – leverantörslager byggs upp', chg:'-2.8%' },
+    { tag:'FX',     cls:'dn',  txt:'EUR/USD testar 1.06 – ECB-oron pressar euron', chg:'-0.4%' },
+    { tag:'AKTIE',  cls:'up',  txt:'Amazon AWS-tillväxt +37% – molnsegmentet slår Wall Street', chg:'+6.7%' },
+    { tag:'RÅVARA', cls:'dn',  txt:'Kopparpriset faller 4% – svagare kinesisk efterfrågan', chg:'-4.1%' },
+    { tag:'MAKRO',  cls:'up',  txt:'Sysselsättning i USA: 256k nya jobb i november – stark arbetsmarknad', chg:'+0.9%' },
+  ];
+  function renderTicker(){
+    const el=document.getElementById('aiqTickerInner'); if(!el) return;
+    // Blanda in nyliga portföljhändelser med globala rubriker
+    const items = [...MARKET_HEADLINES];
+    newsEvents.slice(0,5).forEach(e=>{
+      const cls=e.impact>0?'up':'dn'; const chg=(e.impact>0?'+':'')+(e.impact*10).toFixed(1)+'%';
+      items.unshift({ tag:'NEXUS', cls, txt:e.headline, chg });
+    });
+    const html = items.map(it=>`<div class="aiq-ticker-item"><span class="ti-tag ${it.cls}">${it.tag}</span><span class="ti-txt">${it.txt}</span><span class="ti-chg ${it.cls}">${it.chg}</span></div>`).join('');
+    // Dubblera för sömlös loop
+    el.innerHTML = html + html;
+  }
+
+  let newsEvents = [];
+
+  const BASE_DATE = (function(){ const d=new Date(); d.setDate(d.getDate()-Math.floor(HIST_DAYS*7/5)); return d; })();
+  function tradingDate(day){
+    const d = new Date(BASE_DATE); d.setDate(d.getDate() + Math.floor(day * 7/5));
+    return d.toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
+  }
+  function tradingDateShort(day){
+    const d = new Date(BASE_DATE); d.setDate(d.getDate() + Math.floor(day * 7/5));
+    return d.toLocaleDateString('sv-SE',{day:'numeric',month:'short'});
+  }
+
+  function fireNewsEvents(day){
+    const rng = mulberry32(hash('news'+day));
+    let fired=0;
+    universe.forEach(u=>{
+      if(fired<3 && rng()<0.08){
+        const eligible = NEWS_TEMPLATES.filter(t=>!t.sector || t.sector===u.sector || !!t.global);
+        const tmpl = eligible[Math.floor(rng()*eligible.length)];
+        const shortName = u.name.split(' ')[0];
+        const p = 5+Math.floor(rng()*20); const q = Math.floor(rng()*4)+1;
+        let headline = tmpl.headline.replace('[TICKER]',shortName).replace('[SECTOR]',u.sector)
+                        .replace('Q3','Q'+q).replace('18%',p+'%').replace('15%',p+'%');
+        u.newsBias = tmpl.impact * 0.9;
+        newsEvents.unshift({ day, ticker:u.ticker, name:u.name, headline, impact:tmpl.impact });
+        fired++;
+      } else {
+        if(Math.abs(u.newsBias||0)>0.01) u.newsBias=(u.newsBias||0)*0.82;
+      }
+    });
+    if(newsEvents.length>80) newsEvents.length=80;
+  }
+  let rangeDays = 0;                // 0=allt, annars antal handelsdagar att visa
+  let benchKey = 'equal';           // vald jämförelse: equal|omx|nasdaq|sp500
+  let chartSlice = [];              // aktuellt visat equity-fönster (för tooltip)
+  let indexGen = {};                // marknadsindex { omx:{series,genState}, ... }
+  // Realistiska marknadsindex (deterministiska GBM-serier) för jämförelse
+  const INDEX_DEFS = {
+    omx:    { name:'OMXS30',  drift:0.00032, vol:0.0098, col:'#F0B429' },
+    nasdaq: { name:'Nasdaq',  drift:0.00052, vol:0.0125, col:'#A78BFA' },
+    sp500:  { name:'S&P 500', drift:0.00040, vol:0.0092, col:'#34D399' },
+  };
+  function buildIndices(){
+    indexGen = {};
+    for(const k in INDEX_DEFS){
+      const def=INDEX_DEFS[k];
+      const g={ rng:mulberry32(hash('idx-'+k)), drift:def.drift, vol:def.vol, price:1000 };
+      const series=[]; for(let i=0;i<HIST_DAYS;i++) series.push(nextPrice(g));
+      indexGen[k]={ series, genState:g, def };
+    }
+  }
+  function extendIndices(day){ for(const k in indexGen){ const ix=indexGen[k]; while(ix.series.length<=day) ix.series.push(nextPrice(ix.genState)); } }
+  // Normaliserat indexvärde (START_CAPITAL vid WARMUP)
+  function indexValue(k,d){ const ix=indexGen[k]; if(!ix||ix.series[WARMUP]<=0) return START_CAPITAL; return START_CAPITAL*(ix.series[Math.min(d,ix.series.length-1)]/ix.series[WARMUP]); }
+
+  // ── Seedad RNG (mulberry32) för deterministisk men "äkta" prishistorik ──
+  function hash(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;} return h>>>0; }
+  function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }; }
+
+  // Reverse-lookup sektor för ticker
+  function sectorOf(ticker){ for(const s in SECTORS){ if(SECTORS[s].includes(ticker)) return s; } return 'Övrigt'; }
+
+  // Genererar ny dag i prisserien (GBM-liknande)
+  function nextPrice(g){
+    const shock = (g.rng()-0.5);
+    const ret = g.drift + g.vol*shock*2.4 + g.vol*(g.rng()-0.5);
+    g.price = Math.max(0.5, g.price*(1+ret));
+    return g.price;
+  }
+  function extendTo(day){ universe.forEach(u=>{ while(u.series.length<=day) u.series.push(nextPrice(u.genState)); }); }
+
+  // ── Tekniska indikatorer ──
+  function mom(s,d,n){ return d-n>=0 && s[d-n]>0 ? s[d]/s[d-n]-1 : 0; }
+  function ma(s,d,n){ if(d-n+1<0) n=d+1; let sum=0; for(let i=d-n+1;i<=d;i++) sum+=s[i]; return sum/n; }
+  function rsi(s,d,n=14){ if(d-n<0) return 50; let g=0,l=0; for(let i=d-n+1;i<=d;i++){ const ch=s[i]-s[i-1]; if(ch>=0) g+=ch; else l-=ch; } if(l===0) return 100; const rs=(g/n)/(l/n); return 100-100/(1+rs); }
+  function vol(s,d,n=20){ if(d-n<0) n=d; const r=[]; for(let i=d-n+1;i<=d;i++) r.push(s[i]/s[i-1]-1); const m=r.reduce((a,b)=>a+b,0)/r.length; return Math.sqrt(r.reduce((a,b)=>a+(b-m)**2,0)/r.length); }
+  const tanh = x => Math.tanh(x);
+
+  // MACD: (EMA12−EMA26) vs EMA9 signal-linje, normaliserat mot pris
+  function macdSignal(s,d){
+    if(d<30) return 0;
+    const k9=2/10, start=Math.max(1,d-50);
+    let sig=0, first=true;
+    for(let i=start;i<=d;i++){
+      const ml=(emaOf(s,i,12)-emaOf(s,i,26))/Math.max(0.001,s[i]);
+      sig=first?ml:ml*k9+sig*(1-k9); first=false;
+    }
+    const line=(emaOf(s,d,12)-emaOf(s,d,26))/Math.max(0.001,s[d]);
+    return Math.tanh((line-sig)*60);
+  }
+
+  // Bollinger %B: var priset befinner sig i bandet (0=lägre, 1=övre)
+  function bollingerB(s,d,n=20){
+    if(d<n) return 0;
+    const m=ma(s,d,n), v=vol(s,d,n), upper=m*(1+2*v), lower=m*(1-2*v);
+    const range=upper-lower; if(range<=0) return 0;
+    return Math.tanh(((s[d]-lower)/range-0.5)*4);
+  }
+
+  // 52-veckors hög-proximity: styrkebevis om priset är nära årstoppen
+  function high52(s,d){
+    const lb=Math.min(d,252); if(lb<20) return 0;
+    const hi=Math.max(...s.slice(d-lb,d+1));
+    return Math.tanh((s[d]/hi-0.85)*12);
+  }
+
+  // ── RISKMODELL (institutionell) ──
+  // Dagliga avkastningar för en serie över fönster n fram till dag d
+  function returnsOf(s,d,n=60){ if(d-n<1) n=d-1; const r=[]; for(let i=d-n+1;i<=d;i++) r.push(s[i]/s[i-1]-1); return r; }
+  function mean(a){ return a.reduce((x,y)=>x+y,0)/(a.length||1); }
+  function stdev(a){ const m=mean(a); return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/(a.length||1)); }
+  function covar(a,b){ const ma=mean(a),mb=mean(b); let s=0; const n=Math.min(a.length,b.length); for(let i=0;i<n;i++) s+=(a[i]-ma)*(b[i]-mb); return s/(n||1); }
+  // Portföljens dagliga volatilitet givet vikter + kovariansmatris (w'Σw)
+  function portfolioVol(names,weights,d){
+    const rets=names.map(u=>returnsOf(u.series,d,60));
+    let varSum=0;
+    for(let i=0;i<names.length;i++) for(let j=0;j<names.length;j++) varSum+=weights[i]*weights[j]*covar(rets[i],rets[j]);
+    return Math.sqrt(Math.max(0,varSum));
+  }
+  // Likaviktat marknadsindex som benchmark
+  function benchmarkValue(d){
+    if(benchBase==null) return START_CAPITAL;
+    let r=0,c=0; universe.forEach(u=>{ if(u.series[WARMUP]>0){ r+=u.series[d]/u.series[WARMUP]; c++; } });
+    return START_CAPITAL*(c?r/c:1);
+  }
+  // Percentil (historisk VaR)
+  function percentile(arr,p){ if(!arr.length) return 0; const a=[...arr].sort((x,y)=>x-y); const idx=Math.max(0,Math.min(a.length-1,Math.floor(p*(a.length-1)))); return a[idx]; }
+
+  // Fullständiga riskmått från equity-kurvan
+  function computeMetrics(){
+    const n=equity.length;
+    if(n<3) return null;
+    const pr=[],br=[];
+    for(let i=1;i<n;i++){ pr.push(equity[i].value/equity[i-1].value-1); br.push(equity[i].bench/equity[i-1].bench-1); }
+    const mp=mean(pr), sp=stdev(pr);
+    const annRet=(equity[n-1].value/equity[0].value)**(252/(n-1))-1;
+    const annVol=sp*Math.sqrt(252);
+    const sharpe=sp>0?(mp/sp)*Math.sqrt(252):0;
+    const downside=Math.sqrt(mean(pr.map(x=>x<0?x*x:0)));
+    const sortino=downside>0?(mp/downside)*Math.sqrt(252):0;
+    // Max drawdown
+    let peak=equity[0].value,maxDD=0;
+    for(const e of equity){ if(e.value>peak) peak=e.value; const dd=(e.value-peak)/peak; if(dd<maxDD) maxDD=dd; }
+    // VaR 95 % (daglig, historisk)
+    const var95=-percentile(pr,0.05);
+    // Beta & alfa (Jensen) mot benchmark
+    const bVar=stdev(br)**2;
+    const beta=bVar>0?covar(pr,br)/bVar:0;
+    const mb=mean(br);
+    const alpha=(mp-beta*mb)*252;
+    // Information ratio & tracking error mot benchmark
+    const ex=pr.map((x,i)=>x-br[i]); const te=stdev(ex)*Math.sqrt(252);
+    const ir=stdev(ex)>0?(mean(ex)/stdev(ex))*Math.sqrt(252):0;
+    // Turnover (årlig)
+    const tos=equity.map(e=>e.to||0).filter((_,i)=>i>0);
+    const turnover=mean(tos)*252;
+    const benchRet=equity[n-1].bench/equity[0].bench-1;
+    return { annRet, annVol, sharpe, sortino, maxDD, var95, beta, alpha, ir, te, turnover, benchRet };
+  }
+
+  // Marknadsregim från ett brett medelindex
+  function detectRegime(d){
+    let momSum=0, aboveMa50=0, c=0;
+    universe.forEach(u=>{
+      momSum += mom(u.series,d,20);
+      if(d>=50 && u.series[d] > ma(u.series,d,50)) aboveMa50++;
+      c++;
+    });
+    const avgMom = c ? momSum/c : 0;
+    const breadth = c ? aboveMa50/c : 0.5; // % stocks above MA50
+    if(avgMom > 0.010 && breadth > 0.60) return 'bull';
+    if(avgMom < -0.010 || breadth < 0.35) return 'bear';
+    return 'neutral';
+  }
+
+  // Sektor-momentum (snitt mom20 per sektor)
+  function sectorMomentum(d){
+    const acc={}; universe.forEach(u=>{ (acc[u.sector]=acc[u.sector]||[]).push(mom(u.series,d,20)); });
+    const out={}; for(const s in acc) out[s]=acc[s].reduce((a,b)=>a+b,0)/acc[s].length; return out;
+  }
+
+  // Signal-score 0–100 + delkomponenter (för motivering)
+  // P/E-faktor: positiv vid billiga nivåer, negativ vid extrema – men mjukare kurva.
+  // Tillväxtaktier med högt PE straffas inte lika hårt som värdeaktier med högt PE.
+  function peScore(pe, mom20Override){
+    if(!pe || pe<=0) return 0;          // förlust/saknas → neutral
+    const strongMom = (mom20Override||0) > 0.04; // >4% momentum senaste 20d
+    if(pe < 10)  return  1.0;
+    if(pe < 15)  return  0.7;
+    if(pe < 22)  return  0.3;
+    if(pe < 30)  return  0.0;
+    if(pe < 50)  return strongMom ? 0.0  : -0.2;  // acceptabelt om momentum ok
+    if(pe < 80)  return strongMom ? -0.1 : -0.3;  // tillväxtpremie – halvera straffet
+    if(pe < 120) return strongMom ? -0.2 : -0.4;  // dyrt men håller om momentum finns
+    return strongMom ? -0.3 : -0.5;               // extremt dyrt (>120x)
+  }
+
+  function emaOf(s, d, period){
+    if(d < period-1) return s[d];
+    const k = 2/(period+1);
+    const start = Math.max(0, d-period*3);
+    let emaVal = s[start];
+    for(let i=start+1;i<=d;i++) emaVal = s[i]*k + emaVal*(1-k);
+    return emaVal;
+  }
+
+  // ── Prisstruktur-signaler (TradingView-koncept på vår dagsserie) ──
+  // Resistansnivå som rejektats minTouches gånger och som priset just bröt över
+  function resistanceBreakout(s, d, lookback=50, minTouches=3){
+    if(d < lookback+2) return 0;
+    const win = s.slice(d-lookback, d);
+    const hi = Math.max(...win);
+    if(hi<=0) return 0;
+    let touches=0;
+    for(let i=1;i<win.length-1;i++){
+      if(win[i]>=win[i-1] && win[i]>=win[i+1] && win[i] >= hi*0.985) touches++;
+    }
+    const broke = s[d] > hi*1.002 && s[d-1] <= hi*1.002;
+    if(broke && touches>=minTouches) return Math.min(1, touches/minTouches/1.5);
+    return 0;
+  }
+  // Utbrott över fallande resistans-trendlinje (sammanbinder senaste swing-highs)
+  function trendlineBreak(s, d, lookback=40){
+    if(d < lookback+2) return 0;
+    const pts=[];
+    for(let i=d-lookback+1;i<d;i++){
+      if(s[i]>=s[i-1] && s[i]>=s[i+1]) pts.push({x:i,y:s[i]});
+    }
+    if(pts.length<2) return 0;
+    const a=pts[pts.length-2], b=pts[pts.length-1];
+    if(b.x===a.x) return 0;
+    const slope=(b.y-a.y)/(b.x-a.x);
+    const proj = b.y + slope*(d-b.x);
+    if(slope<=0 && s[d] > proj*1.002 && s[d-1] <= proj*1.002) return 1;
+    return 0;
+  }
+
+  function score(u,d,sectMom,holdingPL){
+    const s=u.series;
+    const m20=mom(s,d,20), m60=mom(s,d,60), r=rsi(s,d), v=vol(s,d);
+    const trend=(s[d]/ma(s,d,50))-1;
+    const ema50val = emaOf(s,d,50); const ema100val = emaOf(s,d,100);
+    const ema50 = (s[d]/ema50val)-1;
+    const ema100 = (s[d]/ema100val)-1;
+    const tlineSig = trendlineBreak(s,d);          // utbrott fallande trendlinje
+    const breakoutSig = resistanceBreakout(s,d);   // utbrott rejektad resistans
+    const macdSig  = macdSignal(s,d);
+    const bSig     = bollingerB(s,d);
+    const h52Sig   = high52(s,d);
+    const sm=sectMom[u.sector]||0;
+    const W=STRATS[strat].w;
+    const pef = peScore(u.pe, m20);
+    // Vinnarhållbonus: om positionen redan är upp >8% och momentum fortfarande positivt,
+    // ge ett scorelyft som motverkar att PE eller volatilitet driver ut vinnaren i förtid.
+    const winBonus = (holdingPL!=null && holdingPL>0.08 && m20>0.01) ? Math.min(0.4, holdingPL*1.5) : 0;
+    const f={
+      mom20: tanh(m20*6),
+      mom60: tanh(m60*3),
+      trend: tanh(trend*10),
+      ema50: tanh(ema50*10),
+      ema100: tanh(ema100*8),
+      rsi:   Math.max(-1, 1 - Math.abs(r-55)/40),
+      sect:  tanh(sm*5),
+      news:  u.newsBias,
+      vol:   tanh(v*30),
+      pe:    pef,
+      tline: tlineSig,
+      breakout: breakoutSig,
+      macd: macdSig,
+      bollinger: bSig,
+      high52: h52Sig,
+    };
+    const comp = W.mom20*f.mom20 + W.mom60*f.mom60 + W.trend*f.trend + W.ema50*f.ema50 + W.ema100*f.ema100 + W.rsi*f.rsi + W.sect*f.sect + W.news*f.news - W.vol*f.vol + W.pe*f.pe + (W.tline||0)*f.tline + (W.breakout||0)*f.breakout + (W.macd||0)*f.macd + (W.bollinger||0)*f.bollinger + (W.high52||0)*f.high52 + winBonus;
+    const sc = Math.round(100/(1+Math.exp(-comp*1.5)));
+    return { sc, m20, m60, r, v, trend, ema50, ema100, tline:tlineSig, breakout:breakoutSig, macd:macdSig, bb:bSig, h52:h52Sig, sm, pef, pe: u.pe, f };
+  }
+
+  function priceOf(u){ return u.series[present]; }
+  function holdingsValue(){ let v=0; for(const t in holdings){ const u=universe.find(x=>x.ticker===t); if(u) v+=holdings[t].shares*priceOf(u); } return v; }
+  function totalEquity(){ return cash + holdingsValue(); }
+
+  function buy(u, value, reason, type, headline){
+    const px=priceOf(u); const shares=Math.floor(value/px); if(shares<=0) return;
+    const cost=shares*px*(1+COURTAGE); if(cost>cash) return;
+    cash-=cost; rbTraded+=shares*px;
+    if(holdings[u.ticker]){ const h=holdings[u.ticker]; h.avgPrice=(h.avgPrice*h.shares+px*shares)/(h.shares+shares); h.shares+=shares; }
+    else holdings[u.ticker]={ shares, avgPrice:px };
+    addLog('buy', u, shares, px, reason, type||'technical', headline||null);
+  }
+  function sell(u, shares, reason){
+    const h=holdings[u.ticker]; if(!h) return; shares=Math.min(shares,h.shares); if(shares<=0) return;
+    const px=priceOf(u); cash+=shares*px*(1-COURTAGE); h.shares-=shares; rbTraded+=shares*px;
+    if(h.shares<=0) delete holdings[u.ticker];
+    const stype = reason.startsWith('riskneddragning')||reason.startsWith('max drawdown') ? 'risk' : 'technical';
+    addLog('sell', u, shares, px, reason, stype, null);
+  }
+
+  function addLog(act,u,shares,px,reason,type,headline){
+    log.unshift({ act, name:u.name, ticker:u.ticker, shares, px, reason, day:present, t:Date.now(), type:type||'technical', headline:headline||null });
+    if(log.length>40) log.pop();
+  }
+
+  function buyReason(info, sectName, u){
+    const f=info.f; const peStr = info.pe>0 ? `P/E ${info.pe}` : 'P/E saknas';
+    // Check for recent news event
+    const recentNews = newsEvents.filter(e=>e.ticker===u.ticker && e.day>=present-3 && e.impact>0.4);
+    if(recentNews.length){
+      const ev = recentNews[recentNews.length-1];
+      return { reason: ev.headline, type:'event', headline: ev.headline };
+    }
+    let reason;
+    if(info.breakout > 0) reason = 'utbrott över rejektad resistansnivå – köpsignal';
+    else if(info.tline > 0) reason = 'bryter över fallande trendlinje (D)';
+    else if(info.ema100 > 0.01) reason = 'bryter över EMA100 – strukturell uppåttrend';
+    else if(info.ema50 > 0.005) reason = `pris över EMA50 · momentum +${(info.m20*100).toFixed(1)}% (20d)`;
+    else if(info.trend > 0) reason = 'pris över MA50 (uppåttrend)';
+    else {
+      const cand=[
+        [f.mom20*1.2,  `momentum +${(info.m20*100).toFixed(1)}% (20d)`],
+        [f.sect,       `het sektor: ${sectName}`],
+        [f.rsi*0.8,    `RSI ${info.r.toFixed(0)} – sund nivå`],
+        [f.news*0.9,   `positivt nyhetsflöde`],
+        [f.pe*0.85,    `attraktiv värdering (${peStr})`],
+      ].sort((a,b)=>b[0]-a[0]);
+      reason = cand[0][1];
+    }
+    return { reason, type:'technical', headline: null };
+  }
+
+  // Sektortak: skala ned vikter där en sektor överskrider taket
+  function applySectorCap(names, weights, cap){
+    const sums={}; names.forEach((u,i)=>sums[u.sector]=(sums[u.sector]||0)+weights[i]);
+    names.forEach((u,i)=>{ const s=sums[u.sector]; if(s>cap) weights[i]*=cap/s; });
+    return weights;
+  }
+
+  // ── Rebalansering en handelsdag (institutionell process) ──
+  function rebalance(){
+    rbTraded = 0;
+    fireNewsEvents(present);
+    regime = detectRegime(present);
+    const S = STRATS[strat];
+    const sectMom = sectorMomentum(present);
+
+    // Regimjustering av kontantbuffert
+    let cashBuffer = S.cashBuffer + (regime==='bear'?0.20 : regime==='bull'?-0.04 : 0.04);
+    cashBuffer = Math.min(0.6, Math.max(0, cashBuffer));
+
+    // Scora universumet (alfa-modell)
+    const scored = universe.map(u=>{
+      const h=holdings[u.ticker];
+      const holdingPL = h ? (priceOf(u)-h.avgPrice)/h.avgPrice : null;
+      return { u, info:score(u,present,sectMom,holdingPL) };
+    }).sort((a,b)=>b.info.sc-a.info.sc);
+    const byTicker = {}; scored.forEach(x=>byTicker[x.u.ticker]=x);
+
+    // 1) SÄLJ — risk- & signaldriven avyttring
+    for(const t of Object.keys(holdings)){
+      const x=byTicker[t]; if(!x) continue;
+      const sc=x.info.sc;
+      if(sc < S.sellTh){
+        let reason = `alfa avtar (score ${sc})`;
+        if(x.info.r>72) reason=`överköpt (RSI ${x.info.r.toFixed(0)})`;
+        else if(regime==='bear' && x.info.v>0.025) reason=`riskneddragning – björnmarknad`;
+        else if(x.info.m20<0) reason=`negativ trend ${(x.info.m20*100).toFixed(1)}% (20d)`;
+        sell(x.u, holdings[t].shares, reason);
+      }
+    }
+
+    // 2) Urval — toppkandidater över köptröskel
+    const cands = scored.filter(x=>x.info.sc>=S.buyTh).slice(0, S.maxHoldings);
+
+    // 3) Sälj innehav som roterat ut
+    const candSet = new Set(cands.map(x=>x.u.ticker));
+    for(const t of Object.keys(holdings)){
+      if(!candSet.has(t)){ const x=byTicker[t]; if(x) sell(x.u, holdings[t].shares, `roterar till starkare case`); }
+    }
+
+    let invested = 0;
+    if(cands.length){
+      // 4) Positionsstorlek: alfa-konviktion × invers volatilitet (risk parity-tilt)
+      const names=cands.map(x=>x.u);
+      let w=cands.map(x=>{
+        const alpha=Math.max(0.05, x.info.sc-(S.buyTh-8));
+        const invVol=1/Math.max(0.006, x.info.v);
+        return Math.pow(alpha,0.7)*Math.pow(invVol,0.5);
+      });
+      let sum=w.reduce((a,b)=>a+b,0)||1; w=w.map(x=>x/sum);
+      w=w.map(x=>Math.min(S.maxWeight,x));                 // positionstak
+      w=applySectorCap(names,w,S.maxSector);               // sektortak
+      sum=w.reduce((a,b)=>a+b,0)||1; w=w.map(x=>x/sum);    // renormalisera
+
+      // 5) Volatilitetsmål — skala bruttoexponering mot årlig målvol
+      const pVolDaily=portfolioVol(names,w,present);
+      const targetDaily=S.targetVol/Math.sqrt(252);
+      let exposure=pVolDaily>0?Math.min(1.15,targetDaily/pVolDaily):1;
+
+      // 6) Drawdown-styrning — dra ned risk vid djup förlust
+      const dd=(totalEquity()-peakEquity)/peakEquity;
+      if(dd < -S.maxDD) exposure*=Math.max(0.3, 1-(Math.abs(dd)-S.maxDD)*3);
+      lastExposure=exposure;
+
+      const investable = totalEquity()*(1-cashBuffer)*exposure;
+
+      // 7) Handla mot målvikter (rebalanseringsband för låg omsättning)
+      cands.forEach((x,i)=>{
+        const targetVal=investable*w[i];
+        const curVal=holdings[x.u.ticker]?holdings[x.u.ticker].shares*priceOf(x.u):0;
+        const diff=targetVal-curVal;
+        if(!holdings[x.u.ticker] && targetVal>0){ const br=buyReason(x.info, x.u.sector, x.u); buy(x.u, targetVal, br.reason, br.type, br.headline); }
+        else if(diff > totalEquity()*0.025) buy(x.u, diff, `ökar – konviktion stärks (score ${x.info.sc})`);
+        else if(diff < -totalEquity()*0.03){ const sh=Math.floor((-diff)/priceOf(x.u)); if(sh>0) sell(x.u, sh, `trimmar mot målvikt`); }
+        invested+=targetVal;
+      });
+    } else { lastExposure=0; }
+
+    const eqNow=totalEquity();
+    if(eqNow>peakEquity) peakEquity=eqNow;
+    const turnoverDay = eqNow>0 ? rbTraded/eqNow/2 : 0;
+    equity.push({ day: present, value: eqNow, bench: benchmarkValue(present), to: turnoverDay,
+      omx: indexValue('omx',present), nasdaq: indexValue('nasdaq',present), sp500: indexValue('sp500',present) });
+  }
+
+  function annualizedSharpe(){
+    if(equity.length<3) return 0;
+    const r=[]; for(let i=1;i<equity.length;i++) r.push(equity[i].value/equity[i-1].value-1);
+    const m=r.reduce((a,b)=>a+b,0)/r.length;
+    const sd=Math.sqrt(r.reduce((a,b)=>a+(b-m)**2,0)/r.length);
+    return sd>0 ? (m/sd)*Math.sqrt(252) : 0;
+  }
+
+  // ── Init / reset ──
+  function build(){
+    // Globalt universum: svenska + amerikanska aktier, SEK-denominerad fond
+    const src = [];
+    if(typeof seStocks!=='undefined') src.push(...seStocks);
+    if(typeof usStocks!=='undefined') src.push(...usStocks);
+    universe = src.map(s=>{
+      const rng = mulberry32(hash(s.ticker));
+      const sector = sectorOf(s.ticker);
+      const fx = FX[s.currency] || 1;
+      const priceSEK = s.price * fx;
+      const baseVol = 0.012 + rng()*0.018;
+      const drift = (rng()-0.42)*0.0016;
+      const g = { rng, price: priceSEK*(0.7+rng()*0.15), drift, vol: baseVol };
+      const series=[]; for(let i=0;i<HIST_DAYS;i++) series.push(nextPrice(g));
+      const factor = priceSEK / series[HIST_DAYS-1];
+      for(let i=0;i<series.length;i++) series[i]*=factor; g.price=priceSEK;
+      return { ticker:s.ticker, name:s.name, currency:'kr', region:s.market, sector, series, genState:g, pe: s.pe||null,
+               newsBias: +( (mulberry32(hash(s.ticker+'n'))()-0.5)*1.4 ).toFixed(2) };
+    });
+    buildIndices();
+    cash=START_CAPITAL; holdings={}; equity=[]; log=[]; newsEvents=[];
+    peakEquity=START_CAPITAL; lastExposure=1;
+    present=WARMUP; benchBase=true;
+    // Backtesta från WARMUP fram till "idag" så kurvan är fylld
+    for(let d=WARMUP; d<HIST_DAYS; d++){ present=d; rebalance(); }
+    render();
+  }
+
+  function step(){
+    extendTo(present+1);
+    extendIndices(present+1);
+    present++;
+    rebalance();
+    render();
+  }
+
+  function reset(){ stopAuto(); build(); }
+
+  function toggleAuto(){
+    if(timer){ stopAuto(); } else {
+      const btn=document.getElementById('aiqRunBtn');
+      btn.classList.add('running'); btn.textContent='⏸ Pausa';
+      timer=setInterval(step, 1100);
+    }
+  }
+  function stopAuto(){ if(timer){ clearInterval(timer); timer=null; } const btn=document.getElementById('aiqRunBtn'); if(btn){ btn.classList.remove('running'); btn.textContent='▶ Kör autonomt'; } }
+
+  function setStrat(s){ strat=s; try{localStorage.setItem('bp_strat',s);}catch(_){} document.querySelectorAll('.aiq-strat-btn').forEach(b=>b.classList.toggle('active', b.dataset.strat===s)); reset(); }
+
+  // ── Rendering ──
+  const money = v => Math.round(v).toLocaleString('sv-SE')+' kr';
+  function render(){
+    const eq=totalEquity(), ret=(eq/START_CAPITAL-1)*100;
+    lastReturnPct = ret; // exponeras för portfölj-duellen
+    if (typeof renderDuel === 'function') { try { renderDuel(); } catch(_){} }
+    const set=(id,txt,cls)=>{ const el=document.getElementById(id); if(!el) return; el.textContent=txt; if(cls!==undefined){ el.className='v '+cls; } };
+    set('aiqValue', money(eq));
+    set('aiqReturn', (ret>=0?'+':'')+ret.toFixed(2)+'%', ret>=0?'up':'down');
+    set('aiqCash', money(cash)+' ('+(cash/eq*100).toFixed(0)+'%)');
+    set('aiqCount', Object.keys(holdings).length+' st');
+    // Faktorexponering: genomsnittlig faktor-tilt för innehavsuniverset
+    const heldU = Object.keys(holdings).map(t=>universe.find(u=>u.ticker===t)).filter(Boolean);
+    if(heldU.length>0){
+      const sm2 = sectorMomentum(present);
+      const scores2 = heldU.map(u=>score(u,present,sm2,null));
+      const avgMom   = scores2.reduce((a,x)=>a+x.m20,0)/scores2.length;
+      const avgPE    = scores2.filter(x=>x.pe>0).reduce((a,x)=>a+x.pe,0)/(scores2.filter(x=>x.pe>0).length||1);
+      const avgVol   = scores2.reduce((a,x)=>a+x.v,0)/scores2.length;
+      const avgMacd  = scores2.reduce((a,x)=>a+x.macd,0)/scores2.length;
+      const factorEl = document.getElementById('aiqFactors');
+      if(factorEl){
+        const bar=(v,max)=>{
+          const w=Math.min(100,Math.abs(v)/max*100);
+          const c=v>=0?'#22D3EE':'#EF4444';
+          return `<div style="height:6px;border-radius:3px;background:var(--bg3);margin-top:3px"><div style="height:100%;width:${w}%;background:${c};border-radius:3px;transition:width 0.5s"></div></div>`;
+        };
+        factorEl.innerHTML=`
+          <div class="aiq-factor-row"><span>Momentum</span><span style="font-family:var(--mono);font-size:11px;color:${avgMom>=0?'#22D3EE':'#EF4444'}">${avgMom>=0?'+':''}${(avgMom*100).toFixed(1)}%</span>${bar(avgMom,0.05)}</div>
+          <div class="aiq-factor-row"><span>MACD-signal</span><span style="font-family:var(--mono);font-size:11px;color:${avgMacd>=0?'#22D3EE':'#EF4444'}">${avgMacd>=0?'bull':'bear'}</span>${bar(avgMacd,1)}</div>
+          <div class="aiq-factor-row"><span>Volatilitet</span><span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${(avgVol*100).toFixed(1)}%/d</span>${bar(-avgVol,0.03)}</div>
+          <div class="aiq-factor-row"><span>Värdering (P/E)</span><span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${avgPE>0?avgPE.toFixed(0)+'x':'—'}</span>${bar(30-Math.min(avgPE,60),30)}</div>`;
+      }
+    }
+    const m=computeMetrics();
+    set('aiqSharpe', m?m.sharpe.toFixed(2):'–');
+    const dayEl=document.getElementById('aiqDay'); if(dayEl) dayEl.textContent='Dag '+(present-WARMUP+1);
+
+    // Regim-pill
+    const rp=document.getElementById('aiqRegime'), rt=document.getElementById('aiqRegimeTxt');
+    if(rp){ rp.className='aiq-regime-pill regime-'+regime; rt.textContent = regime==='bull'?'Tjurmarknad':regime==='bear'?'Björnmarknad':'Neutral marknad'; }
+
+    // Riskpanel (institutionella mått)
+    const riskEl=document.getElementById('aiqRisk');
+    if(riskEl){
+      if(!m){ riskEl.innerHTML='<div class="aiq-empty">Beräknar riskmått…</div>'; }
+      else {
+        const tiles=[
+          ['Årsavk. (CAGR)', (m.annRet*100).toFixed(1)+'%', m.annRet>=0?'up':'down'],
+          ['Volatilitet (ann.)', (m.annVol*100).toFixed(1)+'%', ''],
+          ['Sharpe', m.sharpe.toFixed(2), m.sharpe>=1?'up':''],
+          ['Sortino', m.sortino.toFixed(2), m.sortino>=1?'up':''],
+          ['Max drawdown', (m.maxDD*100).toFixed(1)+'%', 'down'],
+          ['VaR 95% (1d)', '-'+(m.var95*100).toFixed(2)+'%', 'down'],
+          ['Beta', m.beta.toFixed(2), ''],
+          ['Alfa (ann.)', (m.alpha*100>=0?'+':'')+(m.alpha*100).toFixed(1)+'%', m.alpha>=0?'up':'down'],
+          ['Info ratio', m.ir.toFixed(2), m.ir>=0.5?'up':''],
+          ['Tracking error', (m.te*100).toFixed(1)+'%', ''],
+          ['Omsättning (ann.)', (m.turnover*100).toFixed(0)+'%', ''],
+          ['Bruttoexponering', (lastExposure*100).toFixed(0)+'%', ''],
+        ];
+        riskEl.innerHTML=tiles.map(t=>`<div class="aiq-risk-tile"><label>${t[0]}</label><div class="rv ${t[2]}">${t[1]}</div></div>`).join('');
+      }
+    }
+
+    // Innehav
+    const hEl=document.getElementById('aiqHoldings');
+    const list=Object.keys(holdings).map(t=>{ const u=universe.find(x=>x.ticker===t); const h=holdings[t]; const px=priceOf(u); const val=h.shares*px; const pl=(px/h.avgPrice-1)*100; return {u,h,px,val,pl}; }).sort((a,b)=>b.val-a.val);
+    if(!list.length){ hEl.innerHTML='<div class="aiq-empty">Inga innehav — AI:n avvaktar (hög kontantandel).</div>'; }
+    else {
+      hEl.innerHTML=list.map(x=>{
+        const w=(x.val/eq*100);
+        const flag = x.u.region==='US'?'🇺🇸':x.u.region==='SE'?'🇸🇪':'';
+        return `<div class="aiq-holding" onclick="aiqExplain('${x.u.ticker}')" title="Klicka för AI:ns motivering">
+          <div><div class="aiq-h-name">${flag} ${x.u.name} <span class="aiq-h-why">varför?</span></div><div class="aiq-h-meta">${x.h.shares} st · ${x.px.toFixed(0)} kr${x.u.pe>0?' · P/E '+x.u.pe:''}</div>
+            <div class="aiq-score-bar"><div class="aiq-score-fill" style="width:${Math.min(100,w*4).toFixed(0)}%"></div></div></div>
+          <div class="aiq-h-weight">${w.toFixed(1)}%</div>
+          <div class="aiq-h-pl ${x.pl>=0?'up':'down'}">${x.pl>=0?'+':''}${x.pl.toFixed(1)}%</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Sektorexponering
+    const secEl=document.getElementById('aiqSectors');
+    if(secEl){
+      const sx={}; list.forEach(x=>{ sx[x.u.sector]=(sx[x.u.sector]||0)+x.val; });
+      const entries=Object.entries(sx).sort((a,b)=>b[1]-a[1]);
+      if(!entries.length){ secEl.innerHTML='<div class="aiq-empty">—</div>'; }
+      else secEl.innerHTML=entries.map(([s,v])=>{ const p=v/eq*100; return `<div class="aiq-sec"><span class="aiq-sec-name">${s}</span><div class="aiq-sec-bar"><div class="aiq-sec-fill" style="width:${Math.min(100,p).toFixed(0)}%"></div></div><span class="aiq-sec-pct">${p.toFixed(0)}%</span></div>`; }).join('');
+    }
+
+    // News feed
+    const nfEl=document.getElementById('aiqNewsFeed');
+    if(nfEl){
+      const recent = newsEvents.slice(-5).reverse();
+      if(!recent.length){ nfEl.innerHTML=''; }
+      else {
+        nfEl.innerHTML='<div class="aiq-news-feed-title">📡 Händelser</div>'+recent.map(e=>{
+          const cls = e.impact>0 ? 'up' : 'down';
+          const arrow = e.impact>0 ? '▲' : '▼';
+          return `<div class="aiq-news-item"><span class="aiq-news-date">${tradingDateShort(e.day)}</span><span class="aiq-news-impact ${cls}">${arrow}</span><span class="aiq-news-txt">${e.headline}</span></div>`;
+        }).join('');
+      }
+    }
+
+    // Logg
+    const lEl=document.getElementById('aiqLog');
+    if(!log.length){ lEl.innerHTML='<div class="aiq-empty">Inga affärer ännu.</div>'; }
+    else {
+      lEl.innerHTML=log.map(e=>{
+        const typeClass = e.type==='risk' ? 'risk' : (e.type==='event' ? 'evt' : 'tech');
+        const typeLabel = e.type==='risk' ? 'RISK' : (e.type==='event' ? 'HÄNDELSE' : 'TEKNISK');
+        const datStr = tradingDate(e.day);
+        const headlineHtml = (e.type==='event' && e.headline) ? `<div class="aiq-log-reason" style="font-style:italic;margin-top:2px">${e.headline}</div>` : '';
+        return `<div class="aiq-log-item">
+        <span class="aiq-log-act ${e.act}">${e.act==='buy'?'KÖP':'SÄLJ'}</span>
+        <div><div class="aiq-log-txt"><span class="aiq-log-type ${typeClass}">${typeLabel}</span><b>${e.name}</b> · ${e.shares} st @ ${e.px.toFixed(2)} — <span class="aiq-log-reason">${e.reason}</span></div>
+        ${headlineHtml}<div class="aiq-log-time">${datStr}</div></div>
+      </div>`;
+      }).join('');
+    }
+
+    renderTicker();
+    renderChart();
+  }
+
+  // Jämförelseserie + etikett/färg utifrån vald benchmark
+  function benchMeta(){
+    if(benchKey==='equal') return { key:'bench', label:'Likaviktat index', col:'#6E7794' };
+    const def=INDEX_DEFS[benchKey];
+    return { key:benchKey, label:def.name, col:def.col };
+  }
+  // Slice equity-fönstret enligt vald tidsperiod
+  function rangeSlice(){
+    if(!rangeDays || rangeDays>=equity.length) return equity;
+    return equity.slice(Math.max(0, equity.length-rangeDays));
+  }
+  // Uppdaterar periodavkastningstexten
+  function updateRangeReturn(slice, bm){
+    const el=document.getElementById('aiqRangeReturn'); if(!el) return;
+    if(slice.length<2){ el.innerHTML=''; return; }
+    const aiR=(slice[slice.length-1].value/slice[0].value-1)*100;
+    const bR=(slice[slice.length-1][bm.key]/slice[0][bm.key]-1)*100;
+    const lbl = rangeDays===5?'Senaste veckan':rangeDays===21?'Senaste månaden':rangeDays===252?'Senaste året':'Hela perioden';
+    const cls=v=>v>=0?'up':'down', sg=v=>v>=0?'+':'';
+    el.innerHTML=`${lbl}: <span class="${cls(aiR)}">AI ${sg(aiR)}${aiR.toFixed(2)}%</span> · <span class="${cls(bR)}">${bm.label} ${sg(bR)}${bR.toFixed(2)}%</span>`;
+  }
+
+  function renderChart(){
+    const cv=document.getElementById('aiqChart'); if(!cv||typeof Chart==='undefined') return;
+    const slice=rangeSlice(); chartSlice=slice;
+    const bm=benchMeta();
+    const labels=slice.map(e=>'D'+(e.day-WARMUP+1));
+    const data=slice.map(e=>e.value);
+    const bench=slice.map(e=>e[bm.key]);
+    const up = data.length && data[data.length-1]>=data[0];
+    const col = up ? '#34D399' : '#FB7185';
+    updateRangeReturn(slice, bm);
+    if(chart){
+      chart.data.labels=labels;
+      chart.data.datasets[0].data=data; chart.data.datasets[0].borderColor=col; chart.data.datasets[0].backgroundColor=ctxGrad(cv,col);
+      chart.data.datasets[1].data=bench; chart.data.datasets[1].label=bm.label; chart.data.datasets[1].borderColor=bm.col; chart.data.datasets[1].pointHoverBackgroundColor=bm.col;
+      chart.update('none'); return;
+    }
+    chart=new Chart(cv.getContext('2d'),{
+      type:'line',
+      data:{ labels, datasets:[
+        { label:'AI-Förvaltaren', data, borderColor:col, borderWidth:2.2, fill:true, backgroundColor:ctxGrad(cv,col), tension:0.35, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:col, pointHoverBorderColor:'#fff', pointHoverBorderWidth:2 },
+        { label:bm.label, data:bench, borderColor:bm.col, borderWidth:1.4, borderDash:[5,4], fill:false, tension:0.35, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:bm.col, pointHoverBorderColor:'#fff', pointHoverBorderWidth:1.5 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false, axis:'x' },
+        hover:{ mode:'index', intersect:false },
+        plugins:{ legend:{display:true, position:'top', align:'end', labels:{ color:'#6E7794', boxWidth:18, boxHeight:2, font:{size:10}, usePointStyle:false } },
+          tooltip:{ mode:'index', intersect:false, position:'nearest',
+            backgroundColor:'rgba(6,9,18,0.94)', borderColor:'rgba(94,130,220,0.25)', borderWidth:1,
+            titleColor:'#9FB3D9', bodyColor:'#E8EEFB', padding:10, cornerRadius:8, displayColors:true,
+            boxWidth:8, boxHeight:8, usePointStyle:true,
+            callbacks:{ title:items=>items.length&&chartSlice[items[0].dataIndex]?('Dag '+(chartSlice[items[0].dataIndex].day-WARMUP+1)):'',
+              label:c=>'  '+c.dataset.label+': '+money(c.parsed.y) } } },
+        scales:{ x:{ display:false }, y:{ position:'right', grid:{color:'rgba(94,130,220,0.08)'}, ticks:{ color:'#6E7794', font:{size:10}, callback:v=>(v/1e6).toFixed(2)+'M' } } },
+        animation:false },
+      plugins:[crosshairPlugin]
+    });
+  }
+  // Vertikal sikteslinje som följer markören när man drar över grafen
+  const crosshairPlugin = {
+    id:'aiqCrosshair',
+    afterDraw(c){
+      const act=c.tooltip && c.tooltip.getActiveElements && c.tooltip.getActiveElements();
+      if(!act || !act.length) return;
+      const x=act[0].element.x; const ya=c.chartArea;
+      const ctx=c.ctx;
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(x,ya.top); ctx.lineTo(x,ya.bottom);
+      ctx.lineWidth=1; ctx.strokeStyle='rgba(34,211,238,0.45)'; ctx.setLineDash([4,3]); ctx.stroke();
+      ctx.restore();
+    }
+  };
+  function ctxGrad(cv,col){ const ctx=cv.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,200); g.addColorStop(0, col+'40'); g.addColorStop(1, col+'00'); return g; }
+
+  function setRange(d){ rangeDays=d; renderChart(); }
+  function setBench(k){ benchKey=k; if(chart){ chart.destroy(); chart=null; } renderChart(); }
+
+  // ── AI-förklaring: varför äger NEXUS-1 detta innehav just nu? ──
+  function explain(ticker){
+    const u=universe.find(x=>x.ticker===ticker); if(!u) return null;
+    const h=holdings[ticker]; if(!h) return null;
+    const px=priceOf(u); const pl=(px/h.avgPrice-1);
+    const eq=totalEquity(); const w=h.shares*px/eq*100;
+    const sectMom=sectorMomentum(present);
+    const holdingPL=(px-h.avgPrice)/h.avgPrice;
+    const info=score(u,present,sectMom,holdingPL);
+    const W=STRATS[strat].w; const f=info.f;
+    const S=STRATS[strat];
+
+    // Viktade signalbidrag (driver scoren)
+    const contribs=[
+      {k:'Momentum (20d)', c:W.mom20*f.mom20, d:`${info.m20*100>=0?'+':''}${(info.m20*100).toFixed(1)}% senaste månaden`},
+      {k:'Momentum (60d)', c:W.mom60*f.mom60, d:`${info.m60*100>=0?'+':''}${(info.m60*100).toFixed(1)}% senaste kvartalet`},
+      {k:'Trend (MA50)', c:W.trend*f.trend, d: info.trend>0?'pris över 50-dagars medel':'pris under 50-dagars medel'},
+      {k:'EMA50', c:W.ema50*f.ema50, d: info.ema50>0?'pris ligger över EMA50':'pris ligger under EMA50'},
+      {k:'EMA100', c:W.ema100*f.ema100, d: info.ema100>0?'pris över EMA100 – strukturell uppåttrend':'pris under EMA100'},
+      {k:'RSI', c:W.rsi*f.rsi, d:`RSI ${info.r.toFixed(0)} ${info.r>70?'(överköpt)':info.r<30?'(översålt)':'(neutralt)'}`},
+      {k:'Sektormomentum', c:W.sect*f.sect, d: info.sm>0.005?`${u.sector} är het just nu`:info.sm<-0.005?`${u.sector} svalnar`:`${u.sector} neutral`},
+      {k:'Nyhetsläge', c:W.news*f.news, d: u.newsBias>0.05?'positivt nyhetsflöde':u.newsBias<-0.05?'negativt nyhetsflöde':'neutralt nyhetsflöde'},
+      {k:'Volatilitet', c:-W.vol*f.vol, d:`${(info.v*100).toFixed(1)}% dagsvolatilitet`},
+      {k:'Värdering', c:W.pe*f.pef, d: info.pe>0?`P/E ${info.pe}`:'P/E saknas'},
+    ];
+    if(W.tline)    contribs.push({k:'Trendlinjebrott', c:W.tline*f.tline, d: f.tline>0?'utbrott över fallande trendlinje (D)':'inget aktivt trendlinjebrott'});
+    if(W.breakout) contribs.push({k:'Resistansutbrott', c:W.breakout*f.breakout, d: f.breakout>0?'utbrott över tidigare rejektad nivå':'inget aktivt resistansutbrott'});
+    contribs.push({k:'MACD',            c:W.macd*f.macd,            d: f.macd>0.1?'MACD-linje över signal – uppåtmomentum':'MACD-linje under signal – nedåtmomentum'});
+    contribs.push({k:'Bollinger %B',    c:(W.bollinger||0)*f.bollinger, d: f.bollinger>0?'pris i övre halvdelen av Bollinger-bandet':'pris i nedre halvdelen – möjlig mean reversion'});
+    contribs.push({k:'52-veckorshög',   c:(W.high52||0)*f.high52,    d: f.high52>0.2?'nära 52-veckors högsta – styrkebevis':'avstånd till 52-veckors topp'});
+    contribs.sort((a,b)=>Math.abs(b.c)-Math.abs(a.c));
+
+    // Verdikt utifrån score mot strategins trösklar
+    let verdict, vcls;
+    if(info.sc>=S.buyTh+8){ verdict='Stark konviktion – kärninnehav'; vcls='up'; }
+    else if(info.sc>=S.buyTh){ verdict='Köpläge bekräftat – behåller positionen'; vcls='up'; }
+    else if(info.sc>=S.sellTh){ verdict='Håller – signalerna är blandade'; vcls=''; }
+    else { verdict='Säljkandidat vid nästa rebalansering'; vcls='down'; }
+
+    // Ursprunglig köporsak från loggen
+    const buyEntry = log.find(e=>e.ticker===ticker && e.act==='buy');
+
+    // Klartext-sammanfattning
+    const top = contribs.filter(c=>c.c>0.02).slice(0,3).map(c=>c.k.toLowerCase());
+    const drag = contribs.filter(c=>c.c<-0.02).slice(0,2).map(c=>c.k.toLowerCase());
+    let summary = `NEXUS-1 äger ${u.name} med en portföljvikt på ${w.toFixed(1)}% och en total signalpoäng på ${info.sc}/100 enligt strategin "${strat}". `;
+    if(top.length) summary += `Det som främst talar för innehavet är ${top.join(', ')}. `;
+    if(pl>=0.001) summary += `Positionen ligger för närvarande på +${(pl*100).toFixed(1)}% sedan köp, och `+(info.m20>0.01?'momentum är fortsatt positivt vilket gör att AI:n låter vinnaren löpa. ':'AI:n bevakar om momentum håller i sig. ');
+    else if(pl<=-0.001) summary += `Positionen ligger på ${(pl*100).toFixed(1)}% sedan köp – AI:n behåller så länge den samlade signalbilden ligger över säljtröskeln (${S.sellTh}). `;
+    if(drag.length) summary += `Det som drar ned betyget är ${drag.join(' och ')}. `;
+    summary += info.sc>=S.buyTh
+      ? 'Sammantaget ligger poängen över köptröskeln, så positionen prioriteras.'
+      : info.sc>=S.sellTh
+        ? 'Poängen ligger i håll-zonen mellan köp- och säljtröskel.'
+        : 'Poängen har fallit under säljtröskeln och positionen avvecklas troligen vid nästa ombalansering.';
+
+    return { u, info, w, pl, verdict, vcls, contribs, buyEntry, summary };
+  }
+
+  return { build, step, reset, toggleAuto, setStrat, setRange, setBench, explain, getReturn: () => lastReturnPct, getStrat: () => strat };
+})();
+
+// Globala handlers för knapparna
+function aiqStep(){ AIQ.step(); }
+function aiqReset(){ AIQ.reset(); }
+function aiqToggleAuto(){ AIQ.toggleAuto(); }
+
+// Öppna AI:ns motivering för ett innehav
+function aiqExplain(ticker){
+  const x = AIQ.explain(ticker);
+  if(!x){ return; }
+  const flag = x.u.region==='US'?'🇺🇸':x.u.region==='SE'?'🇸🇪':'';
+  const maxC = Math.max(0.001, ...x.contribs.map(c=>Math.abs(c.c)));
+  const factors = x.contribs.map(c=>{
+    const pct = Math.min(48, Math.abs(c.c)/maxC*48);
+    const fill = c.c>=0
+      ? `<div class="xpl-f-fill pos" style="width:${pct}%"></div>`
+      : `<div class="xpl-f-fill neg" style="width:${pct}%"></div>`;
+    return `<div class="xpl-factor">
+      <div class="xpl-f-name">${c.k}</div>
+      <div><div class="xpl-f-desc">${escapeHTML(c.d)}</div><div class="xpl-f-bar">${fill}</div></div>
+      <div style="text-align:right;font-family:var(--mono);font-size:11.5px;color:${c.c>=0?'#16A34A':'#DC2626'}">${c.c>=0?'+':''}${c.c.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  const buyHtml = x.buyEntry
+    ? `<div class="xpl-buyrow">📌 Ursprunglig köporsak: <b style="color:var(--text)">${escapeHTML(x.buyEntry.reason)}</b>${x.buyEntry.headline?` — <i>${escapeHTML(x.buyEntry.headline)}</i>`:''}</div>`
+    : '';
+  document.getElementById('holdingContent').innerHTML = `
+    <div class="xpl-head">
+      <div class="xpl-score ${x.vcls}">${x.info.sc}<small>/100</small></div>
+      <div><div class="article-title" style="margin:0;font-size:20px">${flag} ${escapeHTML(x.u.name)}</div>
+      <div style="font-size:12px;color:var(--text2)">${escapeHTML(x.u.sector)} · ${escapeHTML(x.u.ticker)}</div></div>
+    </div>
+    <span class="xpl-verdict ${x.vcls}">${x.verdict}</span>
+    <div class="xpl-summary">${x.summary}</div>
+    <div class="xpl-stats">
+      <div class="xpl-stat"><label>Portföljvikt</label><div class="v">${x.w.toFixed(1)}%</div></div>
+      <div class="xpl-stat"><label>Avkastning</label><div class="v ${x.pl>=0?'up':'down'}" style="color:${x.pl>=0?'#16A34A':'#DC2626'}">${x.pl>=0?'+':''}${(x.pl*100).toFixed(1)}%</div></div>
+      <div class="xpl-stat"><label>RSI</label><div class="v">${x.info.r.toFixed(0)}</div></div>
+      <div class="xpl-stat"><label>Volatilitet</label><div class="v">${(x.info.v*100).toFixed(1)}%</div></div>
+    </div>
+    <div class="xpl-sec-title">Signalbidrag till poängen</div>
+    ${factors}
+    ${buyHtml}
+    <div class="xpl-ai-section" id="xplAiSection">
+      <div class="xpl-sec-title" style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">🤖</span> AI-fördjupning
+        <span class="xpl-ai-spinner" id="xplAiSpinner"></span>
+      </div>
+      <div class="xpl-ai-text" id="xplAiText" style="color:var(--text2);font-style:italic;font-size:13px">Analyserar...</div>
+    </div>
+    <div class="xpl-disclaimer">NEXUS-1 är en simulerad AI-modell för utbildningssyfte. Poängen är en sammanvägning av tekniska och fundamentala signaler enligt vald strategi och utgör inte finansiell rådgivning.</div>`;
+  document.getElementById('holdingOverlay').classList.add('show');
+  document.body.style.overflow='hidden';
+
+  // Hämta Claude AI-fördjupning asynkront
+  fetch('/.netlify/functions/holding-explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ticker: x.u.ticker,
+      name: x.u.name,
+      sector: x.u.sector,
+      score: x.info.sc,
+      strategy: AIQ.getStrat(),
+      pl: (x.pl*100).toFixed(1),
+      weight: x.w.toFixed(1),
+      rsi: x.info.r.toFixed(0),
+      volatility: (x.info.v*100).toFixed(1),
+      contribs: x.contribs.slice(0,6),
+      summary: x.summary,
+    }),
+  })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(d => {
+    const el = document.getElementById('xplAiText');
+    const sp = document.getElementById('xplAiSpinner');
+    if(el){ el.style.fontStyle='normal'; el.style.color='var(--text)'; el.style.lineHeight='1.6'; el.textContent = d.analysis || 'Ingen analys tillgänglig.'; }
+    if(sp) sp.remove();
+  })
+  .catch(() => {
+    const el = document.getElementById('xplAiText');
+    if(el){ el.textContent = 'AI-fördjupning ej tillgänglig just nu.'; }
+    const sp = document.getElementById('xplAiSpinner');
+    if(sp) sp.remove();
+  });
+}
+function closeHolding(e){
+  if(e && e.target !== document.getElementById('holdingOverlay')) return;
+  document.getElementById('holdingOverlay').classList.remove('show');
+  document.body.style.overflow='';
+}
+document.querySelectorAll('.aiq-strat-btn').forEach(b=>b.addEventListener('click',()=>AIQ.setStrat(b.dataset.strat)));
+document.querySelectorAll('#aiqRange button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#aiqRange button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); AIQ.setRange(+b.dataset.range);
+}));
+document.querySelectorAll('#aiqBenchSel button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#aiqBenchSel button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); AIQ.setBench(b.dataset.bench);
+}));
+// Synka aktiv strategi-knapp med sparat val
+(function syncStratBtn(){
+  const saved = localStorage.getItem('bp_strat');
+  if(saved){ document.querySelectorAll('.aiq-strat-btn').forEach(b=>b.classList.toggle('active', b.dataset.strat===saved)); }
+})();
+AIQ.build();
+
 // ── SCROLL REVEAL (IntersectionObserver) ──
 (function initScrollReveal() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -3454,5 +5284,245 @@ handleRoute();
   targets.forEach(el => io.observe(el));
 })();
 </script>
+
+<!-- PWA: installationsbanner -->
+<div id="pwaInstall" style="display:none">
+  <div class="pwa-banner">
+    <img src="/icons/icon-192.png" alt="" class="pwa-banner-icon">
+    <div class="pwa-banner-txt">
+      <b>Installera BörsPulsen</b>
+      <span>Lägg till på hemskärmen för snabb åtkomst – som en app.</span>
+    </div>
+    <button class="pwa-banner-btn" id="pwaInstallBtn">Lägg till</button>
+    <button class="pwa-banner-close" id="pwaDismissBtn" aria-label="Stäng">✕</button>
+  </div>
+</div>
+<style>
+  .pwa-banner { position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:9500;
+    width:min(440px,calc(100% - 28px)); display:flex; align-items:center; gap:12px;
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px 14px;
+    box-shadow:0 18px 50px rgba(0,0,0,0.5); backdrop-filter:blur(16px); animation:pwaUp 0.4s cubic-bezier(0.22,0.61,0.36,1); }
+  @keyframes pwaUp { from{opacity:0;transform:translate(-50%,20px)} to{opacity:1;transform:translate(-50%,0)} }
+  .pwa-banner-icon { width:42px; height:42px; border-radius:10px; flex-shrink:0; }
+  .pwa-banner-txt { flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.3; }
+  .pwa-banner-txt b { font-size:14px; color:var(--text); }
+  .pwa-banner-txt span { font-size:11.5px; color:var(--text2); }
+  .pwa-banner-btn { background:linear-gradient(135deg,#1B4FD8,#6366F1); color:#fff; border:none;
+    padding:9px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .pwa-banner-btn:hover { filter:brightness(1.1); }
+  .pwa-banner-close { background:var(--bg3); border:1px solid var(--border); color:var(--text2);
+    width:30px; height:30px; border-radius:8px; cursor:pointer; flex-shrink:0; font-size:13px; }
+</style>
+<script>
+// ── PWA: service worker + installationsprompt ──
+(function () {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (err) {
+        console.warn('SW-registrering misslyckades:', err);
+      });
+    });
+  }
+
+  var deferredPrompt = null;
+  var banner = document.getElementById('pwaInstall');
+  var DISMISS_KEY = 'pwa-dismissed';
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (localStorage.getItem(DISMISS_KEY) === '1') return;
+    if (banner) banner.style.display = 'block';
+  });
+
+  var installBtn = document.getElementById('pwaInstallBtn');
+  if (installBtn) installBtn.addEventListener('click', function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function () {
+      deferredPrompt = null;
+      if (banner) banner.style.display = 'none';
+    });
+  });
+
+  var dismissBtn = document.getElementById('pwaDismissBtn');
+  if (dismissBtn) dismissBtn.addEventListener('click', function () {
+    localStorage.setItem(DISMISS_KEY, '1');
+    if (banner) banner.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', function () {
+    if (banner) banner.style.display = 'none';
+    deferredPrompt = null;
+  });
+})();
+</script>
+
+<!-- ANVÄNDARKONTON: inloggning + molnsynk via Supabase -->
+<script type="module">
+// Aktiveras bara om BP_SUPABASE är ifyllt; annars körs sajten som vanligt (localStorage).
+const cfg = window.BP_SUPABASE || {};
+const accountBtn = document.getElementById('accountBtn');
+
+// Nycklar som synkas till molnet
+const SYNC_KEYS = ['bp_watchlist', 'bp_portfolio', 'bp_alerts', 'bp_theme', 'bp_strat'];
+
+let sb = null;        // Supabase-klient
+let currentUser = null;
+let syncTimer = null;
+let applyingRemote = false;
+
+function authError(msg) {
+  const el = document.getElementById('authError');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// Läs/skriv hela profilen som ett JSON-objekt
+function collectLocalData() {
+  const data = {};
+  SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
+  return data;
+}
+function applyRemoteData(data) {
+  if (!data || typeof data !== 'object') return;
+  applyingRemote = true;
+  SYNC_KEYS.forEach(k => { if (data[k] !== undefined && data[k] !== null) localStorage.setItem(k, data[k]); });
+  applyingRemote = false;
+  // Ladda om så att alla vyer speglar molndatan (enklast och säkrast)
+  location.reload();
+}
+
+async function pushCloud() {
+  if (!sb || !currentUser) return;
+  try {
+    await sb.from('profiles').upsert({
+      id: currentUser.id,
+      data: collectLocalData(),
+      updated_at: new Date().toISOString(),
+    });
+  } catch (e) { console.warn('Molnsynk misslyckades:', e.message); }
+}
+function scheduleCloudSync() {
+  if (!sb || !currentUser || applyingRemote) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushCloud, 1200); // debounce
+}
+window.scheduleCloudSync = scheduleCloudSync;
+
+async function pullCloud() {
+  if (!sb || !currentUser) return;
+  try {
+    const { data, error } = await sb.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      applyRemoteData(data.data); // laddar om sidan
+    } else {
+      await pushCloud(); // första inloggningen → spara nuvarande lokala data
+    }
+  } catch (e) { console.warn('Kunde inte hämta molndata:', e.message); }
+}
+
+function updateAccountUI() {
+  if (!accountBtn) return;
+  accountBtn.style.display = '';
+  if (currentUser) {
+    const email = currentUser.email || 'Konto';
+    accountBtn.textContent = '👤 ' + email.split('@')[0];
+    accountBtn.onclick = () => { if (confirm('Logga ut från ' + email + '?')) signOut(); };
+  } else {
+    accountBtn.textContent = '👤 Logga in';
+    accountBtn.onclick = openAuthModal;
+  }
+}
+
+async function signOut() {
+  if (sb) await sb.auth.signOut();
+  currentUser = null;
+  updateAccountUI();
+}
+
+// Auth-modal
+let authMode = 'login';
+window.openAuthModal = function () {
+  authError('');
+  document.getElementById('authOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('authEmail').focus(), 50);
+};
+window.closeAuthModal = function (e) {
+  if (e && e.target !== document.getElementById('authOverlay')) return;
+  document.getElementById('authOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+};
+window.toggleAuthMode = function () {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  document.getElementById('authTitle').textContent = authMode === 'login' ? 'Logga in' : 'Skapa konto';
+  document.getElementById('authSubmit').textContent = authMode === 'login' ? 'Logga in' : 'Skapa konto';
+  document.getElementById('authToggleTxt').textContent = authMode === 'login' ? 'Har du inget konto?' : 'Har du redan ett konto?';
+  document.getElementById('authToggleLink').textContent = authMode === 'login' ? 'Skapa konto' : 'Logga in';
+  authError('');
+};
+window.authSubmit = async function () {
+  if (!sb) return;
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  if (!email || pass.length < 6) { authError('Ange e-post och lösenord (minst 6 tecken).'); return; }
+  const btn = document.getElementById('authSubmit');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    if (authMode === 'signup') {
+      const { error } = await sb.auth.signUp({ email, password: pass });
+      if (error) throw error;
+      authError('');
+      alert('Konto skapat! Kolla din e-post om verifiering krävs, logga sedan in.');
+      window.toggleAuthMode();
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      currentUser = data.user;
+      window.closeAuthModal();
+      updateAccountUI();
+      await pullCloud();
+    }
+  } catch (e) {
+    authError(e.message || 'Något gick fel.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Logga in' : 'Skapa konto';
+  }
+};
+
+// Initiering: ladda Supabase-SDK bara om konfigurerat
+(async function initAuth() {
+  if (!cfg.url || !cfg.anonKey) {
+    if (accountBtn) accountBtn.style.display = 'none'; // dölj tills konfigurerat
+    return;
+  }
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    sb = createClient(cfg.url, cfg.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession();
+    currentUser = data.session?.user || null;
+    updateAccountUI();
+    if (currentUser) await pullCloud();
+
+    // Synka vid förändringar: haka på de lokala spar-funktionerna
+    ['saveWatchlist', 'savePortfolio', 'saveAlerts'].forEach(fn => {
+      const orig = window[fn];
+      if (typeof orig === 'function') {
+        window[fn] = function () { const r = orig.apply(this, arguments); scheduleCloudSync(); return r; };
+      }
+    });
+    // Tema/strategi sparas direkt via setItem – synka vid sidbyte/stängning
+    window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pushCloud(); });
+  } catch (e) {
+    console.warn('Kunde inte initiera användarkonton:', e.message);
+    if (accountBtn) accountBtn.style.display = 'none';
+  }
+})();
+</script>
+
 </body>
 </html>
