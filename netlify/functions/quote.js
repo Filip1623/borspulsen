@@ -34,7 +34,7 @@ function toStooq(yahooSymbol) {
     '^IXIC':   '^NDQ',
     '^DJI':    '^DJI',
   };
-  if (indexMap[s]) return indexMap[s].toLowerCase();
+  if (indexMap[s]) return indexMap[s].toLowerCase().replace('^', '%5E');
 
   // Aktier med suffix
   if (s.endsWith('.ST')) return s.slice(0, -3).toLowerCase() + '.st'; // Stockholm
@@ -124,8 +124,8 @@ exports.handler = async function (event) {
   if (!symbols.length) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Inga giltiga symboler' }) };
 
   const reverseMap = buildReverseMap(symbols);
-  const stooqSymbols = symbols.map(toStooq).join(',');
-  const url = `https://stooq.com/q/l/?s=${encodeURIComponent(stooqSymbols)}&f=sd2t2ohlcv&h&e=csv`;
+  const stooqSymbols = symbols.map(toStooq).join('%7C'); // pipe-separated: Stooq batch format
+  const url = `https://stooq.com/q/l/?s=${stooqSymbols}&f=sd2t2ohlcv&h&e=csv`;
 
   try {
     const res = await fetchWithTimeout(url, { headers: HEADERS });
