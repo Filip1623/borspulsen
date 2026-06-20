@@ -32,6 +32,10 @@ function corsHeaders(origin) {
 }
 
 function requireAllowedOrigin(origin) {
+  // Same-origin GET-anrop från browsern skickar INGEN Origin-header.
+  // Saknad origin = same-origin (eller server-till-server) → tillåt.
+  // Endast närvarande men ej tillåten origin blockeras (cross-site hotlinking).
+  if (!origin) return true;
   return isAllowedOrigin(origin);
 }
 
