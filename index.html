@@ -3103,7 +3103,15 @@ async function fetchLivePrices() {
     await new Promise(r => setTimeout(r, 80)); // liten fördröjning mellan batchar
   }
 
-  if (!Object.keys(allQuotes).length) return; // inga svar
+  if (!Object.keys(allQuotes).length) {
+    console.warn('[BörsPulsen] Live prices: inga svar från servern — kör simulerade priser');
+    const simBadge = document.getElementById('simPriserBadge');
+    if (simBadge) simBadge.classList.add('show');
+    return; // inga svar
+  }
+
+  const liveCount = Object.keys(allQuotes).length;
+  console.log(`[BörsPulsen] Live prices: ${liveCount}/${allSymbols.length} symboler hämtade`);
 
   _liveEnabled = true;
   const dot = _liveStatusEl();
