@@ -320,6 +320,9 @@
 
   /* TradingView container */
   .tv-chart-container { width: 100%; height: 450px; background: #131722; border-radius: 10px; overflow: hidden; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
+  .chart-style-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text2); padding:5px 12px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .chart-style-btn:hover { color:var(--text); border-color:var(--neon); }
+  .chart-style-btn.active { background:rgba(34,211,238,0.12); color:var(--neon); border-color:var(--neon); }
   .tv-chart-container iframe { border-radius: 10px; }
   .tv-loading { color: #787b86; font-size: 14px; text-align: center; }
   .tv-loading-spinner { width: 32px; height: 32px; border: 3px solid #2a2e39; border-top-color: #2962FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
@@ -1526,6 +1529,17 @@
     </div>
 
     <!-- TradingView widget mount point -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:6px">
+        <button id="chartStyleCandle" onclick="setChartStyle('1')" class="chart-style-btn active" title="Candlestick">🕯️ Candles</button>
+        <button id="chartStyleHA" onclick="setChartStyle('8')" class="chart-style-btn" title="Heikin Ashi — filtrerar brus, visar trender tydligare">✨ Heikin Ashi</button>
+      </div>
+      <a id="tvOpenLink" href="#" target="_blank" rel="noopener"
+         style="margin-left:auto;font-size:12px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;transition:color 0.2s"
+         onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        Avancerat i TradingView ↗
+      </a>
+    </div>
     <div class="tv-chart-container" id="tv_chart_container">
       <div class="tv-loading">
         <div class="tv-loading-spinner"></div>
@@ -2229,6 +2243,16 @@ function openModal(ticker) {
   window.location.hash = '#/aktie/' + s.name.toLowerCase().replace(/[\s&]/g,'-').replace(/[^a-z0-9-]/g,'');
   document.title = s.name + ' kurs idag | BörsPulsen';
 
+  // TradingView-länk för avancerade traders
+  const tvLink = document.getElementById('tvOpenLink');
+  if(tvLink) tvLink.href = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(s.tvSymbol);
+
+  // Återställ diagramtypsknappar till candles
+  document.querySelectorAll('.chart-style-btn').forEach(b => b.classList.remove('active'));
+  const candleBtn = document.getElementById('chartStyleCandle');
+  if(candleBtn) candleBtn.classList.add('active');
+  window._currentChartStyle = '1';
+
   // TradingView widget
   const container = document.getElementById('tv_chart_container');
   container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
@@ -2240,7 +2264,7 @@ function openModal(ticker) {
       interval:          'D',
       timezone:          'Europe/Stockholm',
       theme:             'dark',
-      style:             '1',
+      style:             window._currentChartStyle || '1',
       locale:            'sv',
       toolbar_bg:        '#131722',
       enable_publishing: false,
@@ -2278,6 +2302,26 @@ function closeModal() {
   const bbPanel = document.getElementById('bbPanel');
   bbPanel.style.display = 'none';
   document.getElementById('bbContent').innerHTML = '<div class="bb-loading">Analyserar aktien...</div>';
+}
+
+// Byt diagramtyp utan att stänga modalen
+function setChartStyle(style) {
+  window._currentChartStyle = style;
+  document.querySelectorAll('.chart-style-btn').forEach(b => b.classList.remove('active'));
+  const btn = style === '8' ? document.getElementById('chartStyleHA') : document.getElementById('chartStyleCandle');
+  if(btn) btn.classList.add('active');
+  if(currentStock) {
+    const container = document.getElementById('tv_chart_container');
+    container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
+    if(typeof TradingView !== 'undefined') {
+      tvWidget = new TradingView.widget({
+        autosize: true, symbol: currentStock.tvSymbol, interval: 'D',
+        timezone: 'Europe/Stockholm', theme: 'dark', style,
+        locale: 'sv', toolbar_bg: '#131722', enable_publishing: false,
+        hide_top_toolbar: false, save_image: false, container_id: 'tv_chart_inner'
+      });
+    }
+  }
 }
 
 const BB_CACHE = {};
