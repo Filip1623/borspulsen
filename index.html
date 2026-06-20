@@ -1602,10 +1602,15 @@
       <div class="stat-box"><div class="stat-label">Marknadsvärde</div><div class="stat-value" id="statMcap">—</div></div>
     </div>
 
-    <!-- Bull & Bear AI-analys -->
+    <!-- AI-analys + senaste nyheter per aktie -->
     <div class="bb-panel" id="bbPanel" style="display:none">
-      <div class="bb-panel-title">🤖 Bull &amp; Bear-case (AI-analys)</div>
+      <div class="bb-panel-title">🤖 AI-Analys</div>
       <div id="bbContent"><div class="bb-loading">Analyserar aktien...</div></div>
+    </div>
+
+    <div class="bb-panel" id="stockNewsPanel" style="display:none;margin-top:14px">
+      <div class="bb-panel-title">📰 Senaste nyheter</div>
+      <div id="stockNewsContent"><div class="bb-loading">Hämtar nyheter...</div></div>
     </div>
   </div>
 </div>
@@ -2288,6 +2293,7 @@ function openModal(ticker) {
   // Bull & Bear AI-analys
   const yahooTicker = ticker.replace(/-/g, '-') + '.ST';
   loadBullBear(yahooTicker, s.name);
+  loadStockNews(s.ticker, s.name);
 }
 
 function closeModal() {
@@ -2302,6 +2308,10 @@ function closeModal() {
   const bbPanel = document.getElementById('bbPanel');
   bbPanel.style.display = 'none';
   document.getElementById('bbContent').innerHTML = '<div class="bb-loading">Analyserar aktien...</div>';
+  const snPanel = document.getElementById('stockNewsPanel');
+  if(snPanel) snPanel.style.display = 'none';
+  const snContent = document.getElementById('stockNewsContent');
+  if(snContent) snContent.innerHTML = '<div class="bb-loading">Hämtar nyheter...</div>';
 }
 
 // Byt diagramtyp utan att stänga modalen
@@ -2330,17 +2340,51 @@ async function loadBullBear(symbol, companyName) {
   const content = document.getElementById('bbContent');
   panel.style.display = 'block';
 
-  if (BB_CACHE[symbol]) { renderBullBear(BB_CACHE[symbol]); return; }
+  if (BB_CACHE[symbol]) { content.innerHTML = BB_CACHE[symbol]; return; }
   content.innerHTML = '<div class="bb-loading">🤖 AI analyserar ' + escHtml(companyName) + '...</div>';
 
   try {
-    const res = await fetch('https://borspulsen-production.up.railway.app/api/bull-bear/' + encodeURIComponent(symbol));
+    const res = await fetch('/.netlify/functions/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question:
+        `Ge en kortfattad bull & bear-analys av ${companyName} (${symbol}) på svenska. ` +
+        `Format: börja med "🐂 Bull-case:" med 2-3 punkter, sedan "🐻 Bear-case:" med 2-3 punkter, ` +
+        `avsluta med en mening "Sammantaget:". Max 150 ord totalt. Inga asterisker.`
+      })
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    BB_CACHE[symbol] = data;
-    renderBullBear(data);
+    const html = `<div style="font-size:13.5px;line-height:1.7;color:var(--text);white-space:pre-wrap">${escHtml(data.answer || 'Ingen analys tillgänglig.')}</div>`;
+    BB_CACHE[symbol] = html;
+    content.innerHTML = html;
   } catch (e) {
-    content.innerHTML = '<div class="bb-loading" style="color:#EF5350">Kunde inte ladda analys just nu.</div>';
+    content.innerHTML = '<div class="bb-loading" style="color:#EF5350">AI-analys ej tillgänglig just nu.</div>';
+  }
+}
+
+async function loadStockNews(ticker, companyName) {
+  const panel = document.getElementById('stockNewsPanel');
+  const content = document.getElementById('stockNewsContent');
+  panel.style.display = 'block';
+  content.innerHTML = '<div class="bb-loading">Hämtar nyheter om ' + escHtml(companyName) + '...</div>';
+
+  try {
+    const res = await fetch('/.netlify/functions/news?q=' + encodeURIComponent(companyName));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const articles = (data.articles || data.news || []).slice(0, 4);
+    if (!articles.length) {
+      content.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:6px 0">Inga nyheter hittades just nu.</div>';
+      return;
+    }
+    content.innerHTML = articles.map(a => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;line-height:1.4">${escHtml(a.headline||a.title||'')}</div>
+        <div style="font-size:11.5px;color:var(--text2)">${a.source||''} ${a.datetime ? '· '+new Date(a.datetime*1000).toLocaleDateString('sv-SE',{day:'numeric',month:'short'}) : ''}</div>
+      </div>`).join('') + '<div style="border-bottom:none"></div>';
+  } catch(e) {
+    content.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:6px 0">Nyheter ej tillgängliga just nu.</div>';
   }
 }
 
