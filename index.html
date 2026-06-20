@@ -3042,7 +3042,128 @@ function updateMarketPrices(liveStocks, baseData) {
   });
 }
 
+// ─── YAHOO FINANCE LIVE PRICES ──────────────────────────────────────────────
+// Mappar vår interna ticker till Yahoo Finance-symbol
+function toYahooSymbol(ticker, market) {
+  if (market === 'SE') return ticker + '.ST';
+  if (market === 'NO') return ticker + '.OL';
+  if (market === 'FI') return ticker + '.HE';
+  if (market === 'DE') return ticker + '.DE';
+  return ticker; // US
+}
+
+// Chunkar array i bitar om max n
+function chunk(arr, n) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+
+let _liveEnabled = false;
+const _liveStatusEl = () => document.getElementById('liveStatusDot');
+
+async function fetchYahooBatch(yahooSymbols) {
+  const url = `/.netlify/functions/quote?symbols=${yahooSymbols.map(encodeURIComponent).join(',')}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.quotes || null;
+  } catch { return null; }
+}
+
+async function fetchLivePrices() {
+  // Bygg lista: alla aktier + index
+  const allDatasets = [
+    { stocks: seStocks, base: SE_DATA, market: 'SE' },
+    { stocks: usStocks, base: US_DATA, market: 'US' },
+    { stocks: deStocks, base: DE_DATA, market: 'DE' },
+    { stocks: noStocks, base: NO_DATA, market: 'NO' },
+    { stocks: fiStocks, base: FI_DATA, market: 'FI' },
+  ];
+
+  // Bygg Yahoo-symbol → stock-referens-map
+  const symbolMap = {};
+  for (const { stocks, market } of allDatasets) {
+    for (const s of stocks) {
+      symbolMap[toYahooSymbol(s.ticker, market)] = { stock: s, market };
+    }
+  }
+
+  // Index-symboler
+  const indexYahoo = { '^OMXS30': 'OMXS30', '^GSPC': 'S&P 500', '^IXIC': 'Dow Jones' };
+  const allSymbols = [...Object.keys(symbolMap), ...Object.keys(indexYahoo)];
+
+  // Fetch i batchar om 20
+  const batches = chunk(allSymbols, 20);
+  const allQuotes = {};
+  for (const batch of batches) {
+    const q = await fetchYahooBatch(batch);
+    if (q) Object.assign(allQuotes, q);
+    await new Promise(r => setTimeout(r, 80)); // liten fördröjning mellan batchar
+  }
+
+  if (!Object.keys(allQuotes).length) return; // inga svar
+
+  _liveEnabled = true;
+  const dot = _liveStatusEl();
+  if (dot) dot.title = 'Live data · Yahoo Finance';
+
+  // Uppdatera aktier
+  for (const { stocks, base, market } of allDatasets) {
+    for (let i = 0; i < stocks.length; i++) {
+      const ySymbol = toYahooSymbol(stocks[i].ticker, market);
+      const q = allQuotes[ySymbol];
+      if (!q || q.price == null) continue;
+      const basePrice = base.find(x => x.ticker === stocks[i].ticker)?.price || stocks[i].price;
+      stocks[i] = {
+        ...stocks[i],
+        price:     +q.price.toFixed(2),
+        change:    q.change != null ? +q.change.toFixed(2) : stocks[i].change,
+        changePct: q.changePct != null ? +q.changePct.toFixed(2) : stocks[i].changePct,
+        _live: true,
+      };
+    }
+  }
+
+  // Uppdatera index
+  for (const [ySymbol, idxName] of Object.entries(indexYahoo)) {
+    const q = allQuotes[ySymbol];
+    if (!q || q.price == null) continue;
+    const idx = INDICES.find(i => i.name === idxName);
+    if (idx) {
+      idx.value  = q.price;
+      idx.change = q.change ?? idx.change;
+    }
+  }
+
+  // Dölj "Simulerade priser"-badge om live
+  const simBadge = document.getElementById('simPriserBadge');
+  if (simBadge) simBadge.classList.remove('show');
+
+  // Re-rendera
+  renderTicker();
+  renderHeatmap();
+  renderWinnersLosers();
+  renderTable();
+  renderPortfolio();
+  renderWatchlist();
+  renderAlerts();
+  checkAlerts();
+  renderIndexCharts();
+  renderHeroStats();
+
+  if (currentStock) {
+    currentStock = getAllStocks().find(s => s.ticker === currentStock.ticker) || currentStock;
+  }
+}
+
 function updatePrices() {
+  if (_liveEnabled) {
+    // Live-läge: hämta bara Yahoo (anropas redan via setInterval)
+    return;
+  }
+  // Fallback: simulerade priser
   seStocks = updateMarketPrices(seStocks, SE_DATA);
   usStocks = updateMarketPrices(usStocks, US_DATA);
   deStocks = updateMarketPrices(deStocks, DE_DATA);
@@ -3210,91 +3331,8 @@ function renderMobileCards(stocks) {
   }).join('');
 }
 
-// ─── FINNHUB LIVE PRICES (via serverless proxy) ──────────────────────────────
-// API-nyckeln hanteras av /.netlify/functions/quote – aldrig i frontend
-const FINNHUB_MAP = {
-  'VOLV-B':   'VOLV-B.ST',
-  'ERIC-B':   'ERIC-B.ST',
-  'HM-B':     'HM-B.ST',
-  'ATCO-A':   'ATCO-A.ST',
-  'INVE-B':   'INVE-B.ST',
-  'SEB-A':    'SEB-A.ST',
-  'NDA-SE':   'NDA-SE.ST',
-  'SHB-A':    'SHB-A.ST',
-  'ABB':      'ABB.ST',
-  'SAND':     'SAND.ST',
-  'SKF-B':    'SKF-B.ST',
-  'SSAB-A':   'SSAB-A.ST',
-  'BOL':      'BOL.ST',
-  'TEL2-B':   'TEL2-B.ST',
-  'HEXA-B':   'HEXA-B.ST',
-  'ALFA':     'ALFA.ST',
-  'EVO':      'EVO.ST',
-  'KINV-B':   'KINV-B.ST',
-  'ESSITY-B': 'ESSITY-B.ST',
-  'SWMA':     'SWMA.ST',
-  'ALV':      'ALV.ST',
-  'GETI-B':   'GETI-B.ST',
-  'HPOL-B':   'HPOL-B.ST',
-  'NIBE-B':   'NIBE-B.ST',
-  'EKTA-B':   'EKTA-B.ST',
-  'AXFO':     'AXFO.ST',
-  'CLAS-B':   'CLAS-B.ST',
-  'ADDT-B':   'ADDT-B.ST',
-  'INDT':     'INDT.ST',
-  'BIL-A':    'BIL-A.ST',
-  'BEIJ-B':   'BEIJ-B.ST',
-  'BILL':     'BILL.ST',
-  'HUSQ-B':   'HUSQ-B.ST',
-  'SAGA-D':   'SAGA-D.ST',
-  'BALD-B':   'BALD-B.ST',
-};
-
+// ─── HJÄLPFUNKTIONER ─────────────────────────────────────────────────────────
 function _delay(ms) { return new Promise(res => setTimeout(res, ms)); }
-
-async function fetchLivePrices() {
-  const badge = document.getElementById('simPriserBadge');
-  const tickers = Object.keys(FINNHUB_MAP);
-  let successCount = 0;
-
-  for (let i = 0; i < tickers.length; i++) {
-    if (i > 0) await _delay(100); // 100 ms between calls (≤ 60 req/min per batch)
-    const ticker = tickers[i];
-    const symbol = FINNHUB_MAP[ticker];
-    try {
-      const resp = await fetch(
-        `/.netlify/functions/quote?symbol=${encodeURIComponent(symbol)}`
-      );
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      if (!data.c || data.c === 0) continue; // invalid / empty quote
-      const idx = seStocks.findIndex(s => s.ticker === ticker);
-      if (idx !== -1) {
-        seStocks[idx] = {
-          ...seStocks[idx],
-          price:     +data.c.toFixed(2),
-          change:    +((data.d) ? data.d.toFixed(2) : 0),
-          changePct: +((data.dp) ? data.dp.toFixed(2) : 0),
-          volume:    data.v > 0 ? data.v : seStocks[idx].volume,
-        };
-        successCount++;
-      }
-    } catch(e) { /* skip individual failures silently */ }
-  }
-
-  if (successCount > 0) {
-    if (badge) badge.classList.remove('show');
-    // Re-render all views that depend on stock prices
-    renderTicker();
-    renderHeatmap();
-    renderWinnersLosers();
-    renderTable();
-    renderPortfolio();
-  } else {
-    // Full failure — show badge, simulated prices remain
-    if (badge) badge.classList.add('show');
-  }
-}
 
 // ─── FETCH MAKRO RATES ───────────────────────────────────────────────────────
 async function fetchMacroRates() {
