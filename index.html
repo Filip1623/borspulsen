@@ -3062,40 +3062,26 @@ function chunk(arr, n) {
 let _liveEnabled = false;
 const _liveStatusEl = () => document.getElementById('liveStatusDot');
 
-// Hämtar ett enskilt Yahoo Finance-pris direkt från browsern (ingen server-proxy)
-// Browser-requests blockeras inte av Cloudflare till skillnad från AWS Lambda IPs
-async function fetchOneYahoo(symbol) {
-  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d&includePrePost=false`;
-  try {
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const meta = data?.chart?.result?.[0]?.meta;
-    if (!meta?.regularMarketPrice) return null;
-    const prev = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPrice;
-    return {
-      symbol,
-      price:     meta.regularMarketPrice,
-      prevClose: prev,
-      change:    meta.regularMarketPrice - prev,
-      changePct: prev ? ((meta.regularMarketPrice - prev) / prev) * 100 : 0,
-      volume:    meta.regularMarketVolume ?? null,
-      currency:  meta.currency ?? null,
-      state:     meta.marketState ?? null,
-    };
-  } catch { return null; }
-}
-
-// Batch: kör max `concurrency` requests parallellt åt gången
-async function fetchYahooBatch(symbols, concurrency = 8) {
-  const results = {};
-  for (let i = 0; i < symbols.length; i += concurrency) {
-    const slice = symbols.slice(i, i + concurrency);
-    const settled = await Promise.all(slice.map(fetchOneYahoo));
-    for (const r of settled) { if (r) results[r.symbol] = r; }
-    if (i + concurrency < symbols.length) await new Promise(res => setTimeout(res, 120));
+// Hämtar priser via vår server-proxy (Yahoo blockerar direkt browser-anrop / saknar CORS)
+async function fetchYahooBatch(symbols) {
+  const allQuotes = {};
+  const batches = chunk(symbols, 20);
+  for (const batch of batches) {
+    try {
+      const url = `/.netlify/functions/quote?symbols=${batch.map(encodeURIComponent).join(',')}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.quotes) Object.assign(allQuotes, data.quotes);
+      // Diagnostik i konsolen
+      if (data.errors && data.errors.length) {
+        console.warn('[BörsPulsen] Yahoo-fel:', data.errors.join(' | '));
+      }
+    } catch (e) {
+      console.warn('[BörsPulsen] Proxy-fel:', e.message);
+    }
   }
-  return results;
+  return allQuotes;
 }
 
 async function fetchLivePrices() {
@@ -3120,8 +3106,8 @@ async function fetchLivePrices() {
   const indexYahoo = { '^OMXS30': 'OMXS30', '^GSPC': 'S&P 500', '^IXIC': 'Dow Jones' };
   const allSymbols = [...Object.keys(symbolMap), ...Object.keys(indexYahoo)];
 
-  // Hämta direkt från Yahoo Finance i browsern — 8 parallella requests åt gången
-  const allQuotes = await fetchYahooBatch(allSymbols, 8);
+  // Hämta via server-proxy
+  const allQuotes = await fetchYahooBatch(allSymbols);
 
   if (!Object.keys(allQuotes).length) {
     console.warn('[BörsPulsen] Live prices: inga svar från servern — kör simulerade priser');
