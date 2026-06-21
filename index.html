@@ -4205,17 +4205,63 @@ function aiAskChip(btn) {
   sendAiMessage();
 }
 
+// Lätt och säker markdown → HTML (escapar först, stödjer **fet**, *kursiv*, `kod`,
+// punktlistor och radbrytningar). Används bara för AI:ns bot-svar.
+function renderAiMarkdown(text) {
+  const esc = String(text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const lines = esc.split('\n');
+  let html = '', inList = false;
+  for (let line of lines) {
+    const trimmed = line.trim();
+    const isBullet = /^[-*•]\s+/.test(trimmed);
+    if (isBullet) {
+      if (!inList) { html += '<ul style="margin:6px 0;padding-left:18px">'; inList = true; }
+      html += '<li>' + trimmed.replace(/^[-*•]\s+/, '') + '</li>';
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (trimmed) html += '<div>' + line + '</div>';
+    }
+  }
+  if (inList) html += '</ul>';
+  return html
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px">$1</code>');
+}
+
 function appendAiMsg(text, role) {
   const box = document.getElementById('aiMessages');
   const wrap = document.createElement('div');
   wrap.className = 'ai-msg ' + role;
   const bubble = document.createElement('div');
   bubble.className = 'ai-msg-bubble';
-  bubble.textContent = text;
+  if (role === 'bot') {
+    bubble.innerHTML = renderAiMarkdown(text);
+  } else {
+    bubble.textContent = text;
+  }
   wrap.appendChild(bubble);
   box.appendChild(wrap);
   box.scrollTop = box.scrollHeight;
   return bubble;
+}
+
+// Konversationshistorik för flerturssamtal (skickas med till AI:n)
+let aiHistory = [];
+
+// Bygger ett kompakt live-snapshot av marknaden som AI:n kan resonera kring
+function buildAiContext() {
+  try {
+    const stocks = getTableStocks().slice(0, 60).map(s => ({
+      name: s.name, ticker: s.ticker, price: s.price,
+      changePct: s.changePct, currency: s.currency
+    }));
+    const indices = INDICES.map(i => ({ name: i.name, value: i.value, change: i.change }));
+    return { indices, stocks };
+  } catch (e) {
+    return null;
+  }
 }
 
 async function sendAiMessage() {
@@ -4238,12 +4284,20 @@ async function sendAiMessage() {
     const res = await fetch('/.netlify/functions/ai-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({
+        question,
+        history: aiHistory.slice(-10),
+        context: buildAiContext()
+      })
     });
     const data = await res.json();
     typingWrap.remove();
     if (res.ok && data.answer) {
       appendAiMsg(data.answer, 'bot');
+      // Spara turen i historiken så följdfrågor får sammanhang
+      aiHistory.push({ role: 'user', content: question });
+      aiHistory.push({ role: 'assistant', content: data.answer });
+      if (aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
     } else {
       appendAiMsg('Tyvärr kunde jag inte svara just nu. Försök igen senare.', 'bot');
     }
