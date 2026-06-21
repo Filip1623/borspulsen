@@ -2068,11 +2068,12 @@ function renderIndexCharts() {
 
 // ─── HEATMAP – Squarified Treemap ──────────────────────────────────────────
 function buildTreemap(items, W, H) {
-  const total = items.reduce((s, d) => s + (d.price || 1), 0);
+  // Mcap visas inte på sidan men används internt för att storleksbestämma heatmap-rutorna
+  const total = items.reduce((s, d) => s + (d.mcap || 1), 0);
   const area  = W * H;
   const scaled = [...items]
-    .sort((a, b) => (b.price || 1) - (a.price || 1))
-    .map(d => ({ ...d, a: (d.price || 1) / total * area }));
+    .sort((a, b) => (b.mcap || 1) - (a.mcap || 1))
+    .map(d => ({ ...d, a: (d.mcap || 1) / total * area }));
 
   const rects = [];
 
