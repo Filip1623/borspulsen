@@ -154,7 +154,7 @@ exports.handler = async function (event) {
     if (!response.ok) {
       const err = await response.text();
       console.error('Anthropic API error:', response.status, err.slice(0, 300));
-      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten svarade inte korrekt' }) };
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten svarade inte korrekt', upstreamStatus: response.status, detail: err.slice(0, 300) }) };
     }
 
     const data = await response.json();
