@@ -1279,7 +1279,6 @@
             <th onclick="sortTable('change')">Förändring ⇅</th>
             <th onclick="sortTable('changePct')">% ⇅</th>
             <th onclick="sortTable('volume')">Volym ⇅</th>
-            <th onclick="sortTable('mcap')">Marknadsvärde ⇅</th>
             <th style="width:42px;text-align:center" title="Lägg till i bevakningslista">⭐</th>
           </tr>
         </thead>
@@ -1360,15 +1359,6 @@
           </select>
         </div>
         <div class="screener-filter-group">
-          <label>Marknadsvärde</label>
-          <select id="scMcap">
-            <option value="all">Alla</option>
-            <option value="large">Stor (&gt;100 Mdr)</option>
-            <option value="mid">Medel (10–100 Mdr)</option>
-            <option value="small">Liten (&lt;10 Mdr)</option>
-          </select>
-        </div>
-        <div class="screener-filter-group">
           <label>Marknad</label>
           <select id="scMarket">
             <option value="all">Alla</option>
@@ -1404,7 +1394,6 @@
         <span class="screener-presets-label">Snabbfilter:</span>
         <button class="preset-btn" onclick="applyPreset('yield',this)">⭐ Högst direktavkastning</button>
         <button class="preset-btn" onclick="applyPreset('pe',this)">📉 Lägst värderade</button>
-        <button class="preset-btn" onclick="applyPreset('mcap',this)">🏢 Störst bolag</button>
         <button class="preset-btn" onclick="applyPreset('ema100break',this)">📈 EMA100-brott idag</button>
         <button class="preset-btn" onclick="applyPreset('rsi30',this)">🔻 RSI under 30</button>
         <button class="preset-btn" onclick="applyPreset('high52',this)">🚀 Nära 52v-high</button>
@@ -1652,7 +1641,6 @@
       <div class="stat-box"><div class="stat-label">Volym</div><div class="stat-value" id="statVol">—</div></div>
       <div class="stat-box"><div class="stat-label">52v Högsta</div><div class="stat-value" id="stat52H">—</div></div>
       <div class="stat-box"><div class="stat-label">52v Lägsta</div><div class="stat-value" id="stat52L">—</div></div>
-      <div class="stat-box"><div class="stat-label">Marknadsvärde</div><div class="stat-value" id="statMcap">—</div></div>
     </div>
 
     <!-- AI-analys + senaste nyheter per aktie -->
@@ -2080,11 +2068,11 @@ function renderIndexCharts() {
 
 // ─── HEATMAP – Squarified Treemap ──────────────────────────────────────────
 function buildTreemap(items, W, H) {
-  const total = items.reduce((s, d) => s + d.mcap, 0);
+  const total = items.reduce((s, d) => s + (d.price || 1), 0);
   const area  = W * H;
   const scaled = [...items]
-    .sort((a, b) => b.mcap - a.mcap)
-    .map(d => ({ ...d, a: d.mcap / total * area }));
+    .sort((a, b) => (b.price || 1) - (a.price || 1))
+    .map(d => ({ ...d, a: (d.price || 1) / total * area }));
 
   const rects = [];
 
@@ -2269,7 +2257,6 @@ function renderTable() {
       <td class="change-cell ${s.change >= 0 ? 'up' : 'down'}">${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)} ${s.currency}</td>
       <td class="change-cell ${s.changePct >= 0 ? 'up' : 'down'}">${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%</td>
       <td>${(s.volume/1000).toFixed(0)}k</td>
-      <td>${s.mcap} Mdr</td>
       <td style="text-align:center"><button class="btn-wl-add ${inWl ? 'in-wl' : ''}" title="${inWl ? 'Ta bort från bevakningslista' : 'Lägg till i bevakningslista'}" onclick="toggleWatchlist('${s.ticker}')">${inWl ? '⭐' : '☆'}</button></td>
     </tr>`;
   }).join('');
@@ -2303,7 +2290,6 @@ function openModal(ticker) {
   document.getElementById('statVol').textContent   = (s.volume/1000).toFixed(0) + 'k';
   document.getElementById('stat52H').textContent   = (s.price * 1.35).toFixed(2) + ' ' + s.currency;
   document.getElementById('stat52L').textContent   = (s.price * 0.72).toFixed(2) + ' ' + s.currency;
-  document.getElementById('statMcap').textContent  = s.mcap + ' Mdr';
 
   // Nyckeltal – simulate realistic values per stock
   const nk = NYCKELTAL[s.ticker] || { pe: (8 + Math.random()*14).toFixed(1), eps: (s.price/12).toFixed(2), yield: (2+Math.random()*4).toFixed(1), pb: (1+Math.random()*2.5).toFixed(2) };
@@ -2575,7 +2561,6 @@ function openGlobalModal(ticker, tvSymbol, name, market) {
   document.getElementById('statVol').textContent   = '—';
   document.getElementById('stat52H').textContent   = '—';
   document.getElementById('stat52L').textContent   = '—';
-  document.getElementById('statMcap').textContent  = '—';
 
   const container = document.getElementById('tv_chart_container');
   container.innerHTML = '<div id="tv_chart_inner" style="width:100%;height:100%"></div>';
@@ -3929,7 +3914,7 @@ function exportCSV() {
   const pool   = getTableStocks();
   const filtered = pool.filter(s => s.name.toLowerCase().includes(filter) || s.ticker.toLowerCase().includes(filter));
 
-  const header = ['Bolag','Ticker','Kurs','Förändring','%','Volym','Marknadsvärde (Mdr)','Marknad'];
+  const header = ['Bolag','Ticker','Kurs','Förändring','%','Volym','Marknad'];
   const rows = filtered.map(s => [
     `"${s.name}"`,
     s.ticker,
@@ -3937,7 +3922,6 @@ function exportCSV() {
     s.change.toFixed(2),
     s.changePct.toFixed(2),
     s.volume,
-    s.mcap,
     s.market
   ]);
 
@@ -4017,7 +4001,6 @@ function getScreenerStocks() {
 function runScreener(preset) {
   const yieldFilter  = document.getElementById('scYield').value;
   const peFilter     = document.getElementById('scPE').value;
-  const mcapFilter   = document.getElementById('scMcap').value;
   const marketFilter = document.getElementById('scMarket').value;
   const techFilter   = document.getElementById('scTech').value;
   const momFilter    = document.getElementById('scMom').value;
@@ -4032,9 +4015,6 @@ function runScreener(preset) {
     const maxPE = parseFloat(peFilter);
     stocks = stocks.filter(s => s.peVal <= maxPE);
   }
-  if (mcapFilter === 'large')  stocks = stocks.filter(s => s.mcap > 100);
-  if (mcapFilter === 'mid')    stocks = stocks.filter(s => s.mcap >= 10 && s.mcap <= 100);
-  if (mcapFilter === 'small')  stocks = stocks.filter(s => s.mcap < 10);
   if (marketFilter !== 'all')  stocks = stocks.filter(s => s.market === marketFilter);
 
   if (techFilter !== 'all') {
@@ -4061,7 +4041,6 @@ function runScreener(preset) {
   // Preset-logik
   if (preset === 'yield') stocks.sort((a, b) => b.yieldVal - a.yieldVal);
   else if (preset === 'pe') stocks.sort((a, b) => a.peVal - b.peVal);
-  else if (preset === 'mcap') stocks.sort((a, b) => b.mcap - a.mcap);
   else if (preset === 'ema100break') {
     stocks = stocks.filter(s => s.tech && s.tech.ema100break);
     stocks.sort((a, b) => (b.tech ? b.tech.mom20 : 0) - (a.tech ? a.tech.mom20 : 0));
@@ -4130,7 +4109,6 @@ function applyPreset(type, btn) {
   btn.classList.add('active');
   document.getElementById('scYield').value  = 'all';
   document.getElementById('scPE').value     = 'all';
-  document.getElementById('scMcap').value   = 'all';
   document.getElementById('scMarket').value = 'all';
   document.getElementById('scTech').value   = 'all';
   document.getElementById('scMom').value    = 'all';
@@ -4142,7 +4120,6 @@ function resetScreener() {
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('scYield').value  = 'all';
   document.getElementById('scPE').value     = 'all';
-  document.getElementById('scMcap').value   = 'all';
   document.getElementById('scMarket').value = 'all';
   document.getElementById('scTech').value   = 'all';
   document.getElementById('scMom').value    = 'all';
@@ -4349,7 +4326,6 @@ async function loadStockPage(ticker) {
   const exchange  = profile.exchange || '';
   const logo      = profile.logo || '';
   const webUrl    = profile.weburl || '';
-  const mcap      = profile.marketCapitalization ? formatMcap(profile.marketCapitalization) : (stock?.mcap ? stock.mcap + ' Mdr' : '—');
 
   const price     = quote.c || stock?.price || 0;
   const change    = quote.d || 0;
@@ -4410,7 +4386,6 @@ async function loadStockPage(ticker) {
     ['Direktavk.',    div ? div.toFixed(2) + '%' : '—'],
     ['52v max',       w52High ? `${w52High.toFixed(2)} ${currency}` : '—'],
     ['52v min',       w52Low  ? `${w52Low.toFixed(2)} ${currency}`  : '—'],
-    ['Börsvärde',     mcap],
     ['Sektor',        industry || '—'],
   ].map(([label, value]) => `
     <div class="sp-stat-row">
