@@ -1,5 +1,11 @@
-// netlify/functions/news.js
-// Hämtar verkliga börsnyheter från Finnhub och returnerar till frontend
+/**
+ * BörsPulsen — Nyhetsflöde (Finnhub)
+ *
+ * Hämtar verkliga börsnyheter från Finnhub och returnerar till frontend.
+ *
+ * Miljövariabel: FINNHUB_TOKEN
+ * Anropas av frontend: GET /.netlify/functions/news
+ */
 
 exports.handler = async function (event) {
   const CORS = {

@@ -1,5 +1,13 @@
-// netlify/functions/news-impact.js
-// Analyserar en nyhet och returnerar vilka svenska aktier som sannolikt påverkas
+/**
+ * BörsPulsen — Nyhetspåverkan (Anthropic Claude)
+ *
+ * Analyserar en enskild nyhet och returnerar vilka svenska aktier som
+ * sannolikt påverkas, med motivering.
+ *
+ * Miljövariabel: ANTHROPIC_API_KEY
+ * Anropas av frontend: POST /.netlify/functions/news-impact
+ * Body: { "headline": "...", "summary": "..." }
+ */
 
 const SWEDISH_STOCKS = [
   'Ericsson', 'Volvo', 'H&M', 'Handelsbanken', 'SEB', 'Swedbank', 'Nordea',

@@ -1,5 +1,13 @@
-// netlify/functions/news-context.js
-// Analyserar nyhetsrubriker med Claude och returnerar vilket instrument som påverkas mest
+/**
+ * BörsPulsen — Nyhetskontext (Anthropic Claude)
+ *
+ * Analyserar nyhetsrubriker med Claude och returnerar vilket instrument
+ * som sannolikt påverkas mest.
+ *
+ * Miljövariabel: ANTHROPIC_API_KEY
+ * Anropas av frontend: POST /.netlify/functions/news-context
+ * Body: { "headlines": ["..."] }
+ */
 
 const SYSTEM_PROMPT = `Du är en erfaren finansanalytiker specialiserad på hur nyheter påverkar finansiella marknader.
 
