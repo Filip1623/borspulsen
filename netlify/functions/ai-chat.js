@@ -2,9 +2,8 @@
  * BörsPulsen — AI-Chat via Claude (Anthropic)
  *
  * En allmänbildad AI-assistent med spetskompetens inom börs och ekonomi.
- * Kan svara på i stort sett vilken fråga som helst, men är optimerad för
- * den svenska investeraren. Får live-marknadsdata och konversationshistorik
- * från frontend för att ge relevanta, kontextmedvetna svar.
+ * Får live-marknadsdata och konversationshistorik från frontend.
+ * Stödjer valfritt djupanalys-läge per aktie: analys | risk
  *
  * Miljövariabel som krävs i Netlify Dashboard:
  *   ANTHROPIC_API_KEY = din_anthropic_api_nyckel
@@ -12,12 +11,11 @@
  * Anropas av frontend som:
  *   POST /.netlify/functions/ai-chat
  *   Body: {
- *     "question": "Varför gick Volvo ner idag?",
- *     "history":  [{ "role": "user", "content": "..." }, { "role": "assistant", "content": "..." }],
- *     "context":  { "indices": [...], "stocks": [...] },  // valfritt live-snapshot
- *     "mode":     "dcf"  // valfritt djupanalys-läge
+ *     "question": "...",
+ *     "history":  [...],
+ *     "context":  { "indices": [...], "stocks": [...] },
+ *     "mode":     "analys"
  *   }
- *   mode ∈ screener | dcf | risk | earnings | portfolio
  */
 
 const { corsHeaders, getOrigin, requireAllowedOrigin, rateLimit, clientIp, tooMany } = require('./lib/security');
@@ -42,8 +40,7 @@ const SYSTEM_PROMPT = `Du är BörsPulsens AI-assistent — en skarp, hjälpsam 
 
 ## Bredd utöver finans
 Du kan också svara på allmänna frågor — historia, teknik, vetenskap, språk, vardagsfrågor,
-matematik, programmering, m.m. Var lika hjälpsam där som inom finans. Om en fråga ligger
-långt utanför börs/ekonomi, svara ändå så gott du kan men håll det kort.
+matematik, programmering, m.m. Var lika hjälpsam där som inom finans.
 
 ## Stil och format
 - Svara på svenska om inte användaren skriver på ett annat språk.
@@ -55,71 +52,36 @@ långt utanför börs/ekonomi, svara ändå så gott du kan men håll det kort.
 
 ## Viktigt
 Du är INTE en licensierad finansiell rådgivare. Du kan resonera kring aktier, risker och
-strategier på ett utbildande sätt, men ge inte personliga "köp/sälj"-order. Om någon ber om
-en direkt rekommendation, förklara avvägningarna i stället och påminn kort om att besluten
-är användarens egna.`;
+strategier på ett utbildande sätt, men ge inte personliga "köp/sälj"-order.`;
 
 const ANALYSIS_FRAMEWORKS = {
-  screener: `LÄGE: Aktiescreener (institutionell nivå). Agera som en senior equity-analytiker.
-Strukturera svaret med tydliga rubriker:
-- P/E vs sektorgenomsnitt
-- Intäktstillväxt (trend senaste åren)
-- Skuldsättning (skuld/eget kapital)
-- Utdelningshållbarhet
+  analys: `LÄGE: Värdering & Analys (institutionell nivå). Agera som senior equity-analytiker.
+Ge en samlad men koncis analys med tydliga rubriker (korta punktlistor, inte långa stycken):
+- Värdering i kontext: P/E, P/S, P/B vs sektorgenomsnitt
+- Tillväxt & lönsamhet: intäktstrend, marginaler, EPS-utveckling
+- DCF-light: viktigaste antaganden, WACC, uppskattat intrinsiskt värde vs aktuell kurs
+- Resultat: historik vs förväntningar, ledningens guidance, typiska kursreaktioner vid rapport
 - Konkurrensmässig vallgrav (moat)
-- Tjur- och björn-scenarier med riktkurser
-- Riskpoäng (1–10)
-- Indikativa entry-nivåer och stop-loss-resonemang`,
+- Tjur- och björn-scenario med indikativa riktkurser
+- Slutsats: övervärderad / rimligt värderad / undervärderad + riskpoäng (1–10)`,
 
-  dcf: `LÄGE: DCF-värdering (kassaflödesvärdering). Agera som en erfaren investmentbank-analytiker.
-Bygg en pedagogisk DCF med rubriker:
-- 5-åriga intäktsprognoser (antaganden)
-- Rörelsemarginal-prognos
-- Fritt kassaflöde-uppskattning
-- WACC (diskonteringsränta) med motivering
-- Känslighetsanalys (hur värdet ändras med antagandena)
-- Uppskattat intrinsiskt värde per aktie
-- Jämförelse mot aktuell kurs
-- Slutsats: övervärderad / rimligt värderad / undervärderad`,
-
-  risk: `LÄGE: Riskanalys (riskramverk). Agera som riskanalytiker.
-Analysera med rubriker:
-- Sektor- och koncentrationsrisk
-- Geografisk exponering
+  risk: `LÄGE: Risk & Portfölj. Agera som riskanalytiker och portföljstrateg.
+Ge en samlad men koncis analys med tydliga rubriker (korta punktlistor, inte långa stycken):
+- Sektor- och koncentrationsrisk samt geografisk exponering
 - Ränte- och konjunkturkänslighet
-- Recessions-stresstest (hur klarar bolaget en nedgång)
+- Recessions-stresstest: hur klarar bolaget en nedgång
 - Likviditet och balansräkningsstyrka
-- Resonemang om positionsstorlek
-- Möjliga hedging-strategier`,
-
-  earnings: `LÄGE: Resultatanalys (earnings). Agera som equity research-analytiker.
-Strukturera med rubriker:
-- Resultathistorik vs förväntningar
-- Intäkts- och EPS-prognos
-- Nyckeltal att bevaka
-- Segment- och tillväxtanalys
-- Ledningens guidance
-- Historiska kursreaktioner vid rapport
-- Tjur- och björn-scenarier`,
-
-  portfolio: `LÄGE: Portföljkonstruktion. Agera som portföljstrateg.
-Sätt aktien i ett portföljsammanhang med rubriker:
-- Föreslagen allokering (kärna vs satellit)
-- Hur den kompletterar en diversifierad portfölj
-- Förväntad avkastning vs risk
-- Tänkbar drawdown i en nedgång
-- Skatteeffektivt ägande (t.ex. ISK/KF i Sverige)
-- Rebalanserings- och DCA-resonemang (månadssparande)`,
+- Portföljroll: kärna vs satellit, hur den kompletterar en diversifierad portfölj
+- Resonemang om positionsstorlek och tänkbar drawdown
+- Möjliga hedging-strategier
+- Praktiskt: skatteeffektivt ägande (ISK/KF), rebalansering och DCA (månadssparande)`,
 };
 
-function isValidRole(r) {
-  return r === 'user' || r === 'assistant';
-}
+function isValidRole(r) { return r === 'user' || r === 'assistant'; }
 
 function buildMarketContext(context) {
   if (!context || typeof context !== 'object') return '';
   const parts = [];
-
   if (Array.isArray(context.indices) && context.indices.length) {
     const idx = context.indices.slice(0, 10).map(i => {
       const chg = typeof i.change === 'number' ? (i.change >= 0 ? '+' : '') + i.change : i.change;
@@ -127,7 +89,6 @@ function buildMarketContext(context) {
     }).join(', ');
     parts.push(`Index just nu: ${idx}`);
   }
-
   if (Array.isArray(context.stocks) && context.stocks.length) {
     const rows = context.stocks.slice(0, 60).map(s => {
       const pct = typeof s.changePct === 'number' ? (s.changePct >= 0 ? '+' : '') + s.changePct.toFixed(2) + '%' : '';
@@ -135,7 +96,6 @@ function buildMarketContext(context) {
     }).join('\n');
     parts.push(`Aktiekurser just nu (urval):\n${rows}`);
   }
-
   if (!parts.length) return '';
   return `\n\n## Live-marknadsdata (snapshot från sidan, kan vara fördröjd)\n${parts.join('\n\n')}`;
 }
@@ -152,9 +112,7 @@ exports.handler = async function (event) {
   if (!rl.ok) return tooMany(CORS, rl.retryAfter);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten är inte konfigurerad' }) };
-  }
+  if (!apiKey) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten är inte konfigurerad' }) };
 
   let question, history, context, mode;
   try {
@@ -167,11 +125,9 @@ exports.handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Ogiltig förfrågan' }) };
   }
 
-  // Validera läge: tomt (vanlig chat) eller ett av de tillåtna ramverken
   if (mode && !ANALYSIS_FRAMEWORKS[mode]) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Okänt analysläge' }) };
   }
-
   if (!question || question.length < 2) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Frågan är för kort' }) };
   }
@@ -180,13 +136,11 @@ exports.handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `Frågan är för lång (max ${maxLen} tecken)` }) };
   }
 
-  // Bygg systemprompt och svarslängd beroende på läge
   const systemPrompt = mode
     ? `${SYSTEM_PROMPT}\n\n${ANALYSIS_FRAMEWORKS[mode]}\n\nVar konkret och pedagogisk. Märk tydligt alla siffror du uppskattar som illustrativa antaganden — du har inte tillgång till live-bokslut. Avsluta med en kort rad om att detta är utbildning, inte personlig rådgivning.`
     : SYSTEM_PROMPT + buildMarketContext(context);
   const maxTokens = mode ? 1800 : MAX_TOKENS;
 
-  // Bygg meddelandelistan: rensad historik + den nya frågan (ej i djupanalys-läge)
   const messages = [];
   if (!mode) {
     for (const m of history.slice(-MAX_HISTORY)) {
@@ -208,28 +162,18 @@ exports.handler = async function (event) {
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages,
-      }),
+      body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, system: systemPrompt, messages }),
     });
 
     if (!response.ok) {
       const err = await response.text();
       console.error('Anthropic API error:', response.status, err.slice(0, 300));
-      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten svarade inte korrekt', upstreamStatus: response.status, detail: err.slice(0, 300) }) };
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten svarade inte korrekt' }) };
     }
 
     const data = await response.json();
     const answer = data.content?.map(c => c.text).filter(Boolean).join('\n') || '';
-
-    return {
-      statusCode: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answer }),
-    };
+    return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify({ answer }) };
   } catch (err) {
     console.error('AI-chat error:', err);
     return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'Kunde inte nå AI-tjänsten' }) };

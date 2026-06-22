@@ -4499,11 +4499,8 @@ async function loadStockPage(ticker) {
       </div>
       <div class="sp-ai-body" id="spAiBody">Genererar analys...</div>
       <div class="sp-ai-modes">
-        <button class="sp-ai-mode" onclick="runStockAnalysis('screener')">📊 Aktiescreener</button>
-        <button class="sp-ai-mode" onclick="runStockAnalysis('dcf')">💸 DCF-värdering</button>
-        <button class="sp-ai-mode" onclick="runStockAnalysis('risk')">🛡️ Riskanalys</button>
-        <button class="sp-ai-mode" onclick="runStockAnalysis('earnings')">📈 Resultatanalys</button>
-        <button class="sp-ai-mode" onclick="runStockAnalysis('portfolio')">🧩 Portföljroll</button>
+        <button class="sp-ai-mode" onclick="runStockAnalysis('analys')">💸 Värdering &amp; Analys</button>
+        <button class="sp-ai-mode" onclick="runStockAnalysis('risk')">🛡️ Risk &amp; Portfölj</button>
       </div>
       <div class="sp-ai-disclaimer">Djupanalyserna är AI-genererad utbildning, inte personlig finansiell rådgivning. Siffror kan vara uppskattade.</div>
     </div>
@@ -4526,11 +4523,8 @@ async function loadStockPage(ticker) {
 
 // Kör en professionell djupanalys (screener/dcf/risk/earnings/portfolio) för aktuell aktie
 const ANALYSIS_LABELS = {
-  screener:  'Aktiescreener',
-  dcf:       'DCF-värdering',
-  risk:      'Riskanalys',
-  earnings:  'Resultatanalys',
-  portfolio: 'Portföljroll',
+  analys: 'Värdering & Analys',
+  risk:   'Risk & Portfölj',
 };
 async function runStockAnalysis(mode) {
   const s = window.currentStock;
