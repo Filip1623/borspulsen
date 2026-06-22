@@ -14,15 +14,17 @@
  *   Body: {
  *     "question": "Varför gick Volvo ner idag?",
  *     "history":  [{ "role": "user", "content": "..." }, { "role": "assistant", "content": "..." }],
- *     "context":  { "indices": [...], "stocks": [...] }   // valfritt live-snapshot
+ *     "context":  { "indices": [...], "stocks": [...] },  // valfritt live-snapshot
+ *     "mode":     "dcf"  // valfritt djupanalys-läge
  *   }
+ *   mode ∈ screener | dcf | risk | earnings | portfolio
  */
 
 const { corsHeaders, getOrigin, requireAllowedOrigin, rateLimit, clientIp, tooMany } = require('./lib/security');
 
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 1024;
-const MAX_HISTORY = 10; // antal tidigare meddelanden som skickas med
+const MAX_HISTORY = 10;
 
 const SYSTEM_PROMPT = `Du är BörsPulsens AI-assistent — en skarp, hjälpsam och bred AI som är expert på börs och ekonomi men som även kan svara på frågor om i stort sett vad som helst.
 
@@ -57,11 +59,63 @@ strategier på ett utbildande sätt, men ge inte personliga "köp/sälj"-order. 
 en direkt rekommendation, förklara avvägningarna i stället och påminn kort om att besluten
 är användarens egna.`;
 
+const ANALYSIS_FRAMEWORKS = {
+  screener: `LÄGE: Aktiescreener (institutionell nivå). Agera som en senior equity-analytiker.
+Strukturera svaret med tydliga rubriker:
+- P/E vs sektorgenomsnitt
+- Intäktstillväxt (trend senaste åren)
+- Skuldsättning (skuld/eget kapital)
+- Utdelningshållbarhet
+- Konkurrensmässig vallgrav (moat)
+- Tjur- och björn-scenarier med riktkurser
+- Riskpoäng (1–10)
+- Indikativa entry-nivåer och stop-loss-resonemang`,
+
+  dcf: `LÄGE: DCF-värdering (kassaflödesvärdering). Agera som en erfaren investmentbank-analytiker.
+Bygg en pedagogisk DCF med rubriker:
+- 5-åriga intäktsprognoser (antaganden)
+- Rörelsemarginal-prognos
+- Fritt kassaflöde-uppskattning
+- WACC (diskonteringsränta) med motivering
+- Känslighetsanalys (hur värdet ändras med antagandena)
+- Uppskattat intrinsiskt värde per aktie
+- Jämförelse mot aktuell kurs
+- Slutsats: övervärderad / rimligt värderad / undervärderad`,
+
+  risk: `LÄGE: Riskanalys (riskramverk). Agera som riskanalytiker.
+Analysera med rubriker:
+- Sektor- och koncentrationsrisk
+- Geografisk exponering
+- Ränte- och konjunkturkänslighet
+- Recessions-stresstest (hur klarar bolaget en nedgång)
+- Likviditet och balansräkningsstyrka
+- Resonemang om positionsstorlek
+- Möjliga hedging-strategier`,
+
+  earnings: `LÄGE: Resultatanalys (earnings). Agera som equity research-analytiker.
+Strukturera med rubriker:
+- Resultathistorik vs förväntningar
+- Intäkts- och EPS-prognos
+- Nyckeltal att bevaka
+- Segment- och tillväxtanalys
+- Ledningens guidance
+- Historiska kursreaktioner vid rapport
+- Tjur- och björn-scenarier`,
+
+  portfolio: `LÄGE: Portföljkonstruktion. Agera som portföljstrateg.
+Sätt aktien i ett portföljsammanhang med rubriker:
+- Föreslagen allokering (kärna vs satellit)
+- Hur den kompletterar en diversifierad portfölj
+- Förväntad avkastning vs risk
+- Tänkbar drawdown i en nedgång
+- Skatteeffektivt ägande (t.ex. ISK/KF i Sverige)
+- Rebalanserings- och DCA-resonemang (månadssparande)`,
+};
+
 function isValidRole(r) {
   return r === 'user' || r === 'assistant';
 }
 
-// Bygger en kompakt textsammanfattning av live-marknadsdata till systemkontexten
 function buildMarketContext(context) {
   if (!context || typeof context !== 'object') return '';
   const parts = [];
@@ -102,38 +156,49 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'AI-tjänsten är inte konfigurerad' }) };
   }
 
-  let question, history, context;
+  let question, history, context, mode;
   try {
     const body = JSON.parse(event.body || '{}');
     question = (body.question || '').trim();
     history = Array.isArray(body.history) ? body.history : [];
     context = body.context || null;
+    mode = (body.mode || '').trim();
   } catch {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Ogiltig förfrågan' }) };
+  }
+
+  // Validera läge: tomt (vanlig chat) eller ett av de tillåtna ramverken
+  if (mode && !ANALYSIS_FRAMEWORKS[mode]) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Okänt analysläge' }) };
   }
 
   if (!question || question.length < 2) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Frågan är för kort' }) };
   }
-  if (question.length > 2000) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Frågan är för lång (max 2000 tecken)' }) };
+  const maxLen = mode ? 1000 : 2000;
+  if (question.length > maxLen) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `Frågan är för lång (max ${maxLen} tecken)` }) };
   }
 
-  // Bygg meddelandelistan: rensad historik + den nya frågan
+  // Bygg systemprompt och svarslängd beroende på läge
+  const systemPrompt = mode
+    ? `${SYSTEM_PROMPT}\n\n${ANALYSIS_FRAMEWORKS[mode]}\n\nVar konkret och pedagogisk. Märk tydligt alla siffror du uppskattar som illustrativa antaganden — du har inte tillgång till live-bokslut. Avsluta med en kort rad om att detta är utbildning, inte personlig rådgivning.`
+    : SYSTEM_PROMPT + buildMarketContext(context);
+  const maxTokens = mode ? 1800 : MAX_TOKENS;
+
+  // Bygg meddelandelistan: rensad historik + den nya frågan (ej i djupanalys-läge)
   const messages = [];
-  for (const m of history.slice(-MAX_HISTORY)) {
-    if (m && isValidRole(m.role) && typeof m.content === 'string' && m.content.trim()) {
-      messages.push({ role: m.role, content: m.content.slice(0, 2000) });
+  if (!mode) {
+    for (const m of history.slice(-MAX_HISTORY)) {
+      if (m && isValidRole(m.role) && typeof m.content === 'string' && m.content.trim()) {
+        messages.push({ role: m.role, content: m.content.slice(0, 2000) });
+      }
     }
   }
-  // Säkerställ att sista meddelandet inte redan är frågan (undvik dubbletter)
   if (!messages.length || messages[messages.length - 1].content !== question) {
     messages.push({ role: 'user', content: question });
   }
-  // Anthropic kräver att första meddelandet är från 'user'
   while (messages.length && messages[0].role !== 'user') messages.shift();
-
-  const systemWithContext = SYSTEM_PROMPT + buildMarketContext(context);
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -145,8 +210,8 @@ exports.handler = async function (event) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: systemWithContext,
+        max_tokens: maxTokens,
+        system: systemPrompt,
         messages,
       }),
     });
