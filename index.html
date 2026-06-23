@@ -926,6 +926,17 @@
   .sp-ai-icon { background: linear-gradient(135deg,#1B4FD8,#6366F1); color:#fff; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
   .sp-ai-title { font-size: 14px; font-weight: 800; color: var(--text); }
   .sp-ai-body { font-size: 14px; color: var(--text2); line-height: 1.75; }
+  .sp-ai-body p { margin: 0 0 10px; }
+  .sp-ai-body strong { color: var(--text); font-weight: 700; }
+  .sp-ai-list { margin: 4px 0 12px; padding-left: 20px; }
+  .sp-ai-list li { margin-bottom: 5px; }
+  .sp-ai-loading { color: var(--text2); font-style: italic; }
+  .sp-ai-modes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .sp-ai-mode { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 9px; padding: 7px 13px; cursor: pointer; transition: all 0.18s; letter-spacing: -0.1px; }
+  .sp-ai-mode:hover:not(:disabled) { background: rgba(99,102,241,0.14); border-color: rgba(99,102,241,0.5); transform: translateY(-1px); }
+  .sp-ai-mode.active { background: linear-gradient(135deg,#1B4FD8,#6366F1); border-color: transparent; color: #fff; }
+  .sp-ai-mode:disabled { opacity: 0.5; cursor: default; }
+  .sp-ai-disclaimer { margin-top: 12px; font-size: 11px; color: var(--text2); opacity: 0.7; line-height: 1.5; }
   .sp-news-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
   .sp-news-list { display: flex; flex-direction: column; gap: 1px; }
   .sp-news-item { display: flex; gap: 12px; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; }
@@ -4487,6 +4498,11 @@ async function loadStockPage(ticker) {
         <div class="sp-ai-title">AI-Analys</div>
       </div>
       <div class="sp-ai-body" id="spAiBody">Genererar analys...</div>
+      <div class="sp-ai-modes">
+        <button class="sp-ai-mode" onclick="runStockAnalysis('analys')">💸 Värdering &amp; Analys</button>
+        <button class="sp-ai-mode" onclick="runStockAnalysis('risk')">🛡️ Risk &amp; Portfölj</button>
+      </div>
+      <div class="sp-ai-disclaimer">Djupanalyserna är AI-genererad utbildning, inte personlig finansiell rådgivning. Siffror kan vara uppskattade.</div>
     </div>
 
     <div class="sp-card" style="margin-bottom:24px">
@@ -4498,8 +4514,73 @@ async function loadStockPage(ticker) {
   // Initiera TradingView-chart
   initStockChart(symbol);
 
+  // Spara aktiekontext så djupanalys-knapparna kan använda den
+  window.currentStock = { name, ticker, price, changePct, industry, currency, pe, ps, pb, div, mcap };
+
   // Hämta AI-analys
   fetchStockAI(name, ticker, price, changePct, industry);
+}
+
+// Kör en professionell djupanalys (screener/dcf/risk/earnings/portfolio) för aktuell aktie
+const ANALYSIS_LABELS = {
+  analys: 'Värdering & Analys',
+  risk:   'Risk & Portfölj',
+};
+async function runStockAnalysis(mode) {
+  const s = window.currentStock;
+  const el = document.getElementById('spAiBody');
+  if (!s || !el) return;
+
+  // Markera aktiv knapp, lås upp dubbelklick under pågående anrop
+  document.querySelectorAll('.sp-ai-mode').forEach(b => b.classList.remove('active'));
+  const btn = [...document.querySelectorAll('.sp-ai-mode')].find(b => b.getAttribute('onclick')?.includes(`'${mode}'`));
+  if (btn) { btn.classList.add('active'); if (btn.disabled) return; }
+  document.querySelectorAll('.sp-ai-mode').forEach(b => b.disabled = true);
+
+  el.innerHTML = `<span class="sp-ai-loading">Genererar ${ANALYSIS_LABELS[mode] || 'analys'}…</span>`;
+
+  // Bygg kompakt aktiekontext (håll under serverns 1000-teckengräns)
+  const ctx = `Aktie: ${s.name} (${s.ticker}). Kurs: ${s.price?.toFixed(2)} ${s.currency || ''}, `
+    + `${s.changePct >= 0 ? '+' : ''}${(s.changePct || 0).toFixed(2)}% idag. `
+    + `Sektor: ${s.industry || 'okänd'}. `
+    + `P/E: ${s.pe ? s.pe.toFixed(1) : 'okänt'}, P/S: ${s.ps ? s.ps.toFixed(2) : 'okänt'}, `
+    + `P/B: ${s.pb ? s.pb.toFixed(2) : 'okänt'}, Direktavkastning: ${s.div ? s.div.toFixed(2) + '%' : 'okänd'}, `
+    + `Börsvärde: ${s.mcap || 'okänt'}. Gör analysen för denna aktie.`;
+
+  try {
+    const res = await fetch('/.netlify/functions/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: ctx, mode }),
+    });
+    const data = await res.json();
+    if (data.answer) el.innerHTML = renderAnalysis(data.answer);
+    else el.textContent = data.error || 'Kunde inte generera analysen just nu.';
+  } catch {
+    el.textContent = 'Kunde inte nå AI-tjänsten just nu.';
+  } finally {
+    document.querySelectorAll('.sp-ai-mode').forEach(b => b.disabled = false);
+  }
+}
+
+// Enkel, säker render av AI-text → rubriker (**fet**) och punktlistor blir HTML
+function renderAnalysis(text) {
+  const lines = escapeHTML(text).split('\n');
+  let html = '', inList = false;
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) { if (inList) { html += '</ul>'; inList = false; } continue; }
+    const withBold = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    if (/^[-•]\s+/.test(line)) {
+      if (!inList) { html += '<ul class="sp-ai-list">'; inList = true; }
+      html += `<li>${withBold.replace(/^[-•]\s+/, '')}</li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<p>${withBold}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
 }
 
 function initStockChart(symbol) {

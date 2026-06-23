@@ -1,1 +1,23 @@
-.claude/worktrees/
+# Beroenden
+node_modules/
+
+# Miljövariabler / hemligheter — får ALDRIG committas
+.env
+.env.*
+*.local
+
+# Netlify
+.netlify/
+
+# OS-skräp
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Loggar / temp
+*.log
+/tmp/
