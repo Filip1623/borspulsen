@@ -4173,7 +4173,10 @@ renderMobileCards(seStocks);
         <small>Fråga om aktier &amp; börsen</small>
       </div>
     </div>
-    <button class="ai-panel-close" onclick="closeAiPanel()" aria-label="Stäng">✕</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="/agent-mesh.html" target="_blank" title="Agent Mesh — se alla AI-agenter live" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font-size:14px;text-decoration:none;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">⬡</a>
+      <button class="ai-panel-close" onclick="closeAiPanel()" aria-label="Stäng">✕</button>
+    </div>
   </div>
   <div class="ai-messages" id="aiMessages">
     <div class="ai-msg bot">
