@@ -9,7 +9,7 @@
   body { background: #000; color: #e0e0e0; font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace; overflow: hidden; height: 100vh; }
 
   /* TOP BAR */
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid #1a1a1a; background: #050505; position: relative; z-index: 10; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid #1a1a1a; background: #050505; position: relative; z-index: 10; height: 48px; }
   .topbar-left { display: flex; align-items: center; gap: 16px; }
   .brand { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
   .brand span { color: #22d3ee; }
@@ -27,10 +27,18 @@
   .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 6px rgba(74,222,128,0)} }
 
-  /* MAIN LAYOUT */
-  .main { display: flex; height: calc(100vh - 48px); }
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid #1a1a1a; background: #030303; }
+  .tab { padding: 8px 20px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: #888; }
+  .tab.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
-  /* CANVAS */
+  /* MAIN LAYOUT */
+  .view { display: none; height: calc(100vh - 48px - 33px); }
+  .view.active { display: flex; flex-direction: column; }
+
+  /* MESH VIEW */
+  #viewMesh { flex-direction: row; }
   #meshCanvas { flex: 1; cursor: default; }
 
   /* INSPECTOR */
@@ -45,26 +53,22 @@
   .status-dot.idle   { background: #facc15; }
   .status-dot.skill  { background: #22d3ee; }
   .status-text { font-size: 10px; color: #888; letter-spacing: 0.5px; }
-
   .inspector-metrics { padding: 14px 16px; border-bottom: 1px solid #1a1a1a; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .metric { background: #0a0a0a; border-radius: 6px; padding: 10px; }
   .metric-val { font-size: 15px; font-weight: 700; color: #fff; }
   .metric-lbl { font-size: 9px; color: #555; margin-top: 2px; letter-spacing: 0.5px; }
-
   .inspector-connections { padding: 14px 16px; border-bottom: 1px solid #1a1a1a; flex: 1; overflow-y: auto; }
   .conn-label { font-size: 9px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
   .conn-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #0d0d0d; font-size: 11px; color: #666; }
   .conn-item:last-child { border-bottom: none; }
   .conn-dot { width: 5px; height: 5px; border-radius: 50%; background: #22d3ee; flex-shrink: 0; }
-
   .inspector-tools { padding: 14px 16px; }
   .tool-label { font-size: 9px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
   .tool-tag { display: inline-block; background: #111; border: 1px solid #222; border-radius: 4px; padding: 3px 8px; font-size: 10px; color: #666; margin: 2px; }
-
   .inspector-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #333; font-size: 11px; text-align: center; gap: 8px; padding: 20px; }
 
-  /* EVENT LOG */
-  .eventlog { border-top: 1px solid #1a1a1a; background: #030303; padding: 8px 16px; height: 90px; overflow: hidden; }
+  /* EVENT LOG (mesh) */
+  .eventlog { border-top: 1px solid #1a1a1a; background: #030303; padding: 8px 16px; height: 90px; overflow: hidden; flex-shrink: 0; }
   .eventlog-label { font-size: 9px; color: #333; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
   .log-line { font-size: 10px; color: #444; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .log-line .log-time { color: #2a2a2a; margin-right: 8px; }
@@ -75,8 +79,49 @@
   .log-line .log-type.route { color: #facc15; }
   .log-line .log-msg { color: #555; }
 
+  /* HISTORY VIEW */
+  #viewHistory { flex-direction: row; overflow: hidden; }
+  .history-list { flex: 1; overflow-y: auto; border-right: 1px solid #1a1a1a; }
+  .history-list::-webkit-scrollbar { width: 4px; }
+  .history-list::-webkit-scrollbar-track { background: #000; }
+  .history-list::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+  .hist-header { padding: 12px 16px; border-bottom: 1px solid #111; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #030303; z-index: 1; }
+  .hist-header-label { font-size: 9px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; }
+  .hist-load-more { font-size: 9px; color: #22d3ee; cursor: pointer; letter-spacing: 1px; background: none; border: none; font-family: inherit; }
+  .hist-load-more:hover { color: #67e8f9; }
+
+  .commit-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #0d0d0d; cursor: pointer; transition: background 0.15s; }
+  .commit-item:hover { background: #080808; }
+  .commit-item.selected { background: #0a0f1a; border-left: 2px solid #22d3ee; }
+  .commit-sha { font-size: 10px; color: #22d3ee; flex-shrink: 0; font-weight: 700; letter-spacing: 0.5px; width: 52px; }
+  .commit-body { flex: 1; min-width: 0; }
+  .commit-msg { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .commit-meta { font-size: 10px; color: #444; display: flex; gap: 10px; flex-wrap: wrap; }
+  .commit-agent { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; letter-spacing: 0.5px; border: 1px solid; }
+  .commit-date { color: #333; }
+
+  .hist-detail { width: 320px; flex-shrink: 0; border-left: 1px solid #1a1a1a; background: #050505; display: flex; flex-direction: column; overflow: hidden; }
+  .hist-detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #333; font-size: 11px; text-align: center; gap: 8px; padding: 20px; }
+  .hist-detail-content { padding: 16px; overflow-y: auto; flex: 1; }
+  .hist-detail-content::-webkit-scrollbar { width: 4px; }
+  .hist-detail-content::-webkit-scrollbar-track { background: #000; }
+  .hist-detail-content::-webkit-scrollbar-thumb { background: #222; }
+  .detail-label { font-size: 9px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; margin-top: 14px; }
+  .detail-label:first-child { margin-top: 0; }
+  .detail-sha { font-size: 13px; font-weight: 700; color: #22d3ee; }
+  .detail-msg { font-size: 12px; color: #ddd; line-height: 1.5; margin-bottom: 4px; }
+  .detail-author { font-size: 11px; color: #666; }
+  .detail-date { font-size: 11px; color: #444; }
+  .detail-agent-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; border: 1px solid; font-size: 10px; margin-top: 4px; }
+  .detail-gh-link { display: inline-block; margin-top: 10px; font-size: 10px; color: #22d3ee; text-decoration: none; letter-spacing: 0.5px; }
+  .detail-gh-link:hover { text-decoration: underline; }
+
+  .hist-loading { display: flex; align-items: center; justify-content: center; flex: 1; color: #333; font-size: 11px; gap: 8px; }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* BOTTOM BAR */
-  .bottombar { display: flex; align-items: center; justify-content: space-between; padding: 5px 16px; border-top: 1px solid #111; background: #030303; font-size: 9px; color: #333; letter-spacing: 0.5px; }
+  .bottombar { display: flex; align-items: center; justify-content: space-between; padding: 5px 16px; border-top: 1px solid #111; background: #030303; font-size: 9px; color: #333; letter-spacing: 0.5px; height: 24px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -90,66 +135,268 @@
     <div class="live-dot"></div>
   </div>
   <div class="topbar-stats">
-    <div class="stat"><div class="stat-val cyan" id="statTokens">0</div><div class="stat-lbl">Tokens/m</div></div>
-    <div class="stat"><div class="stat-val" id="statLatency">0ms</div><div class="stat-lbl">Latency</div></div>
-    <div class="stat"><div class="stat-val green" id="statThrough">0</div><div class="stat-lbl">Throughput</div></div>
-    <div class="stat"><div class="stat-val yellow" id="statQueue">0</div><div class="stat-lbl">Queue</div></div>
-    <div class="stat"><div class="stat-val" id="statMsgs">0</div><div class="stat-lbl">Msgs</div></div>
-    <div class="stat"><div class="stat-val cyan">27</div><div class="stat-lbl">Agents</div></div>
+    <div class="stat"><div class="stat-val cyan" id="statAgents">27</div><div class="stat-lbl">Agenter</div></div>
+    <div class="stat"><div class="stat-val green" id="statCommits">—</div><div class="stat-lbl">Commits</div></div>
+    <div class="stat"><div class="stat-val yellow" id="statLinks">40</div><div class="stat-lbl">Länkar</div></div>
   </div>
   <div class="topbar-right">
-    <button class="btn-pause" id="pauseBtn">⏸ PAUSE</button>
+    <a href="/" style="font-size:10px;color:#444;text-decoration:none;letter-spacing:1px;">← TILLBAKA</a>
   </div>
 </div>
 
-<div class="main">
-  <canvas id="meshCanvas"></canvas>
+<div class="tabs">
+  <div class="tab active" data-view="viewMesh">⬡ MESH</div>
+  <div class="tab" data-view="viewHistory">⏱ HISTORIK</div>
+</div>
 
-  <div class="inspector" id="inspector">
-    <div class="inspector-empty" id="inspectorEmpty">
-      <div style="font-size:24px;opacity:0.3">⬡</div>
-      <div>Klicka på en agent för att inspektera</div>
-    </div>
-    <div id="inspectorContent" style="display:none; display:flex; flex-direction:column; height:100%;">
-      <div class="inspector-header">
-        <div class="inspector-label">INSPECTOR</div>
-        <div class="inspector-name" id="iName">—</div>
-        <div class="inspector-role" id="iRole">—</div>
-        <div class="inspector-status">
-          <div class="status-dot active" id="iStatusDot"></div>
-          <div class="status-text" id="iStatus">ACTIVE</div>
+<!-- MESH VIEW -->
+<div class="view active" id="viewMesh">
+  <div style="display:flex;flex:1;overflow:hidden">
+    <canvas id="meshCanvas" style="flex:1;cursor:default"></canvas>
+    <div class="inspector" id="inspector">
+      <div class="inspector-empty" id="inspectorEmpty">
+        <div style="font-size:24px;opacity:0.3">⬡</div>
+        <div>Klicka på en agent för att inspektera</div>
+      </div>
+      <div id="inspectorContent" style="display:none;flex-direction:column;height:100%">
+        <div class="inspector-header">
+          <div class="inspector-label">INSPECTOR</div>
+          <div class="inspector-name" id="iName">—</div>
+          <div class="inspector-role" id="iRole">—</div>
+          <div class="inspector-status">
+            <div class="status-dot active" id="iStatusDot"></div>
+            <div class="status-text" id="iStatus">ACTIVE</div>
+          </div>
+        </div>
+        <div class="inspector-metrics">
+          <div class="metric"><div class="metric-val" id="iLoad">—</div><div class="metric-lbl">LOAD</div></div>
+          <div class="metric"><div class="metric-val" id="iLatency">—</div><div class="metric-lbl">LATENCY</div></div>
+          <div class="metric"><div class="metric-val" id="iMsgs">—</div><div class="metric-lbl">MSGS</div></div>
+          <div class="metric"><div class="metric-val" id="iRate">—</div><div class="metric-lbl">RATE/s</div></div>
+        </div>
+        <div class="inspector-connections" style="flex:1;overflow-y:auto">
+          <div class="conn-label">CONNECTED TO</div>
+          <div id="iConnections"></div>
+        </div>
+        <div class="inspector-tools">
+          <div class="tool-label">VERKTYG</div>
+          <div id="iTools"></div>
         </div>
       </div>
-      <div class="inspector-metrics">
-        <div class="metric"><div class="metric-val" id="iLoad">—</div><div class="metric-lbl">LOAD</div></div>
-        <div class="metric"><div class="metric-val" id="iLatency">—</div><div class="metric-lbl">LATENCY</div></div>
-        <div class="metric"><div class="metric-val" id="iMsgs">—</div><div class="metric-lbl">MSGS</div></div>
-        <div class="metric"><div class="metric-val" id="iRate">—</div><div class="metric-lbl">RATE/s</div></div>
-      </div>
-      <div class="inspector-connections" style="flex:1;overflow-y:auto">
-        <div class="conn-label">CONNECTED TO</div>
-        <div id="iConnections"></div>
-      </div>
-      <div class="inspector-tools">
-        <div class="tool-label">VERKTYG</div>
-        <div id="iTools"></div>
-      </div>
     </div>
+  </div>
+  <div class="eventlog">
+    <div class="eventlog-label">EVENT LOG</div>
+    <div id="logLines"></div>
   </div>
 </div>
 
-<div class="eventlog">
-  <div class="eventlog-label">EVENT LOG</div>
-  <div id="logLines"></div>
+<!-- HISTORY VIEW -->
+<div class="view" id="viewHistory">
+  <div class="history-list" id="historyList">
+    <div class="hist-loading" id="histLoading"><span class="spin">↻</span> Hämtar commits från GitHub...</div>
+  </div>
+  <div class="hist-detail" id="histDetail">
+    <div class="hist-detail-empty" id="histDetailEmpty">
+      <div style="font-size:24px;opacity:0.3">⏱</div>
+      <div>Välj en commit för att se detaljer</div>
+    </div>
+    <div id="histDetailContent" style="display:none"></div>
+  </div>
 </div>
 
 <div class="bottombar">
-  <span>KLICKA PÅ EN NOD FÖR ATT INSPEKTERA</span>
-  <span id="linkCount">— LINKS</span>
-  <span id="agentCount">27 AGENTS</span>
+  <span id="bottomLeft">KLICKA PÅ EN NOD FÖR ATT INSPEKTERA</span>
+  <span id="bottomRight">27 AGENTS · 40 LINKS</span>
 </div>
 
 <script>
+// ── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.view).classList.add('active');
+    if (tab.dataset.view === 'viewHistory') loadHistory();
+    if (tab.dataset.view === 'viewMesh') setTimeout(resize, 10);
+  });
+});
+
+// ── AGENT COLOR MAP ──────────────────────────────────────────────────────────
+const AGENT_COLORS = {
+  'borspulsen-oversikt': '#22d3ee',
+  'api-functions':       '#6366f1',
+  'market-data-analyst': '#6366f1',
+  'release-verifier':    '#6366f1',
+  'frontend-engineer':   '#a78bfa',
+  'design-critic':       '#a78bfa',
+  'tech-sektor':         '#34d399',
+  'finans-sektor':       '#34d399',
+  'industri-sektor':     '#34d399',
+  'energi-sektor':       '#34d399',
+  'halsa-sektor':        '#34d399',
+  'konsument-sektor':    '#34d399',
+  'material-sektor':     '#34d399',
+};
+const AGENT_LABELS = {
+  'borspulsen-oversikt': 'BörsPulsen',
+  'api-functions':       'API-Functions',
+  'market-data-analyst': 'Market Data',
+  'release-verifier':    'Release Verifier',
+  'frontend-engineer':   'Frontend Eng',
+  'design-critic':       'Design Critic',
+  'tech-sektor':         'Tech',
+  'finans-sektor':       'Finans',
+  'industri-sektor':     'Industri',
+  'energi-sektor':       'Energi',
+  'halsa-sektor':        'Hälsa',
+  'konsument-sektor':    'Konsument',
+  'material-sektor':     'Material',
+};
+
+function agentBadgeStyle(agentId) {
+  const c = AGENT_COLORS[agentId] || '#555';
+  return `color:${c};border-color:${c}33;background:${c}11`;
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+let histPage = 1;
+let histLoaded = false;
+let histCommits = [];
+let selectedSha = null;
+
+async function loadHistory(append = false) {
+  if (histLoaded && !append) return;
+
+  const list = document.getElementById('historyList');
+  if (!append) {
+    list.innerHTML = '<div class="hist-loading" id="histLoading"><span class="spin">↻</span> Hämtar commits...</div>';
+  } else {
+    const loading = document.createElement('div');
+    loading.className = 'hist-loading';
+    loading.style.height = '48px';
+    loading.innerHTML = '<span class="spin">↻</span>';
+    loading.id = 'histLoadingMore';
+    list.appendChild(loading);
+  }
+
+  try {
+    const res = await fetch(`/.netlify/functions/git-history?page=${histPage}`);
+    const data = await res.json();
+    if (!data.commits) throw new Error(data.error || 'Okänt fel');
+
+    histCommits = append ? [...histCommits, ...data.commits] : data.commits;
+
+    renderHistory(list, append ? data.commits : data.commits, append);
+    document.getElementById('statCommits').textContent = histCommits.length + (data.commits.length === 50 ? '+' : '');
+    histLoaded = true;
+  } catch (err) {
+    list.innerHTML = `<div class="hist-loading" style="color:#555">Kunde inte hämta historik: ${err.message}</div>`;
+  }
+}
+
+function renderHistory(list, commits, append) {
+  if (!append) list.innerHTML = '';
+
+  // Header (only on first render)
+  if (!append) {
+    const hdr = document.createElement('div');
+    hdr.className = 'hist-header';
+    hdr.innerHTML = `
+      <span class="hist-header-label">Git-historik — filip1623/borspulsen</span>
+      <button class="hist-load-more" id="loadMoreBtn" onclick="loadMore()">Ladda fler ↓</button>
+    `;
+    list.appendChild(hdr);
+  } else {
+    const old = document.getElementById('histLoadingMore');
+    if (old) old.remove();
+  }
+
+  commits.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'commit-item' + (c.sha === selectedSha ? ' selected' : '');
+    item.dataset.sha = c.sha;
+
+    const relDate = relativeTime(c.date);
+    const agentLabel = AGENT_LABELS[c.agent] || c.agent;
+    const agentStyle = agentBadgeStyle(c.agent);
+
+    item.innerHTML = `
+      <div class="commit-sha">${c.sha}</div>
+      <div class="commit-body">
+        <div class="commit-msg">${esc(c.message)}</div>
+        <div class="commit-meta">
+          <span class="commit-agent" style="${agentStyle}">${agentLabel}</span>
+          <span class="commit-date">${relDate}</span>
+        </div>
+      </div>
+    `;
+    item.addEventListener('click', () => selectCommit(c));
+    list.appendChild(item);
+  });
+}
+
+function loadMore() {
+  histPage++;
+  loadHistory(true);
+}
+
+function selectCommit(c) {
+  selectedSha = c.sha;
+  document.querySelectorAll('.commit-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.sha === c.sha);
+  });
+
+  const empty = document.getElementById('histDetailEmpty');
+  const content = document.getElementById('histDetailContent');
+  const agentLabel = AGENT_LABELS[c.agent] || c.agent;
+  const agentColor = AGENT_COLORS[c.agent] || '#555';
+  const dateStr = new Date(c.date).toLocaleString('sv-SE', { dateStyle: 'medium', timeStyle: 'short' });
+
+  empty.style.display = 'none';
+  content.style.display = 'block';
+  content.innerHTML = `
+    <div class="hist-detail-content">
+      <div class="detail-label">COMMIT</div>
+      <div class="detail-sha">${c.sha}</div>
+
+      <div class="detail-label">MEDDELANDE</div>
+      <div class="detail-msg">${esc(c.message)}</div>
+
+      <div class="detail-label">DATUM</div>
+      <div class="detail-date">${dateStr}</div>
+
+      <div class="detail-label">AUTHOR</div>
+      <div class="detail-author">${esc(c.author)}</div>
+
+      <div class="detail-label">AGENT (GISSNING)</div>
+      <div class="detail-agent-badge" style="color:${agentColor};border-color:${agentColor}44;background:${agentColor}11">
+        <span style="width:7px;height:7px;border-radius:50%;background:${agentColor};display:inline-block"></span>
+        ${agentLabel}
+      </div>
+
+      <div>
+        <a href="${c.url}" target="_blank" rel="noopener" class="detail-gh-link">↗ Öppna på GitHub</a>
+      </div>
+    </div>
+  `;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function relativeTime(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60) return 'just nu';
+  if (diff < 3600) return Math.floor(diff / 60) + ' min sedan';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' tim sedan';
+  if (diff < 86400 * 30) return Math.floor(diff / 86400) + ' dagar sedan';
+  return Math.floor(diff / 86400 / 30) + ' mån sedan';
+}
+
+// ── MESH CANVAS ──────────────────────────────────────────────────────────────
 const canvas = document.getElementById('meshCanvas');
 const ctx = canvas.getContext('2d');
 let paused = false;
@@ -157,21 +404,13 @@ let selectedNode = null;
 let animFrame = 0;
 let particles = [];
 
-// ── AGENT DEFINITIONS ─────────────────────────────────────────────────────────
 const AGENTS = [
-  // Orkestratorn i mitten
   { id: 'oversikt',    name: 'BörsPulsen',   role: 'oversikt / koordinator',  type: 'core',    tools: ['All tools'], color: '#22d3ee' },
-
-  // Backend-lager
   { id: 'api',         name: 'API-Functions', role: 'netlify serverless',      type: 'backend', tools: ['Read','Edit','Write','Grep','Glob','Bash'], color: '#6366f1' },
   { id: 'market',      name: 'Market Data',   role: 'nyckeltal & kurs-analys', type: 'backend', tools: ['Read','Grep','Glob','Bash','WebFetch'], color: '#6366f1' },
   { id: 'release',     name: 'Release Verifier', role: 'säkerhet & deploy',   type: 'backend', tools: ['Read','Grep','Glob','Bash'], color: '#6366f1' },
-
-  // Frontend
   { id: 'frontend',    name: 'Frontend Eng', role: 'index.html / vanilla JS', type: 'frontend', tools: ['Read','Edit','Write','Grep','Glob','Bash'], color: '#a78bfa' },
   { id: 'design',      name: 'Design Critic', role: 'UI / premium-känsla',    type: 'frontend', tools: ['Read','Grep','Glob','Skill'], color: '#a78bfa' },
-
-  // Sektors-agenter
   { id: 'tech',        name: 'Tech',          role: 'Ericsson, Hexagon, Evo',  type: 'sector', tools: ['All tools'], color: '#34d399' },
   { id: 'finans',      name: 'Finans',        role: 'SEB, Nordea, Investor',   type: 'sector', tools: ['All tools'], color: '#34d399' },
   { id: 'industri',    name: 'Industri',      role: 'Volvo, Atlas, Sandvik',   type: 'sector', tools: ['All tools'], color: '#34d399' },
@@ -179,86 +418,73 @@ const AGENTS = [
   { id: 'halsa',       name: 'Hälsa',         role: 'Getinge, AstraZeneca',    type: 'sector', tools: ['All tools'], color: '#34d399' },
   { id: 'konsument',   name: 'Konsument',     role: 'H&M, Axfood, Amazon',     type: 'sector', tools: ['All tools'], color: '#34d399' },
   { id: 'material',    name: 'Material',      role: 'SSAB, Boliden, Hexpol',   type: 'sector', tools: ['All tools'], color: '#34d399' },
-
-  // Skills
   { id: 'brandkit',    name: 'Brandkit',      role: 'brand image generation',  type: 'skill', tools: ['Skill'], color: '#f59e0b' },
-  { id: 'design-taste','name': 'Design Taste', role: 'frontend taste v1/v2',   type: 'skill', tools: ['Skill'], color: '#f59e0b' },
+  { id: 'design-taste', name: 'Design Taste', role: 'frontend taste v1/v2',    type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'high-end',    name: 'High-End Visual', role: 'premium visual design', type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'image-code',  name: 'Image→Code',    role: 'screenshot to code',      type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'img-web',     name: 'Imagegen Web',  role: 'web image generation',    type: 'skill', tools: ['Skill'], color: '#f59e0b' },
-  { id: 'img-mob',     name: 'Imagegen Mobile','role': 'mobile image gen',     type: 'skill', tools: ['Skill'], color: '#f59e0b' },
+  { id: 'img-mob',     name: 'Imagegen Mobile', role: 'mobile image gen',      type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'brutalist',   name: 'Brutalist UI',  role: 'industrial design',       type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'minimalist',  name: 'Minimalist UI', role: 'clean & minimal',         type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'redesign',    name: 'Redesign',      role: 'existing project redesign',type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'stitch',      name: 'Stitch Taste',  role: 'stitch design system',    type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'gpt-taste',   name: 'GPT Taste',     role: 'gpt-style design',        type: 'skill', tools: ['Skill'], color: '#f59e0b' },
   { id: 'full-output', name: 'Full Output',   role: 'output enforcement',      type: 'skill', tools: ['Skill'], color: '#f59e0b' },
+  { id: 'plan',        name: 'Plan',          role: 'implementation planning', type: 'skill', tools: ['Skill'], color: '#f59e0b' },
+  { id: 'explore',     name: 'Explore',       role: 'read-only code search',   type: 'skill', tools: ['Skill'], color: '#f59e0b' },
 ];
 
-// ── CONNECTIONS ──────────────────────────────────────────────────────────────
 const LINKS = [
-  // Orkestratorn → alla lager
   ['oversikt','api'], ['oversikt','market'], ['oversikt','release'],
   ['oversikt','frontend'], ['oversikt','design'],
   ['oversikt','tech'], ['oversikt','finans'], ['oversikt','industri'],
   ['oversikt','energi'], ['oversikt','halsa'], ['oversikt','konsument'], ['oversikt','material'],
-  // Backend-interna
   ['api','market'], ['api','release'],
-  // Frontend → skills
   ['frontend','brandkit'], ['frontend','design-taste'], ['frontend','high-end'],
   ['frontend','image-code'], ['frontend','img-web'], ['frontend','img-mob'],
   ['frontend','brutalist'], ['frontend','minimalist'], ['frontend','redesign'],
   ['frontend','stitch'], ['frontend','gpt-taste'], ['frontend','full-output'],
   ['design','high-end'], ['design','stitch'], ['design','minimalist'],
-  // Sektorer → market data
   ['tech','market'], ['finans','market'], ['industri','market'],
   ['energi','market'], ['halsa','market'], ['konsument','market'], ['material','market'],
+  ['oversikt','plan'], ['oversikt','explore'],
+  ['frontend','plan'], ['api','plan'],
 ];
 
-// ── POSITIONS (beräknas när canvas-storlek är känd) ──────────────────────────
+document.getElementById('statAgents').textContent = AGENTS.length;
+document.getElementById('statLinks').textContent = LINKS.length;
+document.getElementById('bottomRight').textContent = `${AGENTS.length} AGENTS · ${LINKS.length} LINKS`;
+
 function calcPositions(W, H) {
   const cx = W / 2, cy = H / 2;
   const pos = {};
-
-  // Orkestratorn i mitten
   pos['oversikt'] = { x: cx, y: cy };
-
-  // Backend-ring (kl 11, 1, 3)
   const backendAngles = [-Math.PI*0.55, -Math.PI*0.25, 0];
   const backendR = Math.min(W, H) * 0.28;
   ['api','market','release'].forEach((id, i) => {
     pos[id] = { x: cx + Math.cos(backendAngles[i]) * backendR, y: cy + Math.sin(backendAngles[i]) * backendR };
   });
-
-  // Frontend-ring (kl 8, 10)
   const frontendAngles = [-Math.PI*0.75, -Math.PI*0.9];
-  const frontendR = Math.min(W, H) * 0.28;
   ['frontend','design'].forEach((id, i) => {
-    pos[id] = { x: cx + Math.cos(frontendAngles[i]) * frontendR, y: cy + Math.sin(frontendAngles[i]) * frontendR };
+    pos[id] = { x: cx + Math.cos(frontendAngles[i]) * Math.min(W,H)*0.28, y: cy + Math.sin(frontendAngles[i]) * Math.min(W,H)*0.28 };
   });
-
-  // Sektorer (nedre halvcirkel)
   const sectors = ['tech','finans','industri','energi','halsa','konsument','material'];
   const sectorR = Math.min(W, H) * 0.3;
   sectors.forEach((id, i) => {
     const angle = Math.PI * 0.15 + (Math.PI * 0.7 / (sectors.length - 1)) * i;
     pos[id] = { x: cx + Math.cos(angle) * sectorR, y: cy + Math.sin(angle) * sectorR };
   });
-
-  // Skills (yttre ring, vänster sida)
-  const skills = ['brandkit','design-taste','high-end','image-code','img-web','img-mob','brutalist','minimalist','redesign','stitch','gpt-taste','full-output'];
+  const skills = ['brandkit','design-taste','high-end','image-code','img-web','img-mob','brutalist','minimalist','redesign','stitch','gpt-taste','full-output','plan','explore'];
   const skillR = Math.min(W, H) * 0.42;
   skills.forEach((id, i) => {
     const angle = -Math.PI * 1.15 + (Math.PI * 0.8 / (skills.length - 1)) * i;
     pos[id] = { x: cx + Math.cos(angle) * skillR, y: cy + Math.sin(angle) * skillR };
   });
-
   return pos;
 }
 
 let positions = {};
 let nodeStates = {};
-
 function initNodeStates() {
   AGENTS.forEach(a => {
     nodeStates[a.id] = {
@@ -272,10 +498,10 @@ function initNodeStates() {
 }
 initNodeStates();
 
-// ── RESIZE ───────────────────────────────────────────────────────────────────
 function resize() {
-  const W = canvas.offsetWidth;
-  const H = canvas.parentElement.offsetHeight - 90; // minus eventlog
+  const container = canvas.parentElement;
+  const W = container.offsetWidth;
+  const H = container.offsetHeight;
   canvas.width = W;
   canvas.height = H;
   positions = calcPositions(W, H);
@@ -283,20 +509,12 @@ function resize() {
 window.addEventListener('resize', resize);
 setTimeout(resize, 10);
 
-// ── DRAW ─────────────────────────────────────────────────────────────────────
 function drawNode(agent, x, y, selected) {
   const st = nodeStates[agent.id];
   const w = agent.id === 'oversikt' ? 130 : 110;
   const h = agent.id === 'oversikt' ? 56 : 44;
   const r = 6;
-
-  // Glow om selected
-  if (selected) {
-    ctx.shadowColor = agent.color;
-    ctx.shadowBlur = 20;
-  }
-
-  // Box
+  if (selected) { ctx.shadowColor = agent.color; ctx.shadowBlur = 20; }
   ctx.beginPath();
   ctx.roundRect(x - w/2, y - h/2, w, h, r);
   ctx.fillStyle = selected ? '#0d1117' : '#080808';
@@ -305,27 +523,19 @@ function drawNode(agent, x, y, selected) {
   ctx.lineWidth = selected ? 1.5 : 0.8;
   ctx.stroke();
   ctx.shadowBlur = 0;
-
-  // Aktivitets-bar
   const barW = (w - 16) * Math.max(0.05, st.activity);
   ctx.fillStyle = agent.color + '33';
   ctx.fillRect(x - w/2 + 8, y + h/2 - 7, w - 16, 3);
   ctx.fillStyle = agent.color;
   ctx.fillRect(x - w/2 + 8, y + h/2 - 7, barW, 3);
-
-  // Status-dot
   ctx.beginPath();
   ctx.arc(x - w/2 + 10, y - h/2 + 10, 3, 0, Math.PI * 2);
   ctx.fillStyle = agent.type === 'skill' ? '#f59e0b' : (st.activity > 0.5 ? '#4ade80' : '#facc15');
   ctx.fill();
-
-  // Namn
   ctx.fillStyle = selected ? '#fff' : '#ccc';
   ctx.font = `${agent.id === 'oversikt' ? 600 : 500} ${agent.id === 'oversikt' ? 12 : 11}px "SF Mono", ui-monospace, monospace`;
   ctx.textAlign = 'center';
   ctx.fillText(agent.name, x, y - 4);
-
-  // Roll
   ctx.fillStyle = '#444';
   ctx.font = '9px "SF Mono", ui-monospace, monospace';
   ctx.fillText(agent.role.length > 18 ? agent.role.slice(0, 17) + '…' : agent.role, x, y + 10);
@@ -340,13 +550,11 @@ function drawLink(x1, y1, x2, y2, color, alpha) {
   ctx.stroke();
 }
 
-// Partiklar som rör sig längs linjer
 function spawnParticle() {
   if (particles.length > 80) return;
   const link = LINKS[Math.floor(Math.random() * LINKS.length)];
   const [fromId, toId] = Math.random() > 0.5 ? link : [link[1], link[0]];
-  const from = positions[fromId];
-  const to = positions[toId];
+  const from = positions[fromId], to = positions[toId];
   if (!from || !to) return;
   const agent = AGENTS.find(a => a.id === fromId);
   particles.push({ from, to, t: 0, speed: 0.008 + Math.random() * 0.012, color: agent ? agent.color : '#22d3ee' });
@@ -355,8 +563,6 @@ function spawnParticle() {
 function draw() {
   if (!canvas.width) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Linjer
   LINKS.forEach(([a, b]) => {
     const pa = positions[a], pb = positions[b];
     if (!pa || !pb) return;
@@ -364,8 +570,6 @@ function draw() {
     const isSelectedLink = selectedNode && (selectedNode.id === a || selectedNode.id === b);
     drawLink(pa.x, pa.y, pb.x, pb.y, agentA ? agentA.color : '#22d3ee', isSelectedLink ? 0.25 : 0.08);
   });
-
-  // Partiklar
   particles.forEach(p => {
     const px = p.from.x + (p.to.x - p.from.x) * p.t;
     const py = p.from.y + (p.to.y - p.from.y) * p.t;
@@ -376,56 +580,29 @@ function draw() {
     ctx.fill();
     ctx.globalAlpha = 1;
   });
-
-  // Noder
   AGENTS.forEach(agent => {
     const p = positions[agent.id];
     if (!p) return;
     drawNode(agent, p.x, p.y, selectedNode && selectedNode.id === agent.id);
   });
-
   animFrame++;
 }
 
 function tick() {
   if (!paused) {
-    // Flytta partiklar
     particles = particles.filter(p => p.t < 1);
     particles.forEach(p => { p.t += p.speed; });
     if (animFrame % 12 === 0) spawnParticle();
-
-    // Uppdatera node-aktivitet
     if (animFrame % 30 === 0) {
       AGENTS.forEach(a => {
         nodeStates[a.id].activity = Math.max(0.05, Math.min(1, nodeStates[a.id].activity + (Math.random() - 0.48) * 0.15));
       });
     }
     draw();
-    updateStats();
   }
   requestAnimationFrame(tick);
 }
 
-// ── STATS ─────────────────────────────────────────────────────────────────────
-let statTokens = 180, statLatency = 320, statThrough = 22, statQueue = 3, statMsgs = 1240;
-function updateStats() {
-  if (animFrame % 45 !== 0) return;
-  statTokens  = Math.max(50, statTokens  + Math.floor((Math.random()-0.45)*30));
-  statLatency = Math.max(80, statLatency + Math.floor((Math.random()-0.5)*60));
-  statThrough = Math.max(5,  statThrough + Math.floor((Math.random()-0.45)*5));
-  statQueue   = Math.max(0,  Math.floor(Math.random()*8));
-  statMsgs   += Math.floor(Math.random()*8);
-  document.getElementById('statTokens').textContent  = statTokens;
-  document.getElementById('statLatency').textContent = statLatency + 'ms';
-  document.getElementById('statThrough').textContent = statThrough;
-  document.getElementById('statQueue').textContent   = statQueue;
-  document.getElementById('statMsgs').textContent    = statMsgs;
-
-  // Uppdatera metrics för vald nod
-  if (selectedNode) updateInspector(selectedNode);
-}
-
-// ── EVENT LOG ─────────────────────────────────────────────────────────────────
 const LOG_MSGS = [
   ['task',   'Hämtar kurs för ERIC-B via Finnhub'],
   ['result', 'P/E beräknat: 22.4 — returnerat till frontend'],
@@ -439,9 +616,6 @@ const LOG_MSGS = [
   ['result', '12 aktier matchar screener-kriterierna'],
   ['data',   'Insider-affär: Volvo-chef köpte 50k aktier'],
   ['route',  'Release-check → inga läckta nycklar hittade'],
-  ['task',   'AI-analys för Hexagon B → läge: Värdering'],
-  ['result', 'Nyhetsradar: Ericsson nämndes i 4 artiklar'],
-  ['data',   'Utdelningskalender uppdaterad: Nordea ex-dag 15 aug'],
 ];
 let logIdx = 0;
 function addLog() {
@@ -458,12 +632,10 @@ function addLog() {
 }
 setInterval(addLog, 2200);
 
-// ── INSPECTOR ─────────────────────────────────────────────────────────────────
 function updateInspector(agent) {
   const st = nodeStates[agent.id];
   document.getElementById('inspectorEmpty').style.display = 'none';
   document.getElementById('inspectorContent').style.display = 'flex';
-
   document.getElementById('iName').textContent = agent.name;
   document.getElementById('iRole').textContent = agent.role;
   const dot = document.getElementById('iStatusDot');
@@ -473,22 +645,14 @@ function updateInspector(agent) {
   document.getElementById('iLatency').textContent = st.latency + 'ms';
   document.getElementById('iMsgs').textContent    = st.msgs;
   document.getElementById('iRate').textContent    = st.rate;
-
-  // Connections
-  const conns = LINKS.filter(([a,b]) => a === agent.id || b === agent.id)
-    .map(([a,b]) => a === agent.id ? b : a);
-  const connEl = document.getElementById('iConnections');
-  connEl.innerHTML = conns.map(id => {
+  const conns = LINKS.filter(([a,b]) => a === agent.id || b === agent.id).map(([a,b]) => a === agent.id ? b : a);
+  document.getElementById('iConnections').innerHTML = conns.map(id => {
     const a = AGENTS.find(x => x.id === id);
     return `<div class="conn-item"><div class="conn-dot" style="background:${a?.color||'#22d3ee'}"></div>${a?.name || id}</div>`;
   }).join('');
-
-  // Tools
-  const toolEl = document.getElementById('iTools');
-  toolEl.innerHTML = agent.tools.map(t => `<span class="tool-tag">${t}</span>`).join('');
+  document.getElementById('iTools').innerHTML = agent.tools.map(t => `<span class="tool-tag">${t}</span>`).join('');
 }
 
-// ── CLICK ─────────────────────────────────────────────────────────────────────
 canvas.addEventListener('click', e => {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left, my = e.clientY - rect.top;
@@ -500,26 +664,14 @@ canvas.addEventListener('click', e => {
     const h = agent.id === 'oversikt' ? 56 : 44;
     if (mx >= p.x - w/2 && mx <= p.x + w/2 && my >= p.y - h/2 && my <= p.y + h/2) found = agent;
   });
-  if (found) {
-    selectedNode = found;
-    updateInspector(found);
-  } else {
+  if (found) { selectedNode = found; updateInspector(found); }
+  else {
     selectedNode = null;
     document.getElementById('inspectorEmpty').style.display = 'flex';
     document.getElementById('inspectorContent').style.display = 'none';
   }
 });
 
-// ── PAUSE ─────────────────────────────────────────────────────────────────────
-document.getElementById('pauseBtn').addEventListener('click', function() {
-  paused = !paused;
-  this.textContent = paused ? '▶ RESUME' : '⏸ PAUSE';
-});
-
-// ── LINK COUNT ────────────────────────────────────────────────────────────────
-document.getElementById('linkCount').textContent = LINKS.length + ' LINKS';
-
-// ── START ─────────────────────────────────────────────────────────────────────
 tick();
 </script>
 </body>
