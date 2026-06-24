@@ -1,5 +1,12 @@
-// netlify/functions/stock-profile.js
-// Hämtar bolagsprofil, aktuell kurs och bolagsnyheter från Finnhub
+/**
+ * BörsPulsen — Bolagsprofil (Finnhub)
+ *
+ * Hämtar bolagsprofil (namn, sektor, logo, hemsida), aktuell kurs
+ * och bolagsnyheter från Finnhub.
+ *
+ * Miljövariabel: FINNHUB_TOKEN
+ * Anropas av frontend: GET /.netlify/functions/stock-profile?symbol=VOLV-B.ST
+ */
 
 exports.handler = async function (event) {
   const CORS = {

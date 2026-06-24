@@ -1,6 +1,13 @@
-// netlify/functions/stock-fundamentals.js
-// Hämtar nyckeltal (P/E, P/S, P/B m.m.) från Yahoo Finance för svenska aktier
-// Finnhub saknar dessa för OMXSTO på gratis-nivå, Yahoo Finance är gratis och täcker .ST-aktier
+/**
+ * BörsPulsen — Nyckeltal (Yahoo Finance)
+ *
+ * Hämtar P/E, P/S, P/B, direktavkastning m.m. från Yahoo Finance.
+ * Finnhub saknar fundamentals för OMXSTO på gratis-nivå; Yahoo täcker .ST-aktier gratis.
+ *
+ * Symbol-konvertering: Finnhub OMXSTO:ERIC-B → Yahoo ERIC-B.ST
+ * Miljövariabel: – (Yahoo Finance är öppet)
+ * Anropas av frontend: GET /.netlify/functions/stock-fundamentals?symbol=OMXSTO:ERIC-B
+ */
 
 exports.handler = async function (event) {
   const CORS = {
