@@ -31,6 +31,26 @@ pekar på Higgsfields CDN.
 - **Länk:** https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_174715_111a290b-de7f-47c0-be90-a62e15f8e1d3.mp4
 - Gjord om utifrån v1:s analys: snabb sifferräkning, ljusblixt och stapel-shoot-up under första sekunden i stället för långsam inzoom, för att stärka hooken. Ej omanalyserad ännu.
 
+## Bild-annonser, batch 2 — fem vinklar
+
+Alla 1:1, `marketing_studio_image`, 2 credits styck.
+
+1. **"Följ börsen i realtid"** — real-time ticker/candlestick-hook
+   `borspulsen-ad-02-realtid.png`
+   https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_220401_1e7d390e-8e4a-4067-988c-7859abf9c037.png
+2. **"Alla sektorer. En app."** — sektor-ikoner (tech, finans, industri, hälsa, energi, material, konsument)
+   `borspulsen-ad-03-sektorer.png`
+   https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_220404_cf56cb6f-99e3-42d1-9d58-69802ec13aea.png
+3. **"Din AI-analytiker, dygnet runt"** — AI-chatten
+   `borspulsen-ad-04-ai-chatt.png`
+   https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_220406_0aab379b-3f86-4f26-9169-5a00554696e8.png
+4. **"Börsen i fickan"** — mobil/på språng, Stockholm-vibe
+   `borspulsen-ad-05-fickan.png`
+   https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_220409_79d42ee0-7b2d-4d9f-ada7-b0f2b9b2101b.png
+5. **"Nyckeltal på sekunden"** — fundamentals-dashboard (P/E, P/S, direktavkastning, EPS)
+   `borspulsen-ad-06-nyckeltal.png`
+   https://d8j0ntlcm91z4.cloudfront.net/user_3G2wAw6WsqfnaabNwuVdELnfyQP/hf_20260704_220412_f5c3b0df-407e-40c2-90c9-231b77a0ffe9.png
+
 ## Känt problem — filer ej nedladdade
 
 Sandboxens nätverksproxy blockerar (403) utgående anrop till Higgsfields
