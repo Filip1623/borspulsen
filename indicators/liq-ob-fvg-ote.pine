@@ -1,0 +1,340 @@
+//@version=6
+indicator("ICT AMD Toolkit — Liquidity/OB/FVG/OTE/Objectives", shorttitle="ICT AMD Toolkit", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+
+// ============================================================
+// Bygger på ICT:s Accumulation → Manipulation → Distribution-modell,
+// likt en handmarkerad "Judas Swing"-chart:
+//   - Accumulation range (auto-detekterad konsolidering)
+//   - Manipulation / Sell-/Buy-Stops sweep + SMR-pil
+//   - BMS (Break of Market Structure)
+//   - Order Blocks (märkta LRB/LRS)
+//   - Fair Value Gaps (mitigeras och städas bort)
+//   - OTE retracement-zon
+//   - Risk:Reward-objectives (1:4 / 1:6 / 1:9) från stop → entry
+//   - Buy-Side / Sell-Side Liquidity-linjer
+//   - Auto-trendlinjer (motstånd/stöd mellan senaste swings)
+//   - London Open-session
+// Allt är heuristiskt/auto-genererat — en diskretionär trader ritar
+// sina rutor lite friare, men logiken och namnen följer samma modell.
+// Alla färger går att ändra i inputs nedan.
+// ============================================================
+
+// ============= INPUTS: STRUKTUR =============
+grpStruct = "Struktur"
+swingLen    = input.int(5, "Swing Lookback", minval=2, group=grpStruct)
+maxLabels   = input.int(12, "Max antal etiketter på chartet", minval=1, maxval=100, group=grpStruct)
+
+// ============= INPUTS: LIQUIDITY LINES =============
+grpLiq = "Liquidity (Buy-Side / Sell-Side)"
+showLiqLines  = input.bool(true, "Visa Buy-Side / Sell-Side Liquidity", group=grpLiq)
+colorBuySide  = input.color(color.new(color.red, 20),  "Buy-Side Liquidity-färg", group=grpLiq)
+colorSellSide = input.color(color.new(color.lime, 20), "Sell-Side Liquidity-färg", group=grpLiq)
+showPDHL      = input.bool(true, "Visa föregående dags High/Low", group=grpLiq)
+colorPDH      = input.color(color.new(color.orange, 40), "PDH-färg", group=grpLiq)
+colorPDL      = input.color(color.new(color.blue, 40),   "PDL-färg", group=grpLiq)
+
+// ============= INPUTS: MANIPULATION / SMR =============
+grpManip = "Accumulation / Manipulation / SMR"
+showAccum       = input.bool(true, "Visa Accumulation-zon", group=grpManip)
+rangeLookback   = input.int(15, "Accumulation lookback (bars)", minval=3, group=grpManip)
+colorAccum      = input.color(color.new(color.gray, 85), "Accumulation-färg", group=grpManip)
+showManip       = input.bool(true, "Visa Manipulation / Stops-sweep", group=grpManip)
+colorManipBull  = input.color(color.new(color.lime, 0), "Sell-Stops sweep-färg (bullish setup)", group=grpManip)
+colorManipBear  = input.color(color.new(color.red, 0),  "Buy-Stops sweep-färg (bearish setup)", group=grpManip)
+showSMR         = input.bool(true, "Visa SMR-pil (Smart Money Reversal)", group=grpManip)
+colorSMRBull    = input.color(color.blue, "SMR-pil färg (bullish)", group=grpManip)
+colorSMRBear    = input.color(color.fuchsia, "SMR-pil färg (bearish)", group=grpManip)
+
+// ============= INPUTS: BMS =============
+grpBMS = "BMS (Break of Market Structure)"
+showBMS      = input.bool(true, "Visa BMS", group=grpBMS)
+colorBMSBull = input.color(color.green,  "BMS-färg (bullish)", group=grpBMS)
+colorBMSBear = input.color(color.maroon, "BMS-färg (bearish)", group=grpBMS)
+
+// ============= INPUTS: FVG =============
+grpFVG = "Fair Value Gap"
+showFVG         = input.bool(true, "Visa FVG", group=grpFVG)
+colorFVGBull    = input.color(color.new(color.teal, 80), "Bullish FVG-färg", group=grpFVG)
+colorFVGBear    = input.color(color.new(color.red, 80),  "Bearish FVG-färg", group=grpFVG)
+fvgMaxBars      = input.int(80, "FVG max extend (bars)", minval=5, group=grpFVG)
+fvgMaxCount     = input.int(15, "Max antal aktiva FVG", minval=1, maxval=100, group=grpFVG)
+fvgRemoveFilled = input.bool(true, "Ta bort FVG när den fyllts", group=grpFVG)
+
+// ============= INPUTS: ORDER BLOCKS (LRB/LRS) =============
+grpOB = "Order Blocks (LRB / LRS)"
+showOB            = input.bool(true, "Visa Order Blocks", group=grpOB)
+colorOBBull       = input.color(color.new(color.lime, 85), "LRB-färg (bullish OB)", group=grpOB)
+colorOBBear       = input.color(color.new(color.red, 85),  "LRS-färg (bearish OB)", group=grpOB)
+obExtend          = input.int(20, "OB extend (bars)", minval=5, group=grpOB)
+obMaxCount        = input.int(10, "Max antal aktiva OB", minval=1, maxval=100, group=grpOB)
+obRemoveMitigated = input.bool(true, "Ta bort OB när den mitigerats", group=grpOB)
+
+// ============= INPUTS: OTE =============
+grpOTE = "OTE"
+showOTE   = input.bool(true, "Visa OTE-zon (61.8%-79%)", group=grpOTE)
+colorOTE  = input.color(color.new(color.orange, 85), "OTE-färg", group=grpOTE)
+
+// ============= INPUTS: OBJECTIVES (Risk:Reward) =============
+grpObj = "Objectives (Risk:Reward)"
+showObjectives = input.bool(true, "Visa Objectives 1:4 / 1:6 / 1:9", group=grpObj)
+rr1 = input.float(4, "Första Objective (R)", group=grpObj)
+rr2 = input.float(6, "Andra Objective (R)", group=grpObj)
+rr3 = input.float(9, "Tredje Objective (R)", group=grpObj)
+colorObj1 = input.color(color.new(color.red, 60),   "Färg Första Objective", group=grpObj)
+colorObj2 = input.color(color.new(color.blue, 60),  "Färg Andra Objective", group=grpObj)
+colorObj3 = input.color(color.new(color.green, 60), "Färg Tredje Objective", group=grpObj)
+objZoneWidth = input.int(20, "Objective-zon bredd (bars)", minval=2, group=grpObj)
+
+// ============= INPUTS: TRENDLINJER =============
+grpTrend = "Auto-trendlinjer"
+showTrendlines = input.bool(true, "Visa auto-trendlinjer", group=grpTrend)
+colorResTrend  = input.color(color.new(color.aqua, 30), "Motstånds-trendlinje", group=grpTrend)
+colorSupTrend  = input.color(color.new(color.yellow, 30), "Stöd-trendlinje", group=grpTrend)
+
+// ============= INPUTS: SESSION =============
+grpSess = "Session (London Open)"
+showSession = input.bool(true, "Highlighta session", group=grpSess)
+sessionTime = input.session("0800-1000", "Session (Exchange Time)", group=grpSess)
+colorSession = input.color(color.new(color.purple, 88), "Session-färg", group=grpSess)
+
+// ============= PREVIOUS DAY HIGH/LOW =============
+[pdh, pdl] = request.security(syminfo.tickerid, "D", [high[1], low[1]], lookahead=barmerge.lookahead_off)
+plot(showPDHL ? pdh : na, "PDH (Buy Stops)",  color=colorPDH, style=plot.style_stepline, linewidth=1)
+plot(showPDHL ? pdl : na, "PDL (Sell Stops)", color=colorPDL, style=plot.style_stepline, linewidth=1)
+
+// ============= SESSION HIGHLIGHT =============
+inSession = not na(time(timeframe.period, sessionTime))
+bgcolor(showSession and inSession ? colorSession : na)
+
+// ============= LABEL-STÄDNING =============
+var array<label> allLabels = array.new<label>()
+manageLabel(lbl) =>
+    array.push(allLabels, lbl)
+    if array.size(allLabels) > maxLabels
+        label.delete(array.shift(allLabels))
+
+// ============= SWING STRUCTURE =============
+swingHigh = ta.pivothigh(high, swingLen, swingLen)
+swingLow  = ta.pivotlow(low, swingLen, swingLen)
+
+var float lastSwingHigh    = na
+var float lastSwingLow     = na
+var int   lastSwingHighBar = na
+var int   lastSwingLowBar  = na
+var float prevSwingHigh    = na
+var int   prevSwingHighBar = na
+var float prevSwingLow     = na
+var int   prevSwingLowBar  = na
+
+var line resTrendLine = na
+var line supTrendLine = na
+
+if not na(swingHigh)
+    prevSwingHigh := lastSwingHigh
+    prevSwingHighBar := lastSwingHighBar
+    lastSwingHigh := swingHigh
+    lastSwingHighBar := bar_index - swingLen
+    if showTrendlines and not na(prevSwingHigh)
+        line.delete(resTrendLine)
+        resTrendLine := line.new(prevSwingHighBar, prevSwingHigh, lastSwingHighBar, lastSwingHigh, extend=extend.right, color=colorResTrend, width=1)
+
+if not na(swingLow)
+    prevSwingLow := lastSwingLow
+    prevSwingLowBar := lastSwingLowBar
+    lastSwingLow := swingLow
+    lastSwingLowBar := bar_index - swingLen
+    if showTrendlines and not na(prevSwingLow)
+        line.delete(supTrendLine)
+        supTrendLine := line.new(prevSwingLowBar, prevSwingLow, lastSwingLowBar, lastSwingLow, extend=extend.right, color=colorSupTrend, width=1)
+
+// ============= BUY-SIDE / SELL-SIDE LIQUIDITY LINES =============
+var line buySideLine  = na
+var line sellSideLine = na
+
+if showLiqLines and not na(lastSwingHigh)
+    line.delete(buySideLine)
+    buySideLine := line.new(lastSwingHighBar, lastSwingHigh, bar_index, lastSwingHigh, extend=extend.right, color=colorBuySide, style=line.style_dashed)
+if showLiqLines and not na(lastSwingLow)
+    line.delete(sellSideLine)
+    sellSideLine := line.new(lastSwingLowBar, lastSwingLow, bar_index, lastSwingLow, extend=extend.right, color=colorSellSide, style=line.style_dashed)
+
+// ============= MANIPULATION: LIQUIDITY SWEEPS =============
+bearManip = showManip and not na(lastSwingHigh) and high > lastSwingHigh and close < lastSwingHigh
+bullManip = showManip and not na(lastSwingLow)  and low  < lastSwingLow  and close > lastSwingLow
+
+var float bullStop = na, var int bullSweepBar = na, var bool bullPendingBMS = false, var bool bullActive = false
+var float bearStop = na, var int bearSweepBar = na, var bool bearPendingBMS = false, var bool bearActive = false
+
+var box accumBoxBull = na
+var box accumBoxBear = na
+
+if bullManip
+    manageLabel(label.new(bar_index, low, "Sell Stops", style=label.style_label_up, color=colorManipBull, textcolor=color.black, size=size.tiny))
+    if showSMR
+        manageLabel(label.new(bar_index, low, "SMR", style=label.style_triangleup, color=colorSMRBull, textcolor=color.white, size=size.small, yloc=yloc.belowbar))
+    bullStop := low
+    bullSweepBar := bar_index
+    bullPendingBMS := true
+    if showAccum
+        box.delete(accumBoxBull)
+        accumBoxBull := box.new(bar_index - rangeLookback, ta.highest(high[1], rangeLookback), bar_index, lastSwingLow, border_color=na, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
+
+if bearManip
+    manageLabel(label.new(bar_index, high, "Buy Stops", style=label.style_label_down, color=colorManipBear, textcolor=color.white, size=size.tiny))
+    if showSMR
+        manageLabel(label.new(bar_index, high, "SMR", style=label.style_triangledown, color=colorSMRBear, textcolor=color.white, size=size.small, yloc=yloc.abovebar))
+    bearStop := high
+    bearSweepBar := bar_index
+    bearPendingBMS := true
+    if showAccum
+        box.delete(accumBoxBear)
+        accumBoxBear := box.new(bar_index - rangeLookback, lastSwingHigh, bar_index, ta.lowest(low[1], rangeLookback), border_color=na, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
+
+// ============= BMS (BREAK OF MARKET STRUCTURE) =============
+bmsUp   = not na(lastSwingHigh) and ta.crossover(close, lastSwingHigh)
+bmsDown = not na(lastSwingLow)  and ta.crossunder(close, lastSwingLow)
+
+var line bmsLineBull = na
+var line bmsLineBear = na
+var line objLine1Bull = na, var line objLine2Bull = na, var line objLine3Bull = na
+var line objLine1Bear = na, var line objLine2Bear = na, var line objLine3Bear = na
+var box  objZone1Bull = na, var box objZone2Bull = na, var box objZone3Bull = na
+var box  objZone1Bear = na, var box objZone2Bear = na, var box objZone3Bear = na
+var float bullEntry = na, var float bullRisk = na
+var float bearEntry = na, var float bearRisk = na
+
+if bmsUp and bullPendingBMS
+    bullPendingBMS := false
+    bullActive := true
+    bullEntry := close
+    bullRisk := bullEntry - bullStop
+    if showBMS
+        line.delete(bmsLineBull)
+        bmsLineBull := line.new(bullSweepBar, lastSwingHigh, bar_index, lastSwingHigh, color=colorBMSBull, style=line.style_dashed, width=1)
+        manageLabel(label.new(bar_index, high, "BMS", style=label.style_label_down, color=colorBMSBull, textcolor=color.white, size=size.tiny))
+    if showObjectives and bullRisk > 0
+        line.delete(objLine1Bull)
+        line.delete(objLine2Bull)
+        line.delete(objLine3Bull)
+        box.delete(objZone1Bull)
+        box.delete(objZone2Bull)
+        box.delete(objZone3Bull)
+        obj1 = bullEntry + bullRisk * rr1
+        obj2 = bullEntry + bullRisk * rr2
+        obj3 = bullEntry + bullRisk * rr3
+        objLine1Bull := line.new(bar_index, obj1, bar_index + objZoneWidth, obj1, extend=extend.right, color=colorObj1, style=line.style_dashed)
+        objLine2Bull := line.new(bar_index, obj2, bar_index + objZoneWidth, obj2, extend=extend.right, color=colorObj2, style=line.style_dashed)
+        objLine3Bull := line.new(bar_index, obj3, bar_index + objZoneWidth, obj3, extend=extend.right, color=colorObj3, style=line.style_dashed)
+        objZone1Bull := box.new(bar_index, obj1 + bullRisk * 0.1, bar_index + objZoneWidth, obj1 - bullRisk * 0.1, border_color=na, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
+        objZone2Bull := box.new(bar_index, obj2 + bullRisk * 0.1, bar_index + objZoneWidth, obj2 - bullRisk * 0.1, border_color=na, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
+        objZone3Bull := box.new(bar_index, obj3 + bullRisk * 0.1, bar_index + objZoneWidth, obj3 - bullRisk * 0.1, border_color=na, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
+
+if bmsDown and bearPendingBMS
+    bearPendingBMS := false
+    bearActive := true
+    bearEntry := close
+    bearRisk := bearStop - bearEntry
+    if showBMS
+        line.delete(bmsLineBear)
+        bmsLineBear := line.new(bearSweepBar, lastSwingLow, bar_index, lastSwingLow, color=colorBMSBear, style=line.style_dashed, width=1)
+        manageLabel(label.new(bar_index, low, "BMS", style=label.style_label_up, color=colorBMSBear, textcolor=color.white, size=size.tiny))
+    if showObjectives and bearRisk > 0
+        line.delete(objLine1Bear)
+        line.delete(objLine2Bear)
+        line.delete(objLine3Bear)
+        box.delete(objZone1Bear)
+        box.delete(objZone2Bear)
+        box.delete(objZone3Bear)
+        obj1b = bearEntry - bearRisk * rr1
+        obj2b = bearEntry - bearRisk * rr2
+        obj3b = bearEntry - bearRisk * rr3
+        objLine1Bear := line.new(bar_index, obj1b, bar_index + objZoneWidth, obj1b, extend=extend.right, color=colorObj1, style=line.style_dashed)
+        objLine2Bear := line.new(bar_index, obj2b, bar_index + objZoneWidth, obj2b, extend=extend.right, color=colorObj2, style=line.style_dashed)
+        objLine3Bear := line.new(bar_index, obj3b, bar_index + objZoneWidth, obj3b, extend=extend.right, color=colorObj3, style=line.style_dashed)
+        objZone1Bear := box.new(bar_index, obj1b + bearRisk * 0.1, bar_index + objZoneWidth, obj1b - bearRisk * 0.1, border_color=na, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
+        objZone2Bear := box.new(bar_index, obj2b + bearRisk * 0.1, bar_index + objZoneWidth, obj2b - bearRisk * 0.1, border_color=na, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
+        objZone3Bear := box.new(bar_index, obj3b + bearRisk * 0.1, bar_index + objZoneWidth, obj3b - bearRisk * 0.1, border_color=na, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
+
+// Ogiltigförklara setup om priset stänger tillbaka igenom stop
+if bullActive and close < bullStop
+    bullActive := false
+if bearActive and close > bearStop
+    bearActive := false
+
+// ============= FAIR VALUE GAP (3-candle imbalance) =============
+type FvgBox
+    box   b
+    bool  isBull
+    float top
+    float bottom
+
+var array<FvgBox> fvgBoxes = array.new<FvgBox>()
+
+bullFVG = low  > high[2]
+bearFVG = high < low[2]
+
+if showFVG and bullFVG
+    newFvg = box.new(bar_index[2], high[2], bar_index + fvgMaxBars, low, border_color=na, bgcolor=colorFVGBull)
+    array.push(fvgBoxes, FvgBox.new(newFvg, true, low, high[2]))
+if showFVG and bearFVG
+    newFvg = box.new(bar_index[2], low[2], bar_index + fvgMaxBars, high, border_color=na, bgcolor=colorFVGBear)
+    array.push(fvgBoxes, FvgBox.new(newFvg, false, low[2], high))
+
+if array.size(fvgBoxes) > 0
+    for i = array.size(fvgBoxes) - 1 to 0
+        f = array.get(fvgBoxes, i)
+        filled = fvgRemoveFilled and (f.isBull ? close < f.top : close > f.bottom)
+        expired = bar_index >= box.get_right(f.b)
+        if filled or expired
+            box.delete(f.b)
+            array.remove(fvgBoxes, i)
+    if array.size(fvgBoxes) > fvgMaxCount
+        oldestFvg = array.shift(fvgBoxes)
+        box.delete(oldestFvg.b)
+
+// ============= ORDER BLOCKS (LRB / LRS) =============
+type ObBox
+    box   b
+    bool  isBull
+    float top
+    float bottom
+
+var array<ObBox> obBoxes = array.new<ObBox>()
+
+bigMove = (high - low) > ta.atr(14)
+bullOB  = showOB and close[1] < open[1] and close > open and close > high[1] and bigMove
+bearOB  = showOB and close[1] > open[1] and close < open and close < low[1]  and bigMove
+
+if bullOB
+    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBull, bgcolor=colorOBBull, text="LRB", text_size=size.tiny)
+    array.push(obBoxes, ObBox.new(newOb, true, high[1], low[1]))
+if bearOB
+    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBear, bgcolor=colorOBBear, text="LRS", text_size=size.tiny)
+    array.push(obBoxes, ObBox.new(newOb, false, high[1], low[1]))
+
+if array.size(obBoxes) > 0
+    for i = array.size(obBoxes) - 1 to 0
+        o = array.get(obBoxes, i)
+        mitigated = obRemoveMitigated and (o.isBull ? close < o.bottom : close > o.top)
+        expired = bar_index >= box.get_right(o.b)
+        if mitigated or expired
+            box.delete(o.b)
+            array.remove(obBoxes, i)
+        else
+            box.set_right(o.b, bar_index + obExtend)
+    if array.size(obBoxes) > obMaxCount
+        oldestOb = array.shift(obBoxes)
+        box.delete(oldestOb.b)
+
+// ============= OTE ZONE (61.8% - 79% retracement) =============
+var box oteBox = na
+newSwing = not na(swingHigh) or not na(swingLow)
+
+if showOTE and newSwing and not na(lastSwingHigh) and not na(lastSwingLow)
+    bullishRetrace = lastSwingHighBar > lastSwingLowBar
+    oteRange   = lastSwingHigh - lastSwingLow
+    oteTop     = bullishRetrace ? lastSwingLow + oteRange * 0.382 : lastSwingHigh - oteRange * 0.21
+    oteBot     = bullishRetrace ? lastSwingLow + oteRange * 0.21  : lastSwingHigh - oteRange * 0.382
+    oteLeftBar = bullishRetrace ? lastSwingLowBar : lastSwingHighBar
+    box.delete(oteBox)
+    oteBox := box.new(oteLeftBar, oteTop, bar_index, oteBot, border_color=colorOTE, bgcolor=colorOTE, extend=extend.right, text="Retracement OTE", text_size=size.tiny)
