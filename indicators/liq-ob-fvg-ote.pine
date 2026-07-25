@@ -37,13 +37,16 @@ colorPDL      = input.color(color.new(color.blue, 40),   "PDL-färg", group=grpL
 grpManip = "Accumulation / Manipulation / SMR"
 showAccum       = input.bool(true, "Visa Accumulation-zon", group=grpManip)
 rangeLookback   = input.int(15, "Accumulation lookback (bars)", minval=3, group=grpManip)
-colorAccum      = input.color(color.new(color.gray, 85), "Accumulation-färg", group=grpManip)
+colorAccum      = input.color(color.new(color.gray, 85), "Accumulation-fyllnad", group=grpManip)
+colorAccumBorder = input.color(color.gray, "Accumulation-kantfärg", group=grpManip)
 showManip       = input.bool(true, "Visa Manipulation / Stops-sweep", group=grpManip)
+manipMarkerStyle = input.string("Etikett", "Manipulation-markör form", options=["Etikett", "Triangel", "Pil", "Cirkel", "Kryss", "Diamant"], group=grpManip)
 colorManipBull  = input.color(color.new(color.lime, 0), "Sell-Stops sweep-färg (bullish setup)", group=grpManip)
 colorManipBear  = input.color(color.new(color.red, 0),  "Buy-Stops sweep-färg (bearish setup)", group=grpManip)
-showSMR         = input.bool(true, "Visa SMR-pil (Smart Money Reversal)", group=grpManip)
-colorSMRBull    = input.color(color.blue, "SMR-pil färg (bullish)", group=grpManip)
-colorSMRBear    = input.color(color.fuchsia, "SMR-pil färg (bearish)", group=grpManip)
+showSMR         = input.bool(true, "Visa SMR-markör (Smart Money Reversal)", group=grpManip)
+smrMarkerStyle  = input.string("Triangel", "SMR-markör form", options=["Etikett", "Triangel", "Pil", "Cirkel", "Kryss", "Diamant"], group=grpManip)
+colorSMRBull    = input.color(color.blue, "SMR-markör färg (bullish)", group=grpManip)
+colorSMRBear    = input.color(color.fuchsia, "SMR-markör färg (bearish)", group=grpManip)
 
 // ============= INPUTS: BMS =============
 grpBMS = "BMS (Break of Market Structure)"
@@ -54,8 +57,10 @@ colorBMSBear = input.color(color.maroon, "BMS-färg (bearish)", group=grpBMS)
 // ============= INPUTS: FVG =============
 grpFVG = "Fair Value Gap"
 showFVG         = input.bool(true, "Visa FVG", group=grpFVG)
-colorFVGBull    = input.color(color.new(color.teal, 80), "Bullish FVG-färg", group=grpFVG)
-colorFVGBear    = input.color(color.new(color.red, 80),  "Bearish FVG-färg", group=grpFVG)
+colorFVGBull    = input.color(color.new(color.teal, 80), "Bullish FVG-fyllnad", group=grpFVG)
+colorFVGBullBorder = input.color(color.teal, "Bullish FVG-kantfärg", group=grpFVG)
+colorFVGBear    = input.color(color.new(color.red, 80),  "Bearish FVG-fyllnad", group=grpFVG)
+colorFVGBearBorder = input.color(color.red, "Bearish FVG-kantfärg", group=grpFVG)
 fvgMaxBars      = input.int(80, "FVG max extend (bars)", minval=5, group=grpFVG)
 fvgMaxCount     = input.int(15, "Max antal aktiva FVG", minval=1, maxval=100, group=grpFVG)
 fvgRemoveFilled = input.bool(true, "Ta bort FVG när den fyllts", group=grpFVG)
@@ -63,8 +68,10 @@ fvgRemoveFilled = input.bool(true, "Ta bort FVG när den fyllts", group=grpFVG)
 // ============= INPUTS: ORDER BLOCKS (LRB/LRS) =============
 grpOB = "Order Blocks (LRB / LRS)"
 showOB            = input.bool(true, "Visa Order Blocks", group=grpOB)
-colorOBBull       = input.color(color.new(color.lime, 85), "LRB-färg (bullish OB)", group=grpOB)
-colorOBBear       = input.color(color.new(color.red, 85),  "LRS-färg (bearish OB)", group=grpOB)
+colorOBBull       = input.color(color.new(color.lime, 85), "LRB-fyllnad (bullish OB)", group=grpOB)
+colorOBBullBorder = input.color(color.lime, "LRB-kantfärg", group=grpOB)
+colorOBBear       = input.color(color.new(color.red, 85),  "LRS-fyllnad (bearish OB)", group=grpOB)
+colorOBBearBorder = input.color(color.red, "LRS-kantfärg", group=grpOB)
 obExtend          = input.int(20, "OB extend (bars)", minval=5, group=grpOB)
 obMaxCount        = input.int(10, "Max antal aktiva OB", minval=1, maxval=100, group=grpOB)
 obRemoveMitigated = input.bool(true, "Ta bort OB när den mitigerats", group=grpOB)
@@ -72,7 +79,8 @@ obRemoveMitigated = input.bool(true, "Ta bort OB när den mitigerats", group=grp
 // ============= INPUTS: OTE =============
 grpOTE = "OTE"
 showOTE   = input.bool(true, "Visa OTE-zon (61.8%-79%)", group=grpOTE)
-colorOTE  = input.color(color.new(color.orange, 85), "OTE-färg", group=grpOTE)
+colorOTE  = input.color(color.new(color.orange, 85), "OTE-fyllnad", group=grpOTE)
+colorOTEBorder = input.color(color.orange, "OTE-kantfärg", group=grpOTE)
 
 // ============= INPUTS: OBJECTIVES (Risk:Reward) =============
 grpObj = "Objectives (Risk:Reward)"
@@ -80,10 +88,14 @@ showObjectives = input.bool(true, "Visa Objectives 1:4 / 1:6 / 1:9", group=grpOb
 rr1 = input.float(4, "Första Objective (R)", group=grpObj)
 rr2 = input.float(6, "Andra Objective (R)", group=grpObj)
 rr3 = input.float(9, "Tredje Objective (R)", group=grpObj)
-colorObj1 = input.color(color.new(color.red, 60),   "Färg Första Objective", group=grpObj)
-colorObj2 = input.color(color.new(color.blue, 60),  "Färg Andra Objective", group=grpObj)
-colorObj3 = input.color(color.new(color.green, 60), "Färg Tredje Objective", group=grpObj)
+colorObj1 = input.color(color.new(color.red, 60),   "Fyllnad Första Objective", group=grpObj)
+colorObj1Border = input.color(color.red, "Kantfärg Första Objective", group=grpObj)
+colorObj2 = input.color(color.new(color.blue, 60),  "Fyllnad Andra Objective", group=grpObj)
+colorObj2Border = input.color(color.blue, "Kantfärg Andra Objective", group=grpObj)
+colorObj3 = input.color(color.new(color.green, 60), "Fyllnad Tredje Objective", group=grpObj)
+colorObj3Border = input.color(color.green, "Kantfärg Tredje Objective", group=grpObj)
 objZoneWidth = input.int(20, "Objective-zon bredd (bars)", minval=2, group=grpObj)
+boxBorderWidth = input.int(1, "Boxramar - tjocklek (px)", minval=1, maxval=5, group=grpObj)
 
 // ============= INPUTS: TRENDLINJER =============
 grpTrend = "Auto-trendlinjer"
@@ -112,6 +124,32 @@ manageLabel(lbl) =>
     array.push(allLabels, lbl)
     if array.size(allLabels) > maxLabels
         label.delete(array.shift(allLabels))
+
+// ============= MARKÖR-FORMER (bull/bear-varianter av vald stil) =============
+markerStyleUp(string styleChoice) =>
+    switch styleChoice
+        "Etikett"  => label.style_label_up
+        "Triangel" => label.style_triangleup
+        "Pil"      => label.style_arrowup
+        "Cirkel"   => label.style_circle
+        "Kryss"    => label.style_cross
+        "Diamant"  => label.style_diamond
+        => label.style_label_up
+
+markerStyleDown(string styleChoice) =>
+    switch styleChoice
+        "Etikett"  => label.style_label_down
+        "Triangel" => label.style_triangledown
+        "Pil"      => label.style_arrowdown
+        "Cirkel"   => label.style_circle
+        "Kryss"    => label.style_cross
+        "Diamant"  => label.style_diamond
+        => label.style_label_down
+
+manipStyleBull = markerStyleUp(manipMarkerStyle)
+manipStyleBear = markerStyleDown(manipMarkerStyle)
+smrStyleBull   = markerStyleUp(smrMarkerStyle)
+smrStyleBear   = markerStyleDown(smrMarkerStyle)
 
 // ============= SWING STRUCTURE =============
 swingHigh = ta.pivothigh(high, swingLen, swingLen)
@@ -169,26 +207,26 @@ var box accumBoxBull = na
 var box accumBoxBear = na
 
 if bullManip
-    manageLabel(label.new(bar_index, low, "Sell Stops", style=label.style_label_up, color=colorManipBull, textcolor=color.black, size=size.tiny))
+    manageLabel(label.new(bar_index, low, "Sell Stops", style=manipStyleBull, color=colorManipBull, textcolor=color.black, size=size.tiny))
     if showSMR
-        manageLabel(label.new(bar_index, low, "SMR", style=label.style_triangleup, color=colorSMRBull, textcolor=color.white, size=size.small, yloc=yloc.belowbar))
+        manageLabel(label.new(bar_index, low, "SMR", style=smrStyleBull, color=colorSMRBull, textcolor=color.white, size=size.small, yloc=yloc.belowbar))
     bullStop := low
     bullSweepBar := bar_index
     bullPendingBMS := true
     if showAccum
         box.delete(accumBoxBull)
-        accumBoxBull := box.new(bar_index - rangeLookback, ta.highest(high[1], rangeLookback), bar_index, lastSwingLow, border_color=na, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
+        accumBoxBull := box.new(bar_index - rangeLookback, ta.highest(high[1], rangeLookback), bar_index, lastSwingLow, border_color=colorAccumBorder, border_width=boxBorderWidth, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
 
 if bearManip
-    manageLabel(label.new(bar_index, high, "Buy Stops", style=label.style_label_down, color=colorManipBear, textcolor=color.white, size=size.tiny))
+    manageLabel(label.new(bar_index, high, "Buy Stops", style=manipStyleBear, color=colorManipBear, textcolor=color.white, size=size.tiny))
     if showSMR
-        manageLabel(label.new(bar_index, high, "SMR", style=label.style_triangledown, color=colorSMRBear, textcolor=color.white, size=size.small, yloc=yloc.abovebar))
+        manageLabel(label.new(bar_index, high, "SMR", style=smrStyleBear, color=colorSMRBear, textcolor=color.white, size=size.small, yloc=yloc.abovebar))
     bearStop := high
     bearSweepBar := bar_index
     bearPendingBMS := true
     if showAccum
         box.delete(accumBoxBear)
-        accumBoxBear := box.new(bar_index - rangeLookback, lastSwingHigh, bar_index, ta.lowest(low[1], rangeLookback), border_color=na, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
+        accumBoxBear := box.new(bar_index - rangeLookback, lastSwingHigh, bar_index, ta.lowest(low[1], rangeLookback), border_color=colorAccumBorder, border_width=boxBorderWidth, bgcolor=colorAccum, text="Accumulation", text_size=size.tiny, text_color=color.gray)
 
 // ============= BMS (BREAK OF MARKET STRUCTURE) =============
 bmsUp   = not na(lastSwingHigh) and ta.crossover(close, lastSwingHigh)
@@ -225,9 +263,9 @@ if bmsUp and bullPendingBMS
         objLine1Bull := line.new(bar_index, obj1, bar_index + objZoneWidth, obj1, extend=extend.right, color=colorObj1, style=line.style_dashed)
         objLine2Bull := line.new(bar_index, obj2, bar_index + objZoneWidth, obj2, extend=extend.right, color=colorObj2, style=line.style_dashed)
         objLine3Bull := line.new(bar_index, obj3, bar_index + objZoneWidth, obj3, extend=extend.right, color=colorObj3, style=line.style_dashed)
-        objZone1Bull := box.new(bar_index, obj1 + bullRisk * 0.1, bar_index + objZoneWidth, obj1 - bullRisk * 0.1, border_color=na, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
-        objZone2Bull := box.new(bar_index, obj2 + bullRisk * 0.1, bar_index + objZoneWidth, obj2 - bullRisk * 0.1, border_color=na, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
-        objZone3Bull := box.new(bar_index, obj3 + bullRisk * 0.1, bar_index + objZoneWidth, obj3 - bullRisk * 0.1, border_color=na, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
+        objZone1Bull := box.new(bar_index, obj1 + bullRisk * 0.1, bar_index + objZoneWidth, obj1 - bullRisk * 0.1, border_color=colorObj1Border, border_width=boxBorderWidth, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
+        objZone2Bull := box.new(bar_index, obj2 + bullRisk * 0.1, bar_index + objZoneWidth, obj2 - bullRisk * 0.1, border_color=colorObj2Border, border_width=boxBorderWidth, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
+        objZone3Bull := box.new(bar_index, obj3 + bullRisk * 0.1, bar_index + objZoneWidth, obj3 - bullRisk * 0.1, border_color=colorObj3Border, border_width=boxBorderWidth, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
 
 if bmsDown and bearPendingBMS
     bearPendingBMS := false
@@ -251,9 +289,9 @@ if bmsDown and bearPendingBMS
         objLine1Bear := line.new(bar_index, obj1b, bar_index + objZoneWidth, obj1b, extend=extend.right, color=colorObj1, style=line.style_dashed)
         objLine2Bear := line.new(bar_index, obj2b, bar_index + objZoneWidth, obj2b, extend=extend.right, color=colorObj2, style=line.style_dashed)
         objLine3Bear := line.new(bar_index, obj3b, bar_index + objZoneWidth, obj3b, extend=extend.right, color=colorObj3, style=line.style_dashed)
-        objZone1Bear := box.new(bar_index, obj1b + bearRisk * 0.1, bar_index + objZoneWidth, obj1b - bearRisk * 0.1, border_color=na, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
-        objZone2Bear := box.new(bar_index, obj2b + bearRisk * 0.1, bar_index + objZoneWidth, obj2b - bearRisk * 0.1, border_color=na, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
-        objZone3Bear := box.new(bar_index, obj3b + bearRisk * 0.1, bar_index + objZoneWidth, obj3b - bearRisk * 0.1, border_color=na, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
+        objZone1Bear := box.new(bar_index, obj1b + bearRisk * 0.1, bar_index + objZoneWidth, obj1b - bearRisk * 0.1, border_color=colorObj1Border, border_width=boxBorderWidth, bgcolor=colorObj1, text=str.format("First Objective 1:{0}", rr1), text_size=size.tiny)
+        objZone2Bear := box.new(bar_index, obj2b + bearRisk * 0.1, bar_index + objZoneWidth, obj2b - bearRisk * 0.1, border_color=colorObj2Border, border_width=boxBorderWidth, bgcolor=colorObj2, text=str.format("Second Objective 1:{0}", rr2), text_size=size.tiny)
+        objZone3Bear := box.new(bar_index, obj3b + bearRisk * 0.1, bar_index + objZoneWidth, obj3b - bearRisk * 0.1, border_color=colorObj3Border, border_width=boxBorderWidth, bgcolor=colorObj3, text=str.format("Third Objective 1:{0}", rr3), text_size=size.tiny)
 
 // Ogiltigförklara setup om priset stänger tillbaka igenom stop
 if bullActive and close < bullStop
@@ -274,10 +312,10 @@ bullFVG = low  > high[2]
 bearFVG = high < low[2]
 
 if showFVG and bullFVG
-    newFvg = box.new(bar_index[2], high[2], bar_index + fvgMaxBars, low, border_color=na, bgcolor=colorFVGBull)
+    newFvg = box.new(bar_index[2], high[2], bar_index + fvgMaxBars, low, border_color=colorFVGBullBorder, border_width=boxBorderWidth, bgcolor=colorFVGBull)
     array.push(fvgBoxes, FvgBox.new(newFvg, true, low, high[2]))
 if showFVG and bearFVG
-    newFvg = box.new(bar_index[2], low[2], bar_index + fvgMaxBars, high, border_color=na, bgcolor=colorFVGBear)
+    newFvg = box.new(bar_index[2], low[2], bar_index + fvgMaxBars, high, border_color=colorFVGBearBorder, border_width=boxBorderWidth, bgcolor=colorFVGBear)
     array.push(fvgBoxes, FvgBox.new(newFvg, false, low[2], high))
 
 if array.size(fvgBoxes) > 0
@@ -306,10 +344,10 @@ bullOB  = showOB and close[1] < open[1] and close > open and close > high[1] and
 bearOB  = showOB and close[1] > open[1] and close < open and close < low[1]  and bigMove
 
 if bullOB
-    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBull, bgcolor=colorOBBull, text="LRB", text_size=size.tiny)
+    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBullBorder, border_width=boxBorderWidth, bgcolor=colorOBBull, text="LRB", text_size=size.tiny)
     array.push(obBoxes, ObBox.new(newOb, true, high[1], low[1]))
 if bearOB
-    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBear, bgcolor=colorOBBear, text="LRS", text_size=size.tiny)
+    newOb = box.new(bar_index[1], high[1], bar_index[1] + obExtend, low[1], border_color=colorOBBearBorder, border_width=boxBorderWidth, bgcolor=colorOBBear, text="LRS", text_size=size.tiny)
     array.push(obBoxes, ObBox.new(newOb, false, high[1], low[1]))
 
 if array.size(obBoxes) > 0
@@ -337,4 +375,4 @@ if showOTE and newSwing and not na(lastSwingHigh) and not na(lastSwingLow)
     oteBot     = bullishRetrace ? lastSwingLow + oteRange * 0.21  : lastSwingHigh - oteRange * 0.382
     oteLeftBar = bullishRetrace ? lastSwingLowBar : lastSwingHighBar
     box.delete(oteBox)
-    oteBox := box.new(oteLeftBar, oteTop, bar_index, oteBot, border_color=colorOTE, bgcolor=colorOTE, extend=extend.right, text="Retracement OTE", text_size=size.tiny)
+    oteBox := box.new(oteLeftBar, oteTop, bar_index, oteBot, border_color=colorOTEBorder, border_width=boxBorderWidth, bgcolor=colorOTE, extend=extend.right, text="Retracement OTE", text_size=size.tiny)
